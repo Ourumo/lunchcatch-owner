@@ -28,14 +28,14 @@ export default defineConfig([
         'error',
         {
           groups: [
+            // 스타일 (side effect import). 로드 순서가 cascade에 영향을 주므로 맨 앞에 둔다
+            ['\\.css$'],
             // react, 외부 패키지
             ['^react', '^@?\\w'],
             // 절대경로 alias
             ['^@/'],
             // 상대경로
             ['^\\.'],
-            // 스타일 (side effect import)
-            ['\\.css$'],
           ],
         },
       ],
