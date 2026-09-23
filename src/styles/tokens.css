@@ -1,10 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap');
-
 /*
  * LaunchCatch 디자인 토큰의 단일 원본입니다.
  * 화면과 컴포넌트에서는 primitive 색상 대신 semantic 색상 토큰을 사용합니다.
  */
-@theme {
+@theme static {
   /* Tailwind utility에서 사용할 폰트, primitive, semantic 토큰입니다. */
   --font-sans: 'Noto Sans KR', 'Noto Sans', sans-serif;
   --color-brand-100: #fff0e8;
