@@ -11,7 +11,6 @@ const meta = {
   title: 'Shared/Forms/SelectField',
   component: SelectField,
   args: {
-    label: 'Select',
     options,
   },
   decorators: [

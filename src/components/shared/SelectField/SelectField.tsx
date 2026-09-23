@@ -16,7 +16,6 @@ export interface SelectFieldProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   'children' | 'onChange' | 'type' | 'value'
 > {
-  label?: string;
   name?: string;
   options: SelectOption[];
   placeholder?: string;
@@ -28,7 +27,6 @@ export interface SelectFieldProps extends Omit<
 export function SelectField({
   defaultValue = '',
   disabled,
-  label,
   name,
   className,
   onClick,
@@ -84,80 +82,70 @@ export function SelectField({
   };
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      {label && (
-        <label
-          className="text-caption-web font-medium text-text-primary"
-          htmlFor={generatedId}
+    <div className="relative w-full">
+      {name && <input name={name} type="hidden" value={selectedValue} />}
+      <button
+        aria-controls={`${generatedId}-options`}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`${triggerClassName} relative`}
+        disabled={disabled}
+        id={generatedId}
+        onClick={(event) => {
+          onClick?.(event);
+
+          if (!event.defaultPrevented) {
+            setIsOpen((currentIsOpen) => !currentIsOpen);
+          }
+        }}
+        onKeyDown={handleKeyDown}
+        type="button"
+        {...props}
+      >
+        <span
+          className={
+            selectedOption
+              ? 'min-w-0 flex-1 truncate pr-6 text-left'
+              : 'min-w-0 flex-1 truncate pr-6 text-left text-text-secondary'
+          }
         >
-          {label}
-        </label>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`absolute right-3 size-4 text-text-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          strokeWidth={2}
+        />
+      </button>
+      {isOpen && (
+        <ul
+          aria-labelledby={generatedId}
+          className="absolute z-10 mt-2 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1"
+          id={`${generatedId}-options`}
+          role="listbox"
+        >
+          {options.map((option) => {
+            const isSelected = option.value === selectedValue;
+
+            return (
+              <li aria-selected={isSelected} key={option.value} role="option">
+                <button
+                  className={`flex w-full rounded-sm px-3 py-2 text-left text-caption-web disabled:cursor-not-allowed disabled:text-text-disabled ${
+                    isSelected
+                      ? 'bg-surface-subtle text-action-primary'
+                      : 'text-text-primary hover:bg-surface-subtle'
+                  }`}
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <div className="relative w-full">
-        {name && <input name={name} type="hidden" value={selectedValue} />}
-        <button
-          aria-controls={`${generatedId}-options`}
-          aria-expanded={isOpen}
-          aria-haspopup="listbox"
-          className={`${triggerClassName} relative`}
-          disabled={disabled}
-          id={generatedId}
-          onClick={(event) => {
-            onClick?.(event);
-
-            if (!event.defaultPrevented) {
-              setIsOpen((currentIsOpen) => !currentIsOpen);
-            }
-          }}
-          onKeyDown={handleKeyDown}
-          type="button"
-          {...props}
-        >
-          <span
-            className={
-              selectedOption
-                ? 'min-w-0 flex-1 truncate pr-6 text-left'
-                : 'min-w-0 flex-1 truncate pr-6 text-left text-text-secondary'
-            }
-          >
-            {selectedOption?.label ?? placeholder}
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            className={`absolute right-3 size-4 text-text-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`}
-            strokeWidth={2}
-          />
-        </button>
-        {isOpen && (
-          <ul
-            aria-labelledby={generatedId}
-            className="absolute z-10 mt-2 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1"
-            id={`${generatedId}-options`}
-            role="listbox"
-          >
-            {options.map((option) => {
-              const isSelected = option.value === selectedValue;
-
-              return (
-                <li aria-selected={isSelected} key={option.value} role="option">
-                  <button
-                    className={`flex w-full rounded-sm px-3 py-2 text-left text-caption-web disabled:cursor-not-allowed disabled:text-text-disabled ${
-                      isSelected
-                        ? 'bg-surface-subtle text-action-primary'
-                        : 'text-text-primary hover:bg-surface-subtle'
-                    }`}
-                    disabled={option.disabled}
-                    onClick={() => handleSelect(option.value)}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }
