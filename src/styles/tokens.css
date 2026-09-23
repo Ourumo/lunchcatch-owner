@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap');
+
+/*
+ * LaunchCatch 디자인 토큰의 단일 원본입니다.
+ * 화면과 컴포넌트에서는 primitive 색상 대신 semantic 색상 토큰을 사용합니다.
+ */
+@theme {
+  /* Tailwind utility에서 사용할 폰트, primitive, semantic 토큰입니다. */
+  --font-sans: 'Noto Sans KR', 'Noto Sans', sans-serif;
+  --color-brand-100: #fff0e8;
+  --color-brand-200: #ffd8c4;
+  --color-brand-300: #ffb58f;
+  --color-brand-400: #ff8c4f;
+  --color-brand-500: #f56b20;
+  --color-brand-600: #d95616;
+  --color-brand-700: #b84312;
+  --color-brand-800: #8f330f;
+  --color-brand-900: #68250c;
+  --color-secondary-100: #e7f4f5;
+  --color-secondary-200: #c7e5e8;
+  --color-secondary-300: #9ed2d7;
+  --color-secondary-400: #75bdc5;
+  --color-secondary-500: #5caab3;
+  --color-secondary-600: #468e97;
+  --color-secondary-700: #39737a;
+  --color-secondary-800: #2e5960;
+  --color-secondary-900: #234348;
+  --color-neutral-0: #fff;
+  --color-neutral-50: #faf8f3;
+  --color-neutral-100: #f1ede9;
+  --color-neutral-200: #e0d8d1;
+  --color-neutral-300: #b8b2aa;
+  --color-neutral-400: #8d8a84;
+  --color-neutral-500: #7a716a;
+  --color-neutral-900: #2f2a27;
+  --color-bg-page: var(--color-neutral-50);
+  --color-bg-surface: var(--color-neutral-0);
+  --color-surface-subtle: var(--color-neutral-100);
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-500);
+  --color-text-tertiary: var(--color-neutral-400);
+  --color-text-disabled: var(--color-neutral-300);
+  --color-text-inverse: var(--color-neutral-0);
+  --color-border-subtle: var(--color-neutral-200);
+  --color-action-primary: var(--color-brand-500);
+  --color-action-primary-hover: var(--color-brand-600);
+  --color-action-primary-disabled: var(--color-neutral-200);
+  --color-action-secondary: var(--color-secondary-500);
+  --color-action-secondary-hover: var(--color-secondary-600);
+  --color-status-info-bg: #eef4f7;
+  --color-status-info-fg: #1b77ac;
+  --color-status-info-border: #1b77ac;
+  --color-status-success-bg: #edf7f0;
+  --color-status-success-fg: #4b8a63;
+  --color-status-success-border: #4b8a63;
+  --color-status-warning-bg: #fff5de;
+  --color-status-warning-fg: #b97808;
+  --color-status-warning-border: #b97808;
+  --color-status-danger-bg: #ffe8e4;
+  --color-status-danger-fg: #b42318;
+  --color-status-danger-border: #b42318;
+  --color-table-header-text: #737373;
+  --color-table-body-text: #212121;
+  --color-table-border: #e5ddd4;
+  --color-table-divider: #f0eee8;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+  --text-display-web: 32px;
+  --text-display-mobile: 36px;
+  --text-h1: 24px;
+  --text-h2-web: 18px;
+  --text-h2-mobile: 20px;
+  --text-h3-web: 16px;
+  --text-h3-mobile: 17px;
+  --text-body-web: 14px;
+  --text-body-mobile: 16px;
+  --text-body-sm-web: 13px;
+  --text-body-sm-mobile: 14px;
+  --text-caption-web: 12px;
+  --text-caption-mobile: 13px;
+}
+
+:root {
+  /*
+   * Light 테마의 기본값입니다.
+   * --space-*, 아이콘, grid 값은 Tailwind 외 CSS에서도 사용할 수 있습니다.
+   */
+  --font-display-web: var(--text-display-web);
+  --font-h1: var(--text-h1);
+  --font-body: var(--text-body-web);
+  --font-caption: var(--text-caption-web);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --space-1: var(--spacing-1);
+  --space-2: var(--spacing-2);
+  --space-3: var(--spacing-3);
+  --space-4: var(--spacing-4);
+  --space-5: var(--spacing-5);
+  --space-6: var(--spacing-6);
+  --space-8: var(--spacing-8);
+  --space-10: var(--spacing-10);
+  --space-12: var(--spacing-12);
+  --space-16: var(--spacing-16);
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+  --grid-web-columns: 12;
+  --grid-web-gutter: 24px;
+  --grid-web-margin: 40px;
+  --grid-mobile-columns: 4;
+  --grid-mobile-gutter: 12px;
+  --grid-mobile-margin: 16px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  /*
+   * Light와 같은 semantic token 이름을 유지하고 값만 Dark 테마에 맞게 교체합니다.
+   * 컴포넌트에서는 data-theme 조건문 없이 semantic token만 사용합니다.
+   */
+  --color-brand-100: #2f2a27;
+  --color-brand-200: #68250c;
+  --color-brand-300: #b84312;
+  --color-brand-400: #d95616;
+  --color-brand-500: #f56b20;
+  --color-brand-600: #ff8c4f;
+  --color-brand-700: #ffb58f;
+  --color-brand-800: #ffd8c4;
+  --color-brand-900: #fff0e8;
+  --color-secondary-100: #2f2a27;
+  --color-secondary-200: #234348;
+  --color-secondary-300: #39737a;
+  --color-secondary-400: #468e97;
+  --color-secondary-500: #5caab3;
+  --color-secondary-600: #75bdc5;
+  --color-secondary-700: #9ed2d7;
+  --color-secondary-800: #c7e5e8;
+  --color-secondary-900: #e7f4f5;
+  --color-neutral-0: #2f2a27;
+  --color-neutral-50: #7a716a;
+  --color-neutral-100: #e0d8d1;
+  --color-neutral-200: #f1ede9;
+  --color-neutral-500: #faf8f3;
+  --color-neutral-900: #fff;
+  --color-bg-page: var(--color-neutral-0);
+  --color-bg-surface: var(--color-neutral-0);
+  --color-surface-subtle: var(--color-neutral-50);
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-200);
+  --color-text-tertiary: var(--color-neutral-100);
+  --color-text-disabled: var(--color-neutral-50);
+  --color-text-inverse: #fff;
+  --color-border-subtle: var(--color-neutral-50);
+  --color-action-primary: var(--color-brand-500);
+  --color-action-primary-hover: var(--color-brand-600);
+  --color-action-primary-disabled: var(--color-neutral-50);
+  --color-action-secondary: var(--color-secondary-500);
+  --color-action-secondary-hover: var(--color-secondary-600);
+  --color-status-info-bg: #1b77ac;
+  --color-status-info-fg: #fff;
+  --color-status-info-border: #1b77ac;
+  --color-status-success-bg: #4b8a63;
+  --color-status-success-fg: #fff;
+  --color-status-success-border: #4b8a63;
+  --color-status-warning-bg: #b97808;
+  --color-status-warning-fg: #fff;
+  --color-status-warning-border: #b97808;
+  --color-status-danger-bg: #b42318;
+  --color-status-danger-fg: #fff;
+  --color-status-danger-border: #b42318;
+}
+
+@layer utilities {
+  /* 역할 기반 타이포그래피와 공통 grid utility입니다. */
+  .type-display {
+    font-size: var(--text-display-web);
+    font-weight: var(--font-weight-semibold);
+  }
+  .type-h1 {
+    font-size: var(--text-h1);
+    font-weight: var(--font-weight-semibold);
+  }
+  .type-h2 {
+    font-size: var(--text-h2-web);
+    font-weight: var(--font-weight-medium);
+  }
+  .type-h3 {
+    font-size: var(--text-h3-web);
+    font-weight: var(--font-weight-medium);
+  }
+  .type-body {
+    font-size: var(--text-body-web);
+    font-weight: var(--font-weight-regular);
+  }
+  .type-body-sm {
+    font-size: var(--text-body-sm-web);
+    font-weight: var(--font-weight-regular);
+  }
+  .type-caption {
+    font-size: var(--text-caption-web);
+    font-weight: var(--font-weight-regular);
+  }
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-web-columns), minmax(0, 1fr));
+    column-gap: var(--grid-web-gutter);
+    margin-inline: var(--grid-web-margin);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --font-display-web: var(--text-display-mobile);
+    --font-body: var(--text-body-mobile);
+    --font-caption: var(--text-caption-mobile);
+  }
+  .type-display {
+    font-size: var(--text-display-mobile);
+  }
+  .type-h2 {
+    font-size: var(--text-h2-mobile);
+  }
+  .type-h3 {
+    font-size: var(--text-h3-mobile);
+  }
+  .type-body {
+    font-size: var(--text-body-mobile);
+  }
+  .type-body-sm {
+    font-size: var(--text-body-sm-mobile);
+  }
+  .type-caption {
+    font-size: var(--text-caption-mobile);
+  }
+  .layout-grid {
+    grid-template-columns: repeat(var(--grid-mobile-columns), minmax(0, 1fr));
+    column-gap: var(--grid-mobile-gutter);
+    margin-inline: var(--grid-mobile-margin);
+  }
+}
