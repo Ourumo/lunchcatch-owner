@@ -1,3 +1,7 @@
+// Storybook ESLint 설정 방식은 아래 문서를 참고한다.
+// https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from 'eslint-plugin-storybook';
+
 import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -41,7 +45,7 @@ export default defineConfig([
       ],
       'simple-import-sort/exports': 'error',
     },
-  },
-  // Prettier와 충돌하는 스타일 규칙을 끈다. 반드시 마지막에 둘 것
+  }, // Prettier와 충돌하는 스타일 규칙을 끈다. 반드시 마지막에 둘 것
   eslintConfigPrettier,
+  ...storybook.configs['flat/recommended'],
 ]);
