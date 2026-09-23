@@ -17,6 +17,7 @@
     "test:storybook": "vitest run --project storybook"
   },
   "dependencies": {
+    "lucide-react": "^1.47.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
