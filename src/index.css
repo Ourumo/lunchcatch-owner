@@ -11,4 +11,9 @@
     min-height: 100vh;
     margin: 0;
   }
+
+  input[type='search']::-webkit-search-cancel-button {
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
 }

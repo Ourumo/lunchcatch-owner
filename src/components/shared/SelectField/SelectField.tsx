@@ -1,7 +1,9 @@
 import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
+  useEffect,
   useId,
+  useRef,
   useState,
 } from 'react';
 import { ChevronDown } from 'lucide-react';
@@ -38,6 +40,7 @@ export function SelectField({
   ...props
 }: SelectFieldProps) {
   const generatedId = useId();
+  const fieldRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedValue = value ?? uncontrolledValue;
@@ -81,8 +84,22 @@ export function SelectField({
     setIsOpen(false);
   };
 
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!fieldRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, []);
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={fieldRef}>
       {name && <input name={name} type="hidden" value={selectedValue} />}
       <button
         aria-controls={`${generatedId}-options`}
