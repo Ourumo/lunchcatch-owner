@@ -23,6 +23,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@rolldown/plugin-babel": "catalog:",
+    "@storybook/react-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/babel__core": "catalog:",
     "@types/node": "catalog:",
