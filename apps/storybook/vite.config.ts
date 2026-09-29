@@ -17,12 +17,8 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    // 앱 컴포넌트의 스토리에서 쓰는 앱별 경로 별칭. 앱을 추가하면 여기에도 등록한다
-    alias: {
-      '@admin': path.resolve(dirname, '../admin/src'),
-      '@owner': path.resolve(dirname, '../owner/src'),
-      '@user': path.resolve(dirname, '../user/src'),
-    },
+    // 스토리 파일마다 가장 가까운 tsconfig의 paths로 앱별 경로 별칭을 찾는다
+    tsconfigPaths: true,
   },
   test: {
     projects: [
