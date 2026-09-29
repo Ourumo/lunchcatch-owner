@@ -44,7 +44,7 @@ export function BottomNav({
                 aria-current={isSelected ? 'page' : undefined}
                 className={`flex h-14 w-full flex-col items-center justify-center gap-1 rounded-[18px] border-0 bg-transparent text-[11px] leading-normal transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary ${
                   isSelected
-                    ? 'font-bold text-brand-600'
+                    ? 'font-bold text-text-brand'
                     : 'font-medium text-text-secondary'
                 }`}
                 onClick={() => onValueChange?.(item.value)}
