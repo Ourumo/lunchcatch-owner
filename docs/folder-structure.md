@@ -91,7 +91,8 @@ import { Header } from '@owner/components/Header';
 
 - 앱마다 별칭 이름이 다른 이유는 Storybook이 세 앱의 컴포넌트를 한꺼번에 읽기 때문입니다. 모두 `@/`를 쓰면 어느 앱의 `src`인지 구분할 수 없습니다.
 - 각 앱은 자기 별칭만 인식하므로, 다른 앱의 별칭을 import하면 타입 에러가 납니다.
-- 별칭은 앱의 `tsconfig.app.json`(`paths`)과 `vite.config.ts`(`resolve.alias`) 두 곳에 설정되어 있습니다. 앱을 추가하면 두 곳과 `apps/storybook/vite.config.ts`에도 등록하고, `packages/eslint-config`의 import 정렬 그룹에도 추가합니다.
+- 별칭은 앱의 `tsconfig.app.json`(`paths`)에만 정의합니다. Vite와 Storybook은 `resolve.tsconfigPaths` 옵션으로 이 값을 그대로 읽으므로 따로 등록하지 않습니다.
+- 앱을 추가하면 새 앱의 `tsconfig.app.json`에 `paths`를, `packages/eslint-config`의 import 정렬 그룹에 별칭 이름을 추가합니다.
 
 ## 컴포넌트 배치 기준
 
