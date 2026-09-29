@@ -1,3 +1,4 @@
+export * from './components/BottomNav/BottomNav';
 export * from './components/BottomSheet/BottomSheet';
 export * from './components/Button/Button';
 export * from './components/Checkbox/Checkbox';
