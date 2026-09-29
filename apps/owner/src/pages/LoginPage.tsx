@@ -1,5 +1,5 @@
 const LoginPage = () => {
-  return <h1 className="type-h1">로그인</h1>;
+  return <h2 className="type-h2">로그인</h2>;
 };
 
 export default LoginPage;

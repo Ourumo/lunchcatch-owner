@@ -1,5 +1,5 @@
 const SignupPage = () => {
-  return <h1 className="type-h1">회원가입</h1>;
+  return <h2 className="type-h2">회원가입</h2>;
 };
 
 export default SignupPage;
