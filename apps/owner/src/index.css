@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+@import '@repo/ui/styles.css';
+
+/* 앱 폴더 밖에 있는 공통 패키지의 Tailwind 클래스도 빌드에 포함한다 */
+@source '../../../packages/ui/src';
