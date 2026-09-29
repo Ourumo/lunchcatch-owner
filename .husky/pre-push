@@ -1,1 +1,2 @@
-npx tsc -b
+pnpm exec tsc -b
+pnpm exec turbo run typecheck
