@@ -4,9 +4,10 @@
 
 ## 기술 스택
 
+- pnpm workspaces + Turborepo 모노레포 (`apps/user`, `apps/owner`, `apps/admin`, `packages/*`)
 - React 19 + Vite 8 + TypeScript
 - Tailwind CSS
-- Storybook
+- Storybook (`apps/storybook`)
 - ESLint / Prettier / Husky
 
 
@@ -25,6 +26,7 @@
 - 서빙 시간대: 10:00~12:59
 - 쿠폰 발급은 찜 목록에서만 (피드 카드에 발급 버튼 없음)
 - 11:00 선착순 오픈, 10:50 알림
-- 브랜드 컬러: #F56B20 (src/styles/tokens.css)
-- shared 컴포넌트 12종 이미 구현됨 (Button, Input, Toast, BottomSheet 등)
+- 브랜드 컬러: #F56B20 (packages/ui/src/styles/tokens.css)
+- 공통 컴포넌트 12종 이미 구현됨 (`@repo/ui`: Button, Input, Toast, BottomSheet 등)
+- 패키지 매니저는 pnpm (npm 사용 X)
 
