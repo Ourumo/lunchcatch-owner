@@ -16,6 +16,14 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  resolve: {
+    // 앱 컴포넌트의 스토리에서 쓰는 앱별 경로 별칭. 앱을 추가하면 여기에도 등록한다
+    alias: {
+      '@admin': path.resolve(dirname, '../admin/src'),
+      '@owner': path.resolve(dirname, '../owner/src'),
+      '@user': path.resolve(dirname, '../user/src'),
+    },
+  },
   test: {
     projects: [
       {
