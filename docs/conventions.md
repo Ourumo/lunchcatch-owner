@@ -38,6 +38,18 @@ feat: 카카오 로그인 화면 구현
 - API: 이번 스프린트는 mock 데이터 사용
 - 타입: interface 우선 (type은 유니온/인터섹션에만)
 - 파일명: 컴포넌트는 PascalCase, 유틸/훅은 camelCase
+- import 경로 (앱 코드):
+  - 같은 폴더나 하위 폴더는 상대 경로(`./`)로 가져옵니다.
+  - 상위 폴더로 올라가야 하면 `../` 대신 앱 경로 별칭(`@user/`, `@owner/`, `@admin/`)으로 가져옵니다.
+  - `../` import는 ESLint에서 에러로 처리됩니다. `packages`는 별칭이 없으므로 이 규칙을 적용하지 않습니다.
+
+```tsx
+// apps/owner/src/features/signup/steps/TermsStep.tsx
+import { ImageUploader } from '@owner/components/ImageUploader';
+import { useSignupForm } from '@owner/features/signup/useSignupForm';
+
+import { TermsItem } from './TermsItem';
+```
 
 ## 린트/포맷
 

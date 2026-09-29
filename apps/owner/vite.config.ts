@@ -9,6 +9,10 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  resolve: {
+    // 경로 별칭은 tsconfig.app.json의 paths를 그대로 사용한다
+    tsconfigPaths: true,
+  },
   server: {
     port: 5174,
     strictPort: true,

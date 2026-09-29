@@ -16,6 +16,10 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  resolve: {
+    // 스토리 파일마다 가장 가까운 tsconfig의 paths로 앱별 경로 별칭을 찾는다
+    tsconfigPaths: true,
+  },
   test: {
     projects: [
       {
