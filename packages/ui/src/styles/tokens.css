@@ -76,6 +76,10 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 999px;
+  /* 모바일 화면 최대 폭 (디자인 기준 폭은 390px) */
+  --container-mobile: 480px;
+  /* 모바일 화면 좌우 여백 (그리드 margin) */
+  --spacing-page: 16px;
   --text-display-web: 32px;
   --text-display-mobile: 36px;
   --text-h1: 24px;
