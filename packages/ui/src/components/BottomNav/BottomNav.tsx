@@ -25,7 +25,13 @@ export function BottomNav({
   return (
     <nav
       aria-label="하단 메뉴"
-      className={['px-3 pt-1.5 pb-2', className].filter(Boolean).join(' ')}
+      className={[
+        // iPhone 홈 바 영역이 있으면 그만큼, 없으면 8px 띄운다
+        'px-3 pt-1.5 pb-[max(8px,env(safe-area-inset-bottom))]',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       {...props}
     >
       <ul className="m-0 flex h-[68px] list-none items-center rounded-3xl border border-border-subtle bg-bg-surface px-1.5 shadow-[0_5px_14px_rgba(36,36,36,0.1)]">
@@ -38,7 +44,7 @@ export function BottomNav({
                 aria-current={isSelected ? 'page' : undefined}
                 className={`flex h-14 w-full flex-col items-center justify-center gap-1 rounded-[18px] border-0 bg-transparent text-[11px] leading-normal transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary ${
                   isSelected
-                    ? 'font-bold text-brand-600'
+                    ? 'font-bold text-text-brand'
                     : 'font-medium text-text-secondary'
                 }`}
                 onClick={() => onValueChange?.(item.value)}
