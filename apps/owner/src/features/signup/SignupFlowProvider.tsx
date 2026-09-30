@@ -1,0 +1,56 @@
+import { type ReactNode, useState } from 'react';
+
+import type { SignupFlowValues, Weekday } from '@owner/api/signupFlow';
+
+import {
+  SignupFlowContext,
+  type SignupFlowContextValue,
+} from './signupFlowContext';
+
+const weekdays: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const REQUIRED_MENU_COUNT = 3;
+
+const createInitialValues = (): SignupFlowValues => ({
+  terms: { requiredAgreed: false, optionalAgreed: false },
+  store: { name: '', category: '', ownerName: '', place: null },
+  business: { registrationNumber: '' },
+  hours: {
+    businessHours: weekdays.map((day) => ({
+      day,
+      isClosed: false,
+      openTime: '',
+      closeTime: '',
+    })),
+  },
+  menu: {
+    logoImage: null,
+    interiorImages: [],
+    menus: Array.from({ length: REQUIRED_MENU_COUNT }, () => ({
+      image: null,
+      name: '',
+      price: '',
+      description: '',
+    })),
+  },
+});
+
+// 회원가입 플로우의 모든 단계 입력값을 한곳에 모아, 단계를 오가도 값이 유지되게 한다
+export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
+  const [values, setValues] = useState(createInitialValues);
+
+  const updateStepValues: SignupFlowContextValue['updateStepValues'] = (
+    stepId,
+    patch,
+  ) => {
+    setValues((prev) => ({
+      ...prev,
+      [stepId]: { ...prev[stepId], ...patch },
+    }));
+  };
+
+  return (
+    <SignupFlowContext value={{ updateStepValues, values }}>
+      {children}
+    </SignupFlowContext>
+  );
+};
