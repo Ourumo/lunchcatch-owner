@@ -17,23 +17,9 @@ export function Tabs({ defaultValue, items, onValueChange, value }: TabsProps) {
   const [uncontrolledValue, setUncontrolledValue] = useState(
     defaultValue ?? items[0]?.value,
   );
-  const [underlineDirection, setUnderlineDirection] = useState<
-    'left-to-right' | 'right-to-left'
-  >('left-to-right');
   const selectedValue = value ?? uncontrolledValue;
 
   const handleSelect = (nextValue: string) => {
-    const selectedIndex = items.findIndex(
-      (item) => item.value === selectedValue,
-    );
-    const nextIndex = items.findIndex((item) => item.value === nextValue);
-
-    if (nextIndex !== selectedIndex) {
-      setUnderlineDirection(
-        nextIndex > selectedIndex ? 'left-to-right' : 'right-to-left',
-      );
-    }
-
     if (value === undefined) {
       setUncontrolledValue(nextValue);
     }
@@ -49,18 +35,14 @@ export function Tabs({ defaultValue, items, onValueChange, value }: TabsProps) {
     >
       {items.map((item) => {
         const isSelected = item.value === selectedValue;
-        const underlineOrigin =
-          underlineDirection === 'left-to-right'
-            ? 'after:origin-left'
-            : 'after:origin-right';
 
         return (
           <button
             aria-selected={isSelected}
-            className={`relative border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-action-primary after:transition-transform after:duration-200 after:ease-out hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled motion-reduce:after:transition-none ${underlineOrigin} ${
+            className={`relative border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-action-primary hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled ${
               isSelected
-                ? 'text-action-primary after:scale-x-100'
-                : 'text-text-secondary after:scale-x-0'
+                ? 'text-action-primary after:block'
+                : 'text-text-secondary after:hidden'
             }`}
             disabled={item.disabled}
             key={item.value}
