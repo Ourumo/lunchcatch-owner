@@ -1,7 +1,7 @@
 import { Button, Input, Toast } from '@repo/ui';
+import { LockKeyhole, Mail } from 'lucide-react';
 
 import type { LoginResponse } from '@owner/api/auth';
-import { PasswordInput } from '@owner/components/PasswordInput/PasswordInput';
 
 import { useLoginForm } from './useLoginForm';
 
@@ -28,6 +28,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         errorMessage={errors.email}
         inputMode="email"
         label="이메일 주소"
+        leadingIcon={<Mail className="size-4" />}
         name="email"
         onBlur={handleBlur('email')}
         onChange={handleChange('email')}
@@ -35,14 +36,16 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         type="email"
         value={values.email}
       />
-      <PasswordInput
+      <Input
         autoComplete="current-password"
         errorMessage={errors.password}
         label="비밀번호"
+        leadingIcon={<LockKeyhole className="size-4" />}
         name="password"
         onBlur={handleBlur('password')}
         onChange={handleChange('password')}
         placeholder="비밀번호를 입력해주세요"
+        type="password"
         value={values.password}
       />
       {submitError && (
