@@ -128,6 +128,7 @@
   --semantic-action-primary-disabled: var(--primitive-neutral-200);
 
   --semantic-surface-brand: var(--primitive-brand-100);
+  --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-600);
   --semantic-bg-inverse: var(--primitive-neutral-900);
   --semantic-text-on-inverse: var(--primitive-neutral-0);
@@ -177,6 +178,7 @@
   --semantic-action-primary-disabled: var(--primitive-neutral-500);
 
   --semantic-surface-brand: var(--primitive-brand-900);
+  --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-400);
   --semantic-bg-inverse: var(--primitive-neutral-0);
   --semantic-text-on-inverse: var(--primitive-neutral-900);
@@ -243,6 +245,7 @@
   --color-action-primary-hover: var(--semantic-action-primary-hover);
   --color-action-primary-disabled: var(--semantic-action-primary-disabled);
   --color-surface-brand: var(--semantic-surface-brand);
+  --color-bg-brand: var(--semantic-bg-brand);
   --color-text-brand: var(--semantic-text-brand);
   --color-bg-inverse: var(--semantic-bg-inverse);
   --color-text-on-inverse: var(--semantic-text-on-inverse);
