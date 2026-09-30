@@ -37,3 +37,14 @@ export const LongTitle: Story = {
     title: '사업자등록정보 입력 및 영업신고증 업로드 안내',
   },
 };
+
+export const WithTrailing: Story = {
+  args: {
+    onBack: () => undefined,
+    trailing: (
+      <span className="type-caption text-text-primary">
+        <span className="font-semibold">2</span> / 5
+      </span>
+    ),
+  },
+};

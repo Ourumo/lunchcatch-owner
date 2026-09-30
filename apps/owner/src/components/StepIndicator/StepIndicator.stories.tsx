@@ -47,3 +47,9 @@ export const WithoutTitle: Story = {
     title: undefined,
   },
 };
+
+export const Attached: Story = {
+  args: {
+    variant: 'attached',
+  },
+};
