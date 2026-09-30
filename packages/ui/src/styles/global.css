@@ -6,6 +6,12 @@
     border-color: var(--color-border-subtle);
   }
 
+  button,
+  [role='button'],
+  [role='tab'] {
+    user-select: none;
+  }
+
   body {
     min-height: 100vh;
     margin: 0;

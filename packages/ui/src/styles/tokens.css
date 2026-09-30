@@ -78,6 +78,7 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-14: 56px;
   --space-16: 64px;
 
   --radius-value-sm: 4px;
@@ -273,6 +274,7 @@
   --spacing-8: var(--space-8);
   --spacing-10: var(--space-10);
   --spacing-12: var(--space-12);
+  --spacing-14: var(--space-14);
   --spacing-16: var(--space-16);
 
   --radius-sm: var(--radius-value-sm);

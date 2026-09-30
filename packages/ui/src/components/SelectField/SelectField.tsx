@@ -23,12 +23,14 @@ export interface SelectFieldProps extends Omit<
   placeholder?: string;
   value?: string;
   defaultValue?: string;
+  fitContent?: boolean;
   onValueChange?: (value: string) => void;
 }
 
 export function SelectField({
   defaultValue = '',
   disabled,
+  fitContent = false,
   name,
   className,
   onClick,
@@ -47,8 +49,16 @@ export function SelectField({
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
   );
+  // 가장 긴 옵션을 숨김 요소로 렌더링해 트리거 너비를 맞춘다.
+  const widestLabel = [
+    placeholder,
+    ...options.map((option) => option.label),
+  ].reduce((longestLabel, label) =>
+    label.length > longestLabel.length ? label : longestLabel,
+  );
   const triggerClassName = [
-    'flex h-10 w-full items-center justify-start rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled',
+    'flex h-10 items-center justify-start rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled',
+    fitContent ? 'col-start-1 row-start-1 whitespace-nowrap' : 'w-full',
     className,
   ]
     .filter(Boolean)
@@ -99,8 +109,19 @@ export function SelectField({
   }, []);
 
   return (
-    <div className="relative w-full" ref={fieldRef}>
+    <div
+      className={fitContent ? 'relative inline-grid' : 'relative w-full'}
+      ref={fieldRef}
+    >
       {name && <input name={name} type="hidden" value={selectedValue} />}
+      {fitContent && (
+        <span
+          aria-hidden="true"
+          className="invisible col-start-1 row-start-1 whitespace-nowrap px-3 pr-10 text-caption-web"
+        >
+          {widestLabel}
+        </span>
+      )}
       <button
         aria-controls={`${generatedId}-options`}
         aria-expanded={isOpen}
@@ -137,7 +158,7 @@ export function SelectField({
       {isOpen && (
         <ul
           aria-labelledby={generatedId}
-          className="absolute z-10 mt-2 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1"
+          className="absolute left-0 top-full z-10 mt-2 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1"
           id={`${generatedId}-options`}
           role="listbox"
         >
