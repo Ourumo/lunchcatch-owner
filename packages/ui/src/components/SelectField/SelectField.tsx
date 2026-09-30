@@ -24,13 +24,16 @@ export interface SelectFieldProps extends Omit<
   value?: string;
   defaultValue?: string;
   fitContent?: boolean;
+  menuPlacement?: 'bottom' | 'top';
   onValueChange?: (value: string) => void;
+  size?: 'compact' | 'default';
 }
 
 export function SelectField({
   defaultValue = '',
   disabled,
   fitContent = false,
+  menuPlacement = 'bottom',
   name,
   className,
   onClick,
@@ -38,6 +41,7 @@ export function SelectField({
   onValueChange,
   options,
   placeholder = '옵션을 선택하세요',
+  size = 'default',
   value,
   ...props
 }: SelectFieldProps) {
@@ -57,7 +61,8 @@ export function SelectField({
     label.length > longestLabel.length ? label : longestLabel,
   );
   const triggerClassName = [
-    'flex h-10 items-center justify-start rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled',
+    'flex h-10 items-center justify-start rounded-md border border-border-subtle bg-bg-surface text-left text-caption-web text-text-primary transition-colors focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled',
+    size === 'compact' ? 'px-2' : 'px-3',
     fitContent ? 'col-start-1 row-start-1 whitespace-nowrap' : 'w-full',
     className,
   ]
@@ -117,7 +122,9 @@ export function SelectField({
       {fitContent && (
         <span
           aria-hidden="true"
-          className="invisible col-start-1 row-start-1 whitespace-nowrap px-3 pr-10 text-caption-web"
+          className={`invisible col-start-1 row-start-1 whitespace-nowrap text-caption-web ${
+            size === 'compact' ? 'px-2 pr-8' : 'px-3 pr-10'
+          }`}
         >
           {widestLabel}
         </span>
@@ -158,7 +165,9 @@ export function SelectField({
       {isOpen && (
         <ul
           aria-labelledby={generatedId}
-          className="absolute left-0 top-full z-10 mt-2 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1"
+          className={`absolute left-0 z-10 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1 ${
+            menuPlacement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
           id={`${generatedId}-options`}
           role="listbox"
         >

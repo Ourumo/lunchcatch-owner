@@ -28,24 +28,27 @@ export function Tabs({ defaultValue, items, onValueChange, value }: TabsProps) {
   };
 
   return (
-    <div aria-label="탭" className="flex items-stretch" role="tablist">
+    <div
+      aria-label="탭"
+      className="inline-flex self-start items-stretch border-b border-border-subtle"
+      role="tablist"
+    >
       {items.map((item) => {
         const isSelected = item.value === selectedValue;
 
         return (
           <button
             aria-selected={isSelected}
-            className={`border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled ${
-              isSelected ? 'text-action-primary' : 'text-text-secondary'
+            className={`relative border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-action-primary hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled ${
+              isSelected
+                ? 'text-action-primary after:block'
+                : 'text-text-secondary after:hidden'
             }`}
             disabled={item.disabled}
             key={item.value}
             onClick={() => handleSelect(item.value)}
             role="tab"
             style={{
-              borderBottom: isSelected
-                ? '2px solid var(--color-action-primary)'
-                : '1px solid var(--color-border-subtle)',
               lineHeight: 'calc(var(--space-5) + (var(--space-1) / 2))',
               padding:
                 'calc(var(--space-3) - (var(--space-1) / 2)) var(--space-5)',

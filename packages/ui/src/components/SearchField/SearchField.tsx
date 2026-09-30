@@ -9,11 +9,18 @@ export type SearchFieldProps = Omit<
 >;
 
 export function SearchField({
+  containerClassName,
   placeholder = '검색어를 입력하세요',
   ...props
 }: SearchFieldProps) {
   return (
     <Input
+      containerClassName={[
+        '!w-[clamp(200px,20vw,320px)] shrink-0',
+        containerClassName,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       leadingIcon={<Search className="size-full" strokeWidth={2} />}
       placeholder={placeholder}
       type="search"

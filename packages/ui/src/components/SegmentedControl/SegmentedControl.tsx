@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 export interface SegmentedControlItem<T extends string = string> {
   disabled?: boolean;
+  icon?: ReactNode;
+  iconOnly?: boolean;
   label: string;
   value: T;
 }
@@ -59,8 +61,10 @@ export function SegmentedControl<T extends string = string>({
         return (
           <button
             aria-pressed={isSelected}
+            aria-label={item.iconOnly ? item.label : undefined}
             className={[
-              'relative z-10 min-h-8 rounded-md px-3 text-caption-web font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
+              'relative z-10 inline-flex min-h-8 items-center justify-center gap-1 rounded-md text-caption-web font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
+              item.iconOnly ? 'px-2' : 'px-3',
               isSelected
                 ? 'text-action-primary'
                 : 'text-text-secondary hover:text-text-primary',
@@ -68,9 +72,15 @@ export function SegmentedControl<T extends string = string>({
             disabled={item.disabled}
             key={item.value}
             onClick={() => handleSelect(item.value)}
+            title={item.label}
             type="button"
           >
-            {item.label}
+            {item.icon}
+            {item.iconOnly ? (
+              <span className="sr-only">{item.label}</span>
+            ) : (
+              item.label
+            )}
           </button>
         );
       })}
