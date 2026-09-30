@@ -1,6 +1,7 @@
 import { type InputHTMLAttributes, type ReactNode, useId } from 'react';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  containerClassName?: string;
   errorMessage?: string;
   label?: string;
   leadingIcon?: ReactNode;
@@ -10,6 +11,7 @@ export function Input({
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
   className,
+  containerClassName,
   errorMessage,
   id,
   label,
@@ -30,7 +32,11 @@ export function Input({
     .join(' ');
 
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div
+      className={['flex w-full flex-col gap-2', containerClassName]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {label && (
         <label
           className="text-caption-web font-medium text-text-primary"
