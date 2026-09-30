@@ -6,6 +6,7 @@ export * from './components/FilterChip/FilterChip';
 export * from './components/Input/Input';
 export * from './components/Radio/Radio';
 export * from './components/SearchField/SearchField';
+export * from './components/SegmentedControl/SegmentedControl';
 export * from './components/SelectField/SelectField';
 export * from './components/StatusBadge/StatusBadge';
 export * from './components/Tabs/Tabs';

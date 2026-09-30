@@ -52,7 +52,7 @@ export function Toggle({
         style={{
           backgroundColor: isChecked
             ? 'var(--color-action-primary)'
-            : 'var(--color-surface-subtle)',
+            : 'var(--color-border-subtle)',
           height: 'var(--space-5)',
           paddingInline: 'calc(var(--space-1) / 2)',
           width: 'var(--space-10)',
