@@ -3,7 +3,7 @@ import { Outlet } from 'react-router';
 const AuthLayout = () => {
   return (
     <div className="min-h-dvh min-w-mobile-min bg-bg-page">
-      <main className="mx-auto flex w-full max-w-mobile-max flex-col gap-6 px-4 pt-10 pb-12">
+      <main className="mx-auto flex w-full max-w-mobile flex-col gap-6 px-page pt-10 pb-12">
         <header className="flex flex-col items-center gap-3 text-center">
           <span className="rounded-md border border-border-subtle bg-surface-subtle px-3 py-1 type-caption font-semibold text-text-secondary">
             사장님 전용

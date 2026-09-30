@@ -98,8 +98,9 @@
   --grid-mobile-gutter: 12px;
   --grid-mobile-margin: 16px;
 
-  /* 모바일 화면 최대 폭 (디자인 기준 폭은 390px) */
+  /* 모바일 화면 폭: 360~480px에서 화면 폭에 맞춘다 (디자인 기준 폭은 390px) */
   --layout-mobile-max-width: 480px;
+  --layout-mobile-min-width: 360px;
 }
 
 /* =========================================================
