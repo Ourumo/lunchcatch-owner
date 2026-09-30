@@ -1,12 +1,10 @@
+import { mockDelay } from './mocks/delay';
 import { mockOwners } from './mocks/owners';
+import type { ApiResult } from './types';
 
 // API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type OwnerStatus = 'ONBOARDING' | 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
-
-export type ApiResult<TData, TFieldErrors = never> =
-  | { ok: true; data: TData }
-  | { ok: false; message?: string; fieldErrors?: TFieldErrors };
 
 export interface LoginRequest {
   email: string;
@@ -27,16 +25,9 @@ export interface SignupFieldErrors {
   email?: string;
 }
 
-const MOCK_DELAY_MS = 600;
-
 // 인증 실패 사유(계정 없음, 비밀번호 불일치, 이용 불가 상태)를 구분하지 않는다
 const LOGIN_FAILED_MESSAGE = '이메일 또는 비밀번호가 올바르지 않습니다.';
 const EMAIL_DUPLICATED_MESSAGE = '이미 가입된 이메일입니다.';
-
-const wait = (ms: number) =>
-  new Promise<void>((resolve) => {
-    setTimeout(resolve, ms);
-  });
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -47,7 +38,7 @@ export const login = async ({
   email,
   password,
 }: LoginRequest): Promise<ApiResult<LoginResponse>> => {
-  await wait(MOCK_DELAY_MS);
+  await mockDelay();
 
   const owner = findOwner(email);
 
@@ -69,7 +60,7 @@ export const signup = async ({
   email,
   password,
 }: SignupRequest): Promise<ApiResult<null, SignupFieldErrors>> => {
-  await wait(MOCK_DELAY_MS);
+  await mockDelay();
 
   if (findOwner(email)) {
     return { ok: false, fieldErrors: { email: EMAIL_DUPLICATED_MESSAGE } };
