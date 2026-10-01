@@ -49,3 +49,11 @@ export const NextLoading: Story = {
     isNextLoading: true,
   },
 };
+
+export const WithHint: Story = {
+  args: {
+    hint: '필수 약관 3개 중 2개에 동의했어요',
+    isNextDisabled: true,
+    onPrevious: undefined,
+  },
+};
