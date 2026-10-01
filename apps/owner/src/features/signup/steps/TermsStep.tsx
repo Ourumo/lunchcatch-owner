@@ -83,10 +83,29 @@ export const TermsStep = () => {
         onClose={() => setOpenedTerms(null)}
         title={openedTerms?.title}
       >
-        {/* 약관 전문은 API 연동 시 서버에서 받아 보여준다 */}
-        <p className="type-body-sm text-text-primary">
-          약관 전문은 준비 중입니다. (버전 {openedTerms?.version})
-        </p>
+        {/* 내용이 길어도 시트가 화면을 넘지 않도록 내용 영역만 스크롤한다 */}
+        <div
+          aria-label={`${openedTerms?.title ?? '약관'} 내용`}
+          className="flex max-h-[60dvh] flex-col gap-4 overflow-y-auto"
+          role="region"
+          tabIndex={0}
+        >
+          <p className="type-caption text-text-secondary">
+            버전 {openedTerms?.version}
+          </p>
+          {openedTerms?.sections.map((section) => (
+            <section className="flex flex-col gap-1" key={section.heading}>
+              <h3 className="text-body-sm-mobile font-semibold text-text-primary">
+                {section.heading}
+              </h3>
+              <ul className="list-disc pl-5 type-body-sm text-text-primary">
+                {section.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </BottomSheet>
     </section>
   );
