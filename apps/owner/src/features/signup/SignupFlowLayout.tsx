@@ -68,25 +68,31 @@ export const SignupFlowLayout = () => {
   return (
     <div className="min-h-dvh min-w-mobile-min bg-bg-page">
       <div className="mx-auto flex min-h-dvh max-w-mobile flex-col">
-        <TopBar
-          onBack={goPrevious}
-          title={currentStep.title}
-          trailing={
-            // 진행 막대가 스크린 리더에 단계를 알리므로 숫자는 화면에만 보여준다
-            <span aria-hidden="true" className="type-caption text-text-primary">
-              <span className="font-semibold">{currentIndex + 1}</span> /{' '}
-              {signupSteps.length}
-            </span>
-          }
-        />
-        <StepIndicator
-          current={currentIndex + 1}
-          label="회원가입 진행 단계"
-          total={signupSteps.length}
-          variant="attached"
-        />
-        {/* 하단 고정 버튼(StepActionBar)에 내용이 가려지지 않도록 비워둔다 */}
-        <main className="flex flex-1 flex-col gap-4 pb-[calc(76px+env(safe-area-inset-bottom))]">
+        {/* 내용을 스크롤해도 제목과 진행 막대가 위에 붙어 있도록 고정한다 */}
+        <div className="sticky top-0 z-10">
+          <TopBar
+            onBack={goPrevious}
+            title={currentStep.title}
+            trailing={
+              // 진행 막대가 스크린 리더에 단계를 알리므로 숫자는 화면에만 보여준다
+              <span
+                aria-hidden="true"
+                className="type-caption text-text-primary"
+              >
+                <span className="font-semibold">{currentIndex + 1}</span> /{' '}
+                {signupSteps.length}
+              </span>
+            }
+          />
+          <StepIndicator
+            current={currentIndex + 1}
+            label="회원가입 진행 단계"
+            total={signupSteps.length}
+            variant="attached"
+          />
+        </div>
+        {/* flex-1로 남은 높이를 채워, 내용이 짧아도 하단 버튼이 화면 아래에 붙게 한다 */}
+        <main className="flex flex-1 flex-col gap-4">
           <Outlet />
           {submitError && (
             <div className="px-page">
@@ -100,6 +106,7 @@ export const SignupFlowLayout = () => {
           )}
         </main>
         <StepActionBar
+          hint={canProceed ? undefined : currentStep.proceedHint?.(values)}
           isNextDisabled={!canProceed}
           isNextLoading={isSubmitting}
           nextLabel={nextStep ? '다음' : '등록 신청 완료'}

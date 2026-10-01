@@ -117,7 +117,8 @@ export function BottomSheet({
       <section
         aria-labelledby={title ? titleId : undefined}
         aria-modal="true"
-        className="bg-bg-surface"
+        // 모바일 화면 폭(360~480px)에 맞추고, 넓은 화면에서는 가운데에 둔다
+        className="mx-auto max-w-mobile min-w-mobile-min bg-bg-surface"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         ref={sheetRef}

@@ -288,6 +288,7 @@
   --radius-full: var(--radius-value-full);
 
   --container-mobile: var(--layout-mobile-max-width);
+  --container-mobile-min: var(--layout-mobile-min-width);
   /* 모바일 화면 좌우 여백 (그리드 margin) */
   --spacing-page: var(--grid-mobile-margin);
 

@@ -27,3 +27,48 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+export const Large: Story = {
+  args: {
+    label: '약관 전체 동의',
+    size: 'lg',
+  },
+};
+
+export const LargeChecked: Story = {
+  args: {
+    defaultChecked: true,
+    label: '약관 전체 동의',
+    size: 'lg',
+  },
+};
+
+export const LargeDisabled: Story = {
+  args: {
+    disabled: true,
+    label: '약관 전체 동의',
+    size: 'lg',
+  },
+};
+
+export const Inverse: Story = {
+  args: {
+    variant: 'inverse',
+  },
+};
+
+export const InverseChecked: Story = {
+  args: {
+    defaultChecked: true,
+    variant: 'inverse',
+  },
+};
+
+export const LargeInverseChecked: Story = {
+  args: {
+    defaultChecked: true,
+    label: '약관 전체 동의',
+    size: 'lg',
+    variant: 'inverse',
+  },
+};

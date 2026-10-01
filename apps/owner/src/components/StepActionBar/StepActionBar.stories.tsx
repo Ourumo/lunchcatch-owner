@@ -10,12 +10,8 @@ const meta = {
     onPrevious: () => undefined,
   },
   decorators: [
-    // 화면 하단에 고정되는 요소라, transform이 있는 틀 안에 고정되도록 감싼다
     (Story) => (
-      <div
-        className="bg-bg-page"
-        style={{ height: 160, transform: 'translateZ(0)', width: 390 }}
-      >
+      <div className="bg-bg-page" style={{ width: 390 }}>
         <Story />
       </div>
     ),
@@ -51,5 +47,13 @@ export const NextDisabled: Story = {
 export const NextLoading: Story = {
   args: {
     isNextLoading: true,
+  },
+};
+
+export const WithHint: Story = {
+  args: {
+    hint: '필수 약관 3개 중 2개에 동의했어요',
+    isNextDisabled: true,
+    onPrevious: undefined,
   },
 };
