@@ -1,5 +1,7 @@
 import {
+  getStoreRequiredChecks,
   hasAgreedRequiredTerms,
+  isStoreStepComplete,
   ownerTerms,
   type SignupFlowValues,
 } from '@owner/api/signupFlow';
@@ -24,6 +26,13 @@ const getTermsProceedHint = ({ terms }: SignupFlowValues) => {
   return `필수 약관 ${requiredTerms.length}개 중 ${agreedCount}개에 동의했어요`;
 };
 
+const getStoreProceedHint = ({ store, business }: SignupFlowValues) => {
+  const checks = getStoreRequiredChecks(store, business);
+  const filledCount = checks.filter(Boolean).length;
+
+  return `필수 항목 ${checks.length}개 중 ${filledCount}개를 입력했어요`;
+};
+
 // 배열 순서대로 진행한다. 단계를 추가할 때는 이 배열, SignupFlowValues, 라우터의 단계 화면에 함께 추가한다
 export const signupSteps: SignupStep[] = [
   {
@@ -33,7 +42,13 @@ export const signupSteps: SignupStep[] = [
     canProceed: ({ terms }) => hasAgreedRequiredTerms(terms),
     proceedHint: getTermsProceedHint,
   },
-  { id: 'store', path: 'store', title: '가게 기본 정보' },
+  {
+    id: 'store',
+    path: 'store',
+    title: '가게 기본 정보',
+    canProceed: ({ store, business }) => isStoreStepComplete(store, business),
+    proceedHint: getStoreProceedHint,
+  },
   { id: 'business', path: 'business', title: '사업자 정보' },
   { id: 'hours', path: 'hours', title: '영업시간' },
   { id: 'menu', path: 'menu', title: '가게 이미지·대표 메뉴' },

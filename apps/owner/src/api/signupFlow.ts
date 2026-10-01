@@ -90,17 +90,24 @@ export const isValidPhone = (phone: string) => /^0\d{8,10}$/.test(phone);
 export const isValidBusinessNumber = (registrationNumber: string) =>
   /^\d{10}$/.test(registrationNumber);
 
+// 가게 기본 정보 필수 항목별 입력 완료 여부.
 // 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다.
 // 카카오맵 장소 선택은 아직 화면이 없어 place는 검사하지 않는다
+export const getStoreRequiredChecks = (
+  store: StoreStepValues,
+  business: BusinessStepValues,
+) => [
+  store.name.trim() !== '',
+  store.ownerName.trim() !== '',
+  isValidPhone(store.phone),
+  store.category !== null,
+  isValidBusinessNumber(business.registrationNumber),
+];
+
 export const isStoreStepComplete = (
   store: StoreStepValues,
   business: BusinessStepValues,
-) =>
-  store.name.trim() !== '' &&
-  store.ownerName.trim() !== '' &&
-  isValidPhone(store.phone) &&
-  store.category !== null &&
-  isValidBusinessNumber(business.registrationNumber);
+) => getStoreRequiredChecks(store, business).every(Boolean);
 
 export type Weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
