@@ -9,7 +9,8 @@ export interface StepActionBarProps {
   isNextLoading?: boolean;
 }
 
-// 여러 단계로 나뉜 입력 흐름의 하단 고정 이전·다음 버튼
+// 여러 단계로 나뉜 입력 흐름의 하단 이전·다음 버튼.
+// sticky로 붙으므로 화면 높이를 채우는 세로 flex 레이아웃(min-h-dvh)의 마지막에 둔다
 export const StepActionBar = ({
   isNextDisabled = false,
   isNextLoading = false,
@@ -18,7 +19,7 @@ export const StepActionBar = ({
   onPrevious,
 }: StepActionBarProps) => {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-mobile min-w-mobile-min gap-2 border-t border-border-subtle bg-bg-surface px-page pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+    <div className="sticky bottom-0 z-10 flex gap-2 border-t border-border-subtle bg-bg-surface px-page pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
       {onPrevious && (
         <Button
           className="h-12 flex-1"

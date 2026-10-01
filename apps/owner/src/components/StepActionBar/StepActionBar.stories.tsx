@@ -10,12 +10,8 @@ const meta = {
     onPrevious: () => undefined,
   },
   decorators: [
-    // 화면 하단에 고정되는 요소라, transform이 있는 틀 안에 고정되도록 감싼다
     (Story) => (
-      <div
-        className="bg-bg-page"
-        style={{ height: 160, transform: 'translateZ(0)', width: 390 }}
-      >
+      <div className="bg-bg-page" style={{ width: 390 }}>
         <Story />
       </div>
     ),
