@@ -1,12 +1,34 @@
 import { mockDelay } from './mocks/delay';
+import { mockOwnerTerms } from './mocks/terms';
 import type { ApiResult } from './types';
 
 // 입점 신청부터 가게 최종 등록까지 회원가입 플로우의 단계별 입력값 (docs/requirements-owner.md)
 
-export interface TermsStepValues {
-  requiredAgreed: boolean;
-  optionalAgreed: boolean;
+export type TermsId =
+  'service' | 'paidService' | 'privacy' | 'location' | 'marketing';
+
+export interface TermsItem {
+  id: TermsId;
+  title: string;
+  required: boolean;
+  // 동의 시점과 함께 저장하는 약관 버전
+  version: string;
 }
+
+// 약관별 동의 여부
+export interface TermsStepValues {
+  service: boolean;
+  paidService: boolean;
+  privacy: boolean;
+  location: boolean;
+  marketing: boolean;
+}
+
+// API 연동 전까지 mock 약관 목록을 쓴다. 연동하면 서버에서 버전과 함께 받아온다
+export const ownerTerms: TermsItem[] = mockOwnerTerms;
+
+export const hasAgreedRequiredTerms = (terms: TermsStepValues) =>
+  ownerTerms.every((item) => !item.required || terms[item.id]);
 
 // 카카오맵 장소 검색에서 선택한 가게 위치 정보
 export interface StorePlace {
@@ -73,7 +95,7 @@ export const submitSignupFlow = async (
 ): Promise<ApiResult<null>> => {
   await mockDelay();
 
-  if (!values.terms.requiredAgreed) {
+  if (!hasAgreedRequiredTerms(values.terms)) {
     return { ok: false, message: '필수 약관에 동의해주세요.' };
   }
 

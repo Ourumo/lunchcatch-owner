@@ -11,7 +11,13 @@ const weekdays: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const REQUIRED_MENU_COUNT = 3;
 
 const createInitialValues = (): SignupFlowValues => ({
-  terms: { requiredAgreed: false, optionalAgreed: false },
+  terms: {
+    service: false,
+    paidService: false,
+    privacy: false,
+    location: false,
+    marketing: false,
+  },
   store: { name: '', category: '', ownerName: '', place: null },
   business: { registrationNumber: '' },
   hours: {
