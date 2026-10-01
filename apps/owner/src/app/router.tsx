@@ -13,11 +13,13 @@ import AuthLayout from '@owner/layout/AuthLayout';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupPage from '@owner/pages/SignupPage';
+import SignupStorePage from '@owner/pages/SignupStorePage';
 import SignupTermsPage from '@owner/pages/SignupTermsPage';
 
 // 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
 const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
   terms: <SignupTermsPage />,
+  store: <SignupStorePage />,
 };
 
 export const router = createBrowserRouter([
