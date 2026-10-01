@@ -46,10 +46,36 @@ export interface StorePlace {
   longitude: number;
 }
 
+export type StoreCategory =
+  | 'KOREAN'
+  | 'CHINESE'
+  | 'JAPANESE'
+  | 'WESTERN'
+  | 'BUNSIK'
+  | 'ASIAN'
+  | 'FAST_FOOD'
+  | 'CAFE_DESSERT'
+  | 'OTHER';
+
+// 업종 선택 칩에 이 순서대로 보여준다
+export const storeCategories: { value: StoreCategory; label: string }[] = [
+  { value: 'KOREAN', label: '한식' },
+  { value: 'CHINESE', label: '중식' },
+  { value: 'JAPANESE', label: '일식' },
+  { value: 'WESTERN', label: '양식' },
+  { value: 'BUNSIK', label: '분식' },
+  { value: 'ASIAN', label: '아시안' },
+  { value: 'FAST_FOOD', label: '패스트푸드' },
+  { value: 'CAFE_DESSERT', label: '카페/디저트' },
+  { value: 'OTHER', label: '기타' },
+];
+
 export interface StoreStepValues {
   name: string;
-  category: string;
+  category: StoreCategory | null;
   ownerName: string;
+  // 하이픈 없는 숫자
+  phone: string;
   place: StorePlace | null;
 }
 
@@ -57,6 +83,31 @@ export interface BusinessStepValues {
   // 하이픈 없는 숫자 10자리
   registrationNumber: string;
 }
+
+// 0으로 시작하는 9~11자리 (02-123-4567, 010-1234-5678 등)
+export const isValidPhone = (phone: string) => /^0\d{8,10}$/.test(phone);
+
+export const isValidBusinessNumber = (registrationNumber: string) =>
+  /^\d{10}$/.test(registrationNumber);
+
+// 가게 기본 정보 필수 항목별 입력 완료 여부.
+// 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다.
+// 카카오맵 장소 선택은 아직 화면이 없어 place는 검사하지 않는다
+export const getStoreRequiredChecks = (
+  store: StoreStepValues,
+  business: BusinessStepValues,
+) => [
+  store.name.trim() !== '',
+  store.ownerName.trim() !== '',
+  isValidPhone(store.phone),
+  store.category !== null,
+  isValidBusinessNumber(business.registrationNumber),
+];
+
+export const isStoreStepComplete = (
+  store: StoreStepValues,
+  business: BusinessStepValues,
+) => getStoreRequiredChecks(store, business).every(Boolean);
 
 export type Weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
