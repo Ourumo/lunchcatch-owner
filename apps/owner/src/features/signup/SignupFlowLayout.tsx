@@ -106,6 +106,7 @@ export const SignupFlowLayout = () => {
           )}
         </main>
         <StepActionBar
+          hint={canProceed ? undefined : currentStep.proceedHint?.(values)}
           isNextDisabled={!canProceed}
           isNextLoading={isSubmitting}
           nextLabel={nextStep ? '다음' : '등록 신청 완료'}

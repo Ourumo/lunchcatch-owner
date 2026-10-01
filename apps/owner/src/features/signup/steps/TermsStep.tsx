@@ -9,12 +9,14 @@ import {
 } from '@owner/api/signupFlow';
 import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
 
-const getTermsLabel = ({ required, title }: TermsItem) =>
-  required ? `[필수] ${title}` : `${title} (선택)`;
+const termsGroups = [
+  { legend: '필수', items: ownerTerms.filter((item) => item.required) },
+  { legend: '선택', items: ownerTerms.filter((item) => !item.required) },
+].filter((group) => group.items.length > 0);
 
-// 약관 전체 동의, 약관별 동의, 약관 상세 보기
+// 모두 동의하기, 필수·선택 약관별 동의, 약관 상세 보기
 export const TermsStep = () => {
-  const allAgreeDescriptionId = useId();
+  const allAgreeId = useId();
   const { updateStepValues, values } = useSignupFlow();
   const [openedTerms, setOpenedTerms] = useState<TermsItem | null>(null);
   const { terms } = values;
@@ -29,54 +31,64 @@ export const TermsStep = () => {
   };
 
   return (
-    <section className="flex flex-col gap-3 px-page py-5">
-      <div className="flex flex-col gap-2 rounded-xl bg-bg-surface p-5">
-        <h2 className="text-h3-mobile font-bold text-text-primary">
-          서비스 이용을 위해 약관에 동의해주세요
-        </h2>
-        <p className="type-body-sm text-text-secondary">
-          필수 항목에 모두 동의해야 다음 단계로 진행할 수 있어요.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6 px-page pt-6 pb-8">
+      <h2 className="text-h1 leading-snug font-bold text-text-primary">
+        사장님, 시작하기 전에
+        <br />
+        약관에 동의해주세요
+      </h2>
 
-      <div className="flex flex-col gap-1 rounded-xl bg-surface-brand p-5">
+      {/* 카드 어디를 눌러도 체크되도록 체크박스 줄과 설명 줄을 모두 같은 입력의 라벨로 둔다 */}
+      <div className="flex flex-col rounded-xl bg-surface-brand">
         <Checkbox
-          aria-describedby={allAgreeDescriptionId}
           checked={isAllAgreed}
-          className="font-bold"
-          label="약관 전체 동의"
+          className="w-full cursor-pointer px-5 pt-5 pb-1"
+          id={allAgreeId}
+          label="모두 동의하기"
           onChange={(event) => handleAllAgreeChange(event.target.checked)}
+          size="lg"
+          variant="inverse"
         />
-        <p
-          className="pl-6 type-caption text-text-primary"
-          id={allAgreeDescriptionId}
+        <label
+          className="cursor-pointer pr-5 pb-5 pl-14 type-body-sm text-text-primary"
+          htmlFor={allAgreeId}
         >
-          선택 약관을 포함해 한 번에 동의합니다.
-        </p>
+          선택 항목까지 한 번에 동의해요
+        </label>
       </div>
 
-      <ul className="flex flex-col rounded-xl bg-bg-surface py-2">
-        {ownerTerms.map((item) => (
-          <li className="flex items-center gap-2 py-1 pr-2 pl-5" key={item.id}>
-            <Checkbox
-              checked={terms[item.id]}
-              className="min-w-0 flex-1 py-2"
-              label={getTermsLabel(item)}
-              onChange={(event) =>
-                updateStepValues('terms', { [item.id]: event.target.checked })
-              }
-            />
-            <button
-              aria-label={`${item.title} 자세히 보기`}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-action-primary"
-              onClick={() => setOpenedTerms(item)}
-              type="button"
-            >
-              <ChevronRight aria-hidden="true" className="size-5" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {termsGroups.map((group) => (
+        <fieldset className="flex flex-col" key={group.legend}>
+          <legend className="mb-1 text-caption-mobile font-semibold text-text-secondary">
+            {group.legend}
+          </legend>
+          <ul className="flex flex-col">
+            {group.items.map((item) => (
+              <li className="flex items-center gap-2" key={item.id}>
+                <Checkbox
+                  checked={terms[item.id]}
+                  className="min-h-12 min-w-0 flex-1 cursor-pointer"
+                  label={item.title}
+                  onChange={(event) =>
+                    updateStepValues('terms', {
+                      [item.id]: event.target.checked,
+                    })
+                  }
+                  variant="inverse"
+                />
+                <button
+                  aria-label={`${item.title} 자세히 보기`}
+                  className="-mr-3 flex size-11 shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-action-primary"
+                  onClick={() => setOpenedTerms(item)}
+                  type="button"
+                >
+                  <ChevronRight aria-hidden="true" className="size-5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      ))}
 
       <BottomSheet
         isOpen={openedTerms !== null}
@@ -107,6 +119,6 @@ export const TermsStep = () => {
           ))}
         </div>
       </BottomSheet>
-    </section>
+    </div>
   );
 };
