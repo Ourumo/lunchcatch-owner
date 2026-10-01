@@ -136,7 +136,8 @@ export const StoreStep = () => {
                 type="radio"
                 value={category.value}
               />
-              <span className="flex h-10 items-center rounded-full border border-border-subtle px-4 text-body-sm-mobile text-text-primary peer-checked:border-surface-brand peer-checked:bg-surface-brand peer-checked:font-semibold peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary">
+              {/* 약관 동의 체크박스처럼 고른 항목은 반전 색으로 채운다. 고를 때 칩 크기가 바뀌지 않도록 색만 바꾼다 */}
+              <span className="flex h-10 items-center rounded-full border border-border-subtle bg-bg-surface px-4 text-body-sm-mobile text-text-primary peer-checked:border-bg-inverse peer-checked:bg-bg-inverse peer-checked:text-text-on-inverse peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary">
                 {category.label}
               </span>
             </label>
