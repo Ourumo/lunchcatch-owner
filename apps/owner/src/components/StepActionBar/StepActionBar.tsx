@@ -7,7 +7,7 @@ export interface StepActionBarProps {
   nextLabel?: string;
   isNextDisabled?: boolean;
   isNextLoading?: boolean;
-  // 버튼 위에 보여주는 안내. 다음으로 넘어가려면 무엇이 남았는지 알려줄 때 쓴다
+  // 버튼 위에 보여주는 진행 상황 안내
   hint?: string;
 }
 
