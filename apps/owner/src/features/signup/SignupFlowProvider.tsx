@@ -18,7 +18,7 @@ const createInitialValues = (): SignupFlowValues => ({
     location: false,
     marketing: false,
   },
-  store: { name: '', category: '', ownerName: '', place: null },
+  store: { name: '', category: null, ownerName: '', phone: '', place: null },
   business: { registrationNumber: '' },
   hours: {
     businessHours: weekdays.map((day) => ({
