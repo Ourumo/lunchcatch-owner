@@ -16,12 +16,14 @@ import {
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
 import CampaignBudgetPage from '@owner/pages/CampaignBudgetPage';
+import CampaignCompletePage from '@owner/pages/CampaignCompletePage';
 import CampaignCouponPage from '@owner/pages/CampaignCouponPage';
 import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
 import CampaignFormPage from '@owner/pages/CampaignFormPage';
 import CampaignListPage from '@owner/pages/CampaignListPage';
 import CampaignNewPage from '@owner/pages/CampaignNewPage';
 import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
+import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
@@ -35,12 +37,13 @@ const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
   store: <SignupStorePage />,
 };
 
-// 캠페인 등록 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
-const campaignStepPages: Partial<Record<CampaignStepId, ReactNode>> = {
+// 캠페인 등록 단계별 화면. 단계를 추가하면 여기에도 화면을 넣어야 타입 검사를 통과한다
+const campaignStepPages: Record<CampaignStepId, ReactNode> = {
   coupon: <CampaignCouponPage />,
   poster: <CampaignPosterPage />,
   target: <CampaignTargetPage />,
   budget: <CampaignBudgetPage />,
+  review: <CampaignReviewPage />,
 };
 
 export const router = createBrowserRouter([
@@ -75,6 +78,7 @@ export const router = createBrowserRouter([
       { path: '/campaigns', element: <CampaignListPage /> },
       { path: '/campaigns/new', element: <CampaignNewPage /> },
       { path: '/campaigns/:id', element: <CampaignDetailPage /> },
+      { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
       {
         path: '/campaigns/:id/edit',
         element: <CampaignFormPage />,
@@ -85,11 +89,7 @@ export const router = createBrowserRouter([
           },
           ...campaignSteps.map((step) => ({
             path: step.path,
-            element: campaignStepPages[step.id] ?? (
-              <p className="px-page type-body text-text-secondary">
-                {step.title} 화면 준비 중
-              </p>
-            ),
+            element: campaignStepPages[step.id],
           })),
         ],
       },

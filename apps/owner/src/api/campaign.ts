@@ -392,6 +392,65 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
   return { ok: true, data: structuredClone(campaign) };
 };
 
+// 활성화 요청 결과. 자동 검수를 통과하면 SCHEDULED가 되고, 통과하지 못하면 DRAFT로 남고 사유를 돌려준다
+export type ActivationResult =
+  | { result: 'PASS'; campaign: Campaign }
+  | { result: 'FAIL'; reasons: string[] };
+
+// 관리자 "검수 기준 관리"의 금지 표현 사전을 흉내 낸 값. 연동하면 서버가 판정한다
+const MOCK_FORBIDDEN_WORDS = ['최고', '1위', '최저가', '무료'];
+
+const NOT_READY_MESSAGE =
+  '아직 채우지 않은 단계가 있어 활성화를 요청할 수 없습니다.';
+
+// 활성화 요청 시 (1) 포스터와 필수 입력값을 확인하고 (2) 포스터를 자동 검수한다.
+// 잔액은 검사하지 않는다. 잔액이 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다
+export const requestCampaignActivation = async (
+  id: string,
+): Promise<ApiResult<ActivationResult>> => {
+  await mockDelay();
+
+  const campaign = findCampaign(id);
+
+  if (!campaign) {
+    return { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
+  if (campaign.status !== 'DRAFT') {
+    return { ok: false, message: NOT_EDITABLE_MESSAGE };
+  }
+
+  if (
+    !isCouponStepComplete(campaign.coupon) ||
+    !isPosterComplete(campaign.poster) ||
+    !isValidTarget(campaign.target) ||
+    !isBudgetStepComplete(campaign.budget, mockPlatformSettings)
+  ) {
+    return { ok: false, message: NOT_READY_MESSAGE };
+  }
+
+  const { discountText, eventName, storeName } = (
+    campaign.poster as CampaignPoster
+  ).slots;
+  const posterText = [discountText, eventName, storeName].join(' ');
+  const reasons = MOCK_FORBIDDEN_WORDS.filter((word) =>
+    posterText.includes(word),
+  ).map((word) => `포스터 문구에 금지 표현 "${word}"가 들어 있어요.`);
+
+  campaign.reviewFailReasons = reasons;
+
+  if (reasons.length > 0) {
+    return { ok: true, data: { result: 'FAIL', reasons } };
+  }
+
+  campaign.status = 'SCHEDULED';
+
+  return {
+    ok: true,
+    data: { result: 'PASS', campaign: structuredClone(campaign) },
+  };
+};
+
 // 저장된 노출 대상(3단계)을 기준으로 계산한다. 노출 대상을 바꿨다면 먼저 저장한 뒤 다시 불러온다
 export const getBudgetRecommendation = async (
   id: string,

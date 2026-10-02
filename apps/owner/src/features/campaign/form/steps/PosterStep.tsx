@@ -15,8 +15,6 @@ import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
 import { PosterPreview } from '@owner/features/campaign/PosterPreview';
 
 const DEFAULT_EVENT_NAME = '오늘 점심 한정 특별 혜택!';
-// 템플릿은 폭 360px 안팎으로 만들어져 있어, 작은 카드에는 그 크기로 그린 뒤 줄여서 보여준다
-const TEMPLATE_BASE_WIDTH = 360;
 const THUMBNAIL_WIDTH = 96;
 
 // 불러오는 중이면 undefined, 실패하면 null
@@ -57,7 +55,6 @@ const TemplateOptions = ({
   templates,
 }: TemplateOptionsProps) => {
   const name = useId();
-  const scale = THUMBNAIL_WIDTH / TEMPLATE_BASE_WIDTH;
 
   return (
     <div className="-mx-page flex gap-3 overflow-x-auto px-page pb-1">
@@ -72,24 +69,12 @@ const TemplateOptions = ({
             value={template.id}
           />
           <span className="relative block overflow-hidden rounded-lg border-2 border-border-subtle transition-colors peer-checked:border-action-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary">
-            <span
-              aria-hidden="true"
-              className="block overflow-hidden"
-              style={{
-                height: (THUMBNAIL_WIDTH * 4) / 3,
-                width: THUMBNAIL_WIDTH,
-              }}
-            >
-              {/* 작은 카드 안에서는 누를 수 없도록 iframe에 포인터를 막는다 */}
-              <span
-                className="pointer-events-none block origin-top-left"
-                style={{
-                  transform: `scale(${scale})`,
-                  width: TEMPLATE_BASE_WIDTH,
-                }}
-              >
-                <PosterPreview html={template.html} slots={slots} />
-              </span>
+            <span aria-hidden="true" className="block">
+              <PosterPreview
+                html={template.html}
+                slots={slots}
+                width={THUMBNAIL_WIDTH}
+              />
             </span>
           </span>
           {/* 선택 표시를 썸네일 위에 올리면 광고 라벨을 가리므로 이름 옆에 둔다 */}

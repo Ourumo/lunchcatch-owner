@@ -5,6 +5,7 @@ import {
   getCouponRequiredChecks,
   isBudgetStepComplete,
   isCouponStepComplete,
+  isValidTarget,
 } from '@owner/api/campaign';
 import type { PlatformSettings } from '@owner/api/platform';
 import { isPosterComplete } from '@owner/api/poster';
@@ -30,6 +31,16 @@ const getProgressHint = (checks: boolean[]) => {
     ? `필수 항목 ${checks.length}개를 모두 입력했어요`
     : `필수 항목 ${checks.length}개 중 ${filledCount}개를 입력했어요`;
 };
+
+// 활성화를 요청하려면 앞 단계가 모두 채워져 있어야 한다
+const isCampaignReady = (
+  { budget, coupon, poster, target }: CampaignValues,
+  settings: PlatformSettings,
+) =>
+  isCouponStepComplete(coupon) &&
+  isPosterComplete(poster) &&
+  isValidTarget(target) &&
+  isBudgetStepComplete(budget, settings);
 
 // 배열 순서대로 진행한다 (쿠폰 조건 -> 포스터 -> 노출 대상 -> 하루 예산과 집행 기간 -> 확인).
 // 단계를 추가할 때는 이 배열과 라우터의 단계 화면에 함께 추가한다
@@ -64,7 +75,16 @@ export const campaignSteps: CampaignStep[] = [
     progressHint: ({ budget }, settings) =>
       getProgressHint(getBudgetRequiredChecks(budget, settings)),
   },
-  { id: 'review', path: 'review', title: '확인' },
+  {
+    id: 'review',
+    path: 'review',
+    title: '확인',
+    canProceed: (values, settings) => isCampaignReady(values, settings),
+    progressHint: (values, settings) =>
+      isCampaignReady(values, settings)
+        ? '모든 단계를 채웠어요'
+        : '채우지 않은 단계를 먼저 완성해 주세요',
+  },
 ];
 
 // 확인 단계를 뺀 나머지는 다음으로 넘어갈 때 그 단계 값을 DRAFT에 저장한다
