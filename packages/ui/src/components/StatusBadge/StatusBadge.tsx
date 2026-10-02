@@ -1,12 +1,18 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
 
-export type StatusBadgeVariant = 'info' | 'success' | 'warning' | 'danger';
+export type StatusBadgeVariant =
+  'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export interface StatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: StatusBadgeVariant;
 }
 
 const variantStyle: Record<StatusBadgeVariant, CSSProperties> = {
+  // 종료, 작성 중처럼 강조하지 않는 상태
+  neutral: {
+    backgroundColor: 'var(--color-surface-subtle)',
+    color: 'var(--color-text-primary)',
+  },
   info: {
     backgroundColor: 'var(--color-status-info-bg)',
     color: 'var(--color-status-info-fg)',

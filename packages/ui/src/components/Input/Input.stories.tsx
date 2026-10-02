@@ -36,6 +36,15 @@ export const WithValue: Story = {
   },
 };
 
+export const WithTrailing: Story = {
+  args: {
+    defaultValue: '20',
+    inputMode: 'numeric',
+    label: '할인율',
+    trailing: '%',
+  },
+};
+
 export const Disabled: Story = {
   args: {
     disabled: true,
