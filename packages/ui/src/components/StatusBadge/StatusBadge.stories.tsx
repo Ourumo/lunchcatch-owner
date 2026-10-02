@@ -16,6 +16,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const Neutral: Story = {
+  args: {
+    children: 'Neutral',
+    variant: 'neutral',
+  },
+};
+
 export const Info: Story = {
   args: {
     variant: 'info',
