@@ -24,7 +24,7 @@ export function Toggle({
     useState(defaultChecked);
   const isChecked = checked ?? uncontrolledChecked;
   const labelClassName = [
-    'inline-flex items-center gap-2 text-body-sm-web text-text-primary',
+    'relative inline-flex items-center gap-2 text-body-sm-web text-text-primary',
     className,
   ]
     .filter(Boolean)
