@@ -21,6 +21,7 @@ import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
 import CampaignFormPage from '@owner/pages/CampaignFormPage';
 import CampaignListPage from '@owner/pages/CampaignListPage';
 import CampaignNewPage from '@owner/pages/CampaignNewPage';
+import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
@@ -37,6 +38,7 @@ const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
 // 캠페인 등록 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
 const campaignStepPages: Partial<Record<CampaignStepId, ReactNode>> = {
   coupon: <CampaignCouponPage />,
+  poster: <CampaignPosterPage />,
   target: <CampaignTargetPage />,
   budget: <CampaignBudgetPage />,
 };

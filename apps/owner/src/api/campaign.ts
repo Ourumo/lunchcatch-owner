@@ -2,7 +2,7 @@ import { mockAudienceRules, mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
-import type { CampaignPoster } from './poster';
+import { type CampaignPoster, isPosterComplete } from './poster';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
@@ -268,6 +268,7 @@ const NOT_EDITABLE_MESSAGE = '작성 중인 캠페인만 수정할 수 있습니
 const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
+const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -367,6 +368,23 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
     !isBudgetStepComplete(values as BudgetStepValues, mockPlatformSettings)
   ) {
     return { ok: false, message: INVALID_BUDGET_MESSAGE };
+  }
+
+  if (stepKey === 'poster') {
+    const poster = values as CampaignPoster | null;
+
+    // 템플릿과 할인 내용, 기간, 가게명이 없으면 포스터를 만들지 않는다
+    if (!isPosterComplete(poster)) {
+      return { ok: false, message: INVALID_POSTER_MESSAGE };
+    }
+
+    // 캠페인당 포스터는 1건이라, 이미 있으면 같은 포스터를 수정한 것으로 본다
+    campaign.poster = {
+      ...structuredClone(poster as CampaignPoster),
+      posterId: campaign.poster?.posterId ?? `poster-${campaign.id}`,
+    };
+
+    return { ok: true, data: structuredClone(campaign) };
   }
 
   Object.assign(campaign, { [stepKey]: structuredClone(values) });

@@ -26,10 +26,26 @@ export interface PosterSlotValues {
 
 // 캠페인당 1건
 export interface CampaignPoster {
+  // 처음 만들 때는 빈 문자열이고, 저장하면 서버가 정한다
   posterId: string;
   templateId: string;
   slots: PosterSlotValues;
 }
+
+// 슬롯 입력 길이 제한. 관리자 검수 기준(제목 길이)에 맞춰 연동 때 서버 값으로 바꾼다
+export const POSTER_TEXT_MAX_LENGTH = {
+  discountText: 20,
+  eventName: 30,
+  storeName: 20,
+} as const;
+
+// 포스터 생성에 필요한 값(템플릿, 할인 내용, 기간, 가게명)이 모두 있는지. 이미지와 이벤트명은 선택이다
+export const isPosterComplete = (poster: CampaignPoster | null) =>
+  poster !== null &&
+  poster.templateId !== '' &&
+  poster.slots.discountText.trim() !== '' &&
+  poster.slots.period.trim() !== '' &&
+  poster.slots.storeName.trim() !== '';
 
 // 게시되고 활성 상태인 템플릿만 내려온다. 하나도 없으면 빈 배열
 export const getPosterTemplates = async (): Promise<
