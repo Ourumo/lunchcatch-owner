@@ -2,7 +2,12 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 import { CircleAlert, Info } from 'lucide-react';
 
-import { type Campaign, ISSUE_OPEN_TIME } from '@owner/api/campaign';
+import {
+  type Campaign,
+  ISSUE_OPEN_TIME,
+  SERVING_TIME_END,
+  SERVING_TIME_START,
+} from '@owner/api/campaign';
 import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
 import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
@@ -27,8 +32,6 @@ import { DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
 
 const LIST_PATH = '/campaigns';
-// 피드에 캠페인이 노출되는 서빙 시간대 (docs/requirements-common.md)
-const SERVING_TIME = '10:00 ~ 12:59';
 
 const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
   const { budget, pausedReason, reviewFailReasons, status } = campaign;
@@ -174,7 +177,10 @@ const CampaignContent = ({
           label="연령대"
           value={formatAgeGroups(campaign.target.ageGroups)}
         />
-        <DetailRow label="노출 시간대" value={`점심 ${SERVING_TIME}`} />
+        <DetailRow
+          label="노출 시간대"
+          value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
+        />
       </DetailSection>
 
       <DetailSection title="예산과 기간">

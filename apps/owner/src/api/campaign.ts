@@ -23,6 +23,9 @@ export const USABLE_TIME_STEP_MINUTES = 30;
 export const MIN_USABLE_MINUTES = 60;
 // 선착순 오픈 시각. 플랫폼 고정이라 점주가 입력하지 않고 안내만 한다
 export const ISSUE_OPEN_TIME = '11:00';
+// 피드에 캠페인이 노출되는 서빙 시간대. 노출 대상의 시간대는 점심으로 고정이라 고르지 않는다
+export const SERVING_TIME_START = '10:00';
+export const SERVING_TIME_END = '12:59';
 
 export type DiscountTarget = 'ALL' | 'MENU';
 export type DiscountType = 'PERCENT' | 'AMOUNT';
@@ -212,9 +215,22 @@ export const getCouponRequiredChecks = (coupon: CouponStepValues) => [
 export const isCouponStepComplete = (coupon: CouponStepValues) =>
   getCouponRequiredChecks(coupon).every(Boolean);
 
+// 반경, 성별, 연령대가 모두 정해진 선택지 안에 있어야 한다
+export const isValidTarget = ({
+  ageGroups,
+  gender,
+  radius,
+}: TargetStepValues) =>
+  exposureRadiusOptions.some(({ value }) => value === radius) &&
+  targetGenderOptions.some(({ value }) => value === gender) &&
+  ageGroups.every((ageGroup) =>
+    ageGroupOptions.some(({ value }) => value === ageGroup),
+  );
+
 const NOT_FOUND_MESSAGE = '캠페인을 찾을 수 없습니다.';
 const NOT_EDITABLE_MESSAGE = '작성 중인 캠페인만 수정할 수 있습니다.';
 const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
+const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -302,6 +318,10 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
     !isCouponStepComplete(values as CouponStepValues)
   ) {
     return { ok: false, message: INVALID_COUPON_MESSAGE };
+  }
+
+  if (stepKey === 'target' && !isValidTarget(values as TargetStepValues)) {
+    return { ok: false, message: INVALID_TARGET_MESSAGE };
   }
 
   Object.assign(campaign, { [stepKey]: structuredClone(values) });
