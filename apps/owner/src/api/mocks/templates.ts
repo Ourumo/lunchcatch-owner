@@ -10,7 +10,7 @@ const baseStyle = `
   .photo { flex: 1; min-height: 0; overflow: hidden; }
   .photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .photo img[src=""] { display: none; }
-  .ad-label { position: absolute; top: 12px; right: 12px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .ad-label { position: absolute; top: 12px; right: 12px; z-index: 1; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 `;
 
 export const mockPosterTemplates: PosterTemplate[] = [
@@ -87,7 +87,7 @@ export const mockPosterTemplates: PosterTemplate[] = [
 <style>
   ${baseStyle}
   body { background: #ffd23f; color: #1d1d1d; }
-  .poster { gap: 12px; padding: 20px; }
+  .poster { gap: 12px; padding: 40px 20px 20px; }
   .discount { display: inline-block; align-self: flex-start; padding: 6px 12px; border: 3px solid #1d1d1d; background: #e63946; color: #fff; box-shadow: 4px 4px 0 #1d1d1d; font-size: 26px; font-weight: 900; line-height: 1.2; word-break: keep-all; transform: rotate(-2deg); }
   .event { font-size: 18px; font-weight: 800; }
   .photo { border: 3px solid #1d1d1d; border-radius: 12px; background: #ffb703; box-shadow: 4px 4px 0 #1d1d1d; }
