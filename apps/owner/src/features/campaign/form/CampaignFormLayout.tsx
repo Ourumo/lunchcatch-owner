@@ -21,7 +21,7 @@ const SAVE_FAILED_MESSAGE = '잠시 후 다시 시도해 주세요.';
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { campaignId, values } = useCampaignForm();
+  const { campaignId, platformSettings, values } = useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
 
@@ -42,7 +42,7 @@ export const CampaignFormLayout = () => {
   const previousStep =
     currentIndex > 0 ? campaignSteps.at(currentIndex - 1) : undefined;
   const nextStep = campaignSteps.at(currentIndex + 1);
-  const canProceed = currentStep.canProceed?.(values) ?? true;
+  const canProceed = currentStep.canProceed?.(values, platformSettings) ?? true;
 
   const goPrevious = () => {
     setSaveError(undefined);
@@ -124,7 +124,7 @@ export const CampaignFormLayout = () => {
         )}
       </main>
       <StepActionBar
-        hint={currentStep.progressHint?.(values)}
+        hint={currentStep.progressHint?.(values, platformSettings)}
         isNextDisabled={!canProceed}
         isNextLoading={isSaving}
         nextLabel={nextStep ? '다음' : '완료'}

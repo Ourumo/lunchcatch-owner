@@ -1,9 +1,12 @@
 import {
   type CampaignStepKey,
   type CampaignValues,
+  getBudgetRequiredChecks,
   getCouponRequiredChecks,
+  isBudgetStepComplete,
   isCouponStepComplete,
 } from '@owner/api/campaign';
+import type { PlatformSettings } from '@owner/api/platform';
 
 // 등록 단계. 확인(review) 단계는 저장할 입력값이 없어 CampaignValues에 없다
 export type CampaignStepId = CampaignStepKey | 'review';
@@ -14,13 +17,12 @@ export interface CampaignStep {
   path: string;
   title: string;
   // 다음 단계로 넘어갈 수 있는지. 없으면 항상 넘어갈 수 있다
-  canProceed?: (values: CampaignValues) => boolean;
+  canProceed?: (values: CampaignValues, settings: PlatformSettings) => boolean;
   // 하단 버튼 위에 보여줄 진행 상황 안내
-  progressHint?: (values: CampaignValues) => string;
+  progressHint?: (values: CampaignValues, settings: PlatformSettings) => string;
 }
 
-const getCouponProgressHint = ({ coupon }: CampaignValues) => {
-  const checks = getCouponRequiredChecks(coupon);
+const getProgressHint = (checks: boolean[]) => {
   const filledCount = checks.filter(Boolean).length;
 
   return filledCount === checks.length
@@ -36,11 +38,20 @@ export const campaignSteps: CampaignStep[] = [
     path: 'coupon',
     title: '쿠폰 조건',
     canProceed: ({ coupon }) => isCouponStepComplete(coupon),
-    progressHint: getCouponProgressHint,
+    progressHint: ({ coupon }) =>
+      getProgressHint(getCouponRequiredChecks(coupon)),
   },
   { id: 'poster', path: 'poster', title: '포스터' },
   { id: 'target', path: 'target', title: '노출 대상' },
-  { id: 'budget', path: 'budget', title: '하루 예산과 집행 기간' },
+  {
+    id: 'budget',
+    path: 'budget',
+    title: '하루 예산과 집행 기간',
+    canProceed: ({ budget }, settings) =>
+      isBudgetStepComplete(budget, settings),
+    progressHint: ({ budget }, settings) =>
+      getProgressHint(getBudgetRequiredChecks(budget, settings)),
+  },
   { id: 'review', path: 'review', title: '확인' },
 ];
 

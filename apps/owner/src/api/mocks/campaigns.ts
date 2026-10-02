@@ -7,13 +7,6 @@ import type {
 
 import { mockStore } from './store';
 
-// 운영의 플랫폼 설정값. 노출 1회당 차감 포인트는 아직 정해지지 않아 임시 값을 쓴다
-export const mockPlatformSettings = {
-  impressionUnitPrice: 10,
-  minDailyBudget: 5000,
-  bootstrapDailyBudget: 10000,
-};
-
 // 하루 예산 추천에 쓰는 반경별 최근 7일 점심 접속 사용자 수와 성별, 연령대 비율
 export const mockAudienceRules: {
   usersByRadius: Record<ExposureRadius, number>;

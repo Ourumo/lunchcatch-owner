@@ -1,9 +1,7 @@
-import {
-  mockAudienceRules,
-  mockCampaigns,
-  mockPlatformSettings,
-} from './mocks/campaigns';
+import { mockAudienceRules, mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
+import { mockPlatformSettings } from './mocks/platform';
+import type { PlatformSettings } from './platform';
 import type { CampaignPoster } from './poster';
 import type { ApiResult } from './types';
 
@@ -136,11 +134,9 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
-// 하루 예산 추천과 예상 노출 계산에 필요한 값.
-// 노출 단가, 최소/부트스트랩 하루 예산은 관리자 "플랫폼 설정값 관리", 인원은 전날 00:00 집계 값이다
+// 하루 예산 추천과 예상 노출 범위 계산에 필요한 값. 인원은 전날 00:00 집계 값이다.
+// 노출 단가와 최소 하루 예산은 플랫폼 설정값(getPlatformSettings)에서 읽는다
 export interface BudgetRecommendation {
-  impressionUnitPrice: number;
-  minDailyBudget: number;
   // 노출 대상에 맞는 인원 x 노출 횟수 상한 2회 x 노출 단가
   recommendedDailyBudget: number;
   // 반경 안에 최근 7일 데이터가 없어 부트스트랩 하루 예산을 추천했는지
@@ -227,10 +223,51 @@ export const isValidTarget = ({
     ageGroupOptions.some(({ value }) => value === ageGroup),
   );
 
+const toDateValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// 오늘 기준 며칠 뒤 날짜(YYYY-MM-DD). 집행 시작일은 등록일 다음 날부터 고를 수 있다
+export const getDateValueFromToday = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+
+  return toDateValue(date);
+};
+
+export const isValidDailyBudget = (
+  dailyBudget: number | null,
+  { minDailyBudget }: Pick<PlatformSettings, 'minDailyBudget'>,
+) =>
+  dailyBudget !== null &&
+  Number.isInteger(dailyBudget) &&
+  dailyBudget >= minDailyBudget;
+
+// 시작일은 내일 이후, 종료일은 시작일 이후(시작일과 같으면 1일)
+export const isValidPeriod = ({
+  endDate,
+  startDate,
+}: Pick<BudgetStepValues, 'endDate' | 'startDate'>) =>
+  Boolean(startDate && endDate) &&
+  startDate >= getDateValueFromToday(1) &&
+  endDate >= startDate;
+
+// 하루 예산과 집행 기간 필수 항목별 입력 완료 여부.
+// 잔액 부족은 저장을 막지 않으므로 검사하지 않는다
+export const getBudgetRequiredChecks = (
+  budget: BudgetStepValues,
+  settings: Pick<PlatformSettings, 'minDailyBudget'>,
+) => [isValidDailyBudget(budget.dailyBudget, settings), isValidPeriod(budget)];
+
+export const isBudgetStepComplete = (
+  budget: BudgetStepValues,
+  settings: Pick<PlatformSettings, 'minDailyBudget'>,
+) => getBudgetRequiredChecks(budget, settings).every(Boolean);
+
 const NOT_FOUND_MESSAGE = '캠페인을 찾을 수 없습니다.';
 const NOT_EDITABLE_MESSAGE = '작성 중인 캠페인만 수정할 수 있습니다.';
 const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
+const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -324,6 +361,14 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
     return { ok: false, message: INVALID_TARGET_MESSAGE };
   }
 
+  // 서버도 최소 하루 예산 미만, 내일 이전 시작일, 시작일보다 이른 종료일은 저장하지 않는다
+  if (
+    stepKey === 'budget' &&
+    !isBudgetStepComplete(values as BudgetStepValues, mockPlatformSettings)
+  ) {
+    return { ok: false, message: INVALID_BUDGET_MESSAGE };
+  }
+
   Object.assign(campaign, { [stepKey]: structuredClone(values) });
 
   return { ok: true, data: structuredClone(campaign) };
@@ -342,8 +387,7 @@ export const getBudgetRecommendation = async (
   }
 
   const { radius, gender, ageGroups } = campaign.target;
-  const { impressionUnitPrice, minDailyBudget, bootstrapDailyBudget } =
-    mockPlatformSettings;
+  const { bootstrapDailyBudget, impressionUnitPrice } = mockPlatformSettings;
   const ageRatio =
     ageGroups.length === 0
       ? 1
@@ -361,8 +405,6 @@ export const getBudgetRecommendation = async (
   return {
     ok: true,
     data: {
-      impressionUnitPrice,
-      minDailyBudget,
       recommendedDailyBudget: isBootstrap
         ? bootstrapDailyBudget
         : audienceCount * DAILY_EXPOSURE_CAP * impressionUnitPrice,

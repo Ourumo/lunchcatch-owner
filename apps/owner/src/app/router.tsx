@@ -15,6 +15,7 @@ import {
 } from '@owner/features/signup/signupSteps';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
+import CampaignBudgetPage from '@owner/pages/CampaignBudgetPage';
 import CampaignCouponPage from '@owner/pages/CampaignCouponPage';
 import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
 import CampaignFormPage from '@owner/pages/CampaignFormPage';
@@ -37,6 +38,7 @@ const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
 const campaignStepPages: Partial<Record<CampaignStepId, ReactNode>> = {
   coupon: <CampaignCouponPage />,
   target: <CampaignTargetPage />,
+  budget: <CampaignBudgetPage />,
 };
 
 export const router = createBrowserRouter([

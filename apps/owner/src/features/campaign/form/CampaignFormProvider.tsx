@@ -7,6 +7,10 @@ import {
   type CampaignValues,
   getCampaign,
 } from '@owner/api/campaign';
+import {
+  getPlatformSettings,
+  type PlatformSettings,
+} from '@owner/api/platform';
 import { TopBar } from '@owner/components/TopBar/TopBar';
 
 import {
@@ -19,14 +23,18 @@ const LIST_PATH = '/campaigns';
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message?: string }
-  | { status: 'loaded'; campaignStatus: CampaignStatus };
+  | {
+      status: 'loaded';
+      campaignStatus: CampaignStatus;
+      platformSettings: PlatformSettings;
+    };
 
 interface CampaignFormProviderProps {
   campaignId: string;
   children: ReactNode;
 }
 
-// 서버에 저장된 DRAFT를 불러와 등록 단계의 입력값을 한곳에 모은다.
+// 서버에 저장된 DRAFT와 플랫폼 설정값을 불러와 등록 단계의 입력값을 한곳에 모은다.
 // 단계를 오가도 값이 유지되고, 새로고침하거나 목록에서 다시 들어와도 저장된 단계부터 이어서 쓸 수 있다
 export const CampaignFormProvider = ({
   campaignId,
@@ -41,20 +49,32 @@ export const CampaignFormProvider = ({
   useEffect(() => {
     let ignore = false;
 
-    getCampaign(campaignId).then((result) => {
-      if (ignore) {
-        return;
-      }
+    Promise.all([getCampaign(campaignId), getPlatformSettings()]).then(
+      ([campaignResult, settingsResult]) => {
+        if (ignore) {
+          return;
+        }
 
-      if (!result.ok) {
-        setLoadState({ status: 'error', message: result.message });
-        return;
-      }
+        if (!campaignResult.ok) {
+          setLoadState({ status: 'error', message: campaignResult.message });
+          return;
+        }
 
-      const { budget, coupon, poster, status, target } = result.data;
-      setValues({ budget, coupon, poster, target });
-      setLoadState({ status: 'loaded', campaignStatus: status });
-    });
+        // 최소 하루 예산 없이는 4단계 진행 여부를 판단할 수 없으므로 함께 실패로 본다
+        if (!settingsResult.ok) {
+          setLoadState({ status: 'error', message: settingsResult.message });
+          return;
+        }
+
+        const { budget, coupon, poster, status, target } = campaignResult.data;
+        setValues({ budget, coupon, poster, target });
+        setLoadState({
+          status: 'loaded',
+          campaignStatus: status,
+          platformSettings: settingsResult.data,
+        });
+      },
+    );
 
     // 응답 전에 화면을 벗어나면 결과를 버린다
     return () => {
@@ -88,7 +108,13 @@ export const CampaignFormProvider = ({
 
     return (
       <CampaignFormContext
-        value={{ campaignId, setPoster, updateStepValues, values }}
+        value={{
+          campaignId,
+          platformSettings: loadState.platformSettings,
+          setPoster,
+          updateStepValues,
+          values,
+        }}
       >
         {children}
       </CampaignFormContext>
