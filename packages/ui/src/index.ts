@@ -2,6 +2,7 @@ export * from './components/BottomNav/BottomNav';
 export * from './components/BottomSheet/BottomSheet';
 export * from './components/Button/Button';
 export * from './components/Checkbox/Checkbox';
+export * from './components/ChoiceChip/ChoiceChip';
 export * from './components/DatePicker/DatePicker';
 export * from './components/DateRangePicker/DateRangePicker';
 export * from './components/FilterChip/FilterChip';

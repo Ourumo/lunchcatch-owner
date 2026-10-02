@@ -12,6 +12,17 @@
     user-select: none;
   }
 
+  /* Tailwind v4부터 버튼 기본 커서가 화살표라, 누를 수 있는 버튼은 손가락, 막힌 버튼은 금지 표시로 맞춘다 */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   body {
     min-height: 100vh;
     margin: 0;
