@@ -11,6 +11,7 @@ import {
 } from '@owner/features/signup/signupSteps';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
+import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
 import CampaignListPage from '@owner/pages/CampaignListPage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
@@ -52,6 +53,9 @@ export const router = createBrowserRouter([
   { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
   {
     element: <MainLayout />,
-    children: [{ path: '/campaigns', element: <CampaignListPage /> }],
+    children: [
+      { path: '/campaigns', element: <CampaignListPage /> },
+      { path: '/campaigns/:id', element: <CampaignDetailPage /> },
+    ],
   },
 ]);

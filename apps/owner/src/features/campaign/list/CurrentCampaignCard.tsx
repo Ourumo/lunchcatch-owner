@@ -1,26 +1,20 @@
 import { Link } from 'react-router';
 import { CircleAlert } from 'lucide-react';
 
-import type { Campaign, PausedReason } from '@owner/api/campaign';
+import type { Campaign } from '@owner/api/campaign';
 import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import {
   formatNumber,
   formatPeriod,
   formatPoints,
   getDaysFromToday,
+  pausedNotices,
 } from '@owner/features/campaign/campaignFormat';
 
 export interface CurrentCampaignCardProps {
   campaign: Campaign;
   title: string;
 }
-
-const pausedNotices: Record<PausedReason, string> = {
-  OWNER: '직접 중단한 캠페인이에요. 상세 화면에서 다시 시작할 수 있어요.',
-  NO_POINTS:
-    '포인트 잔액이 부족해 노출이 멈췄어요. 충전하면 자동으로 다시 시작돼요.',
-  ADMIN: '운영 정책에 따라 관리자가 노출을 중단했어요.',
-};
 
 const getRemainingLabel = (endDate: string) => {
   const days = getDaysFromToday(endDate);
