@@ -1,12 +1,12 @@
 import { Link } from 'react-router';
 
 import type { Campaign } from '@owner/api/campaign';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import {
   formatNumber,
   formatPeriod,
   formatPoints,
 } from '@owner/features/campaign/campaignFormat';
+import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 
 export interface EndedCampaignCardProps {
   campaign: Campaign;

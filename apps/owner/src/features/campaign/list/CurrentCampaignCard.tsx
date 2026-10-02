@@ -2,7 +2,6 @@ import { Link } from 'react-router';
 import { CircleAlert } from 'lucide-react';
 
 import type { Campaign } from '@owner/api/campaign';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import {
   formatNumber,
   formatPeriod,
@@ -10,6 +9,7 @@ import {
   getDaysFromToday,
   pausedNotices,
 } from '@owner/features/campaign/campaignFormat';
+import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 
 export interface CurrentCampaignCardProps {
   campaign: Campaign;

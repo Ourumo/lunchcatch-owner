@@ -2,13 +2,13 @@ import { Link } from 'react-router';
 import { ChevronRight, CircleAlert } from 'lucide-react';
 
 import type { Campaign } from '@owner/api/campaign';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import {
   formatCreatedDate,
   formatPeriod,
   formatShortDate,
   getDaysFromToday,
 } from '@owner/features/campaign/campaignFormat';
+import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 
 export interface UpcomingCampaignCardProps {
   campaign: Campaign;

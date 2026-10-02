@@ -10,7 +10,6 @@ import {
 } from '@owner/api/campaign';
 import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import { TopBar } from '@owner/components/TopBar/TopBar';
 import {
   formatAgeGroups,
@@ -26,6 +25,7 @@ import {
   getPeriodDays,
   pausedNotices,
 } from '@owner/features/campaign/campaignFormat';
+import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 import { PosterPreview } from '@owner/features/campaign/PosterPreview';
 
 import { DetailRow, DetailSection } from './DetailSection';
