@@ -41,8 +41,6 @@ export interface CouponStepValues {
   // HH:mm, 30분 단위
   usableFrom: string;
   usableUntil: string;
-  minOrderAmount: number | null;
-  notice: string;
 }
 
 // 반경 단위는 m
@@ -152,8 +150,71 @@ export interface BudgetRecommendation {
 // (사용자, 캠페인) 조합당 하루 노출 횟수 상한
 export const DAILY_EXPOSURE_CAP = 2;
 
+const toMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+
+  return hours * 60 + minutes;
+};
+
+const toTime = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+// 사용 가능 시간으로 고를 수 있는 시각. 허용 범위 안의 30분 단위 (11:30, 12:00, ... 15:00)
+export const getUsableTimeSlots = () => {
+  const slots: string[] = [];
+
+  for (
+    let minutes = toMinutes(USABLE_TIME_START);
+    minutes <= toMinutes(USABLE_TIME_END);
+    minutes += USABLE_TIME_STEP_MINUTES
+  ) {
+    slots.push(toTime(minutes));
+  }
+
+  return slots;
+};
+
+export const getUsableMinutes = (from: string, until: string) =>
+  toMinutes(until) - toMinutes(from);
+
+// 허용 범위 안의 30분 단위 연속 구간 1개이고, 최소 1시간이어야 한다
+export const isValidUsableTime = (from: string, until: string) => {
+  const slots = getUsableTimeSlots();
+
+  return (
+    slots.includes(from) &&
+    slots.includes(until) &&
+    getUsableMinutes(from, until) >= MIN_USABLE_MINUTES
+  );
+};
+
+// 퍼센트 할인은 1~100%, 금액 할인은 1원 이상의 정수
+export const isValidDiscountValue = ({
+  discountType,
+  discountValue,
+}: Pick<CouponStepValues, 'discountType' | 'discountValue'>) =>
+  discountValue !== null &&
+  Number.isInteger(discountValue) &&
+  discountValue >= 1 &&
+  (discountType === 'AMOUNT' || discountValue <= 100);
+
+export const isValidIssueLimit = (issueLimit: number | null) =>
+  issueLimit !== null && Number.isInteger(issueLimit) && issueLimit >= 1;
+
+// 쿠폰 조건 필수 항목별 입력 완료 여부 (할인 대상, 할인 값, 발급 수량, 사용 가능 시간)
+export const getCouponRequiredChecks = (coupon: CouponStepValues) => [
+  coupon.discountTarget === 'ALL' || coupon.menuId !== null,
+  isValidDiscountValue(coupon),
+  isValidIssueLimit(coupon.issueLimit),
+  isValidUsableTime(coupon.usableFrom, coupon.usableUntil),
+];
+
+export const isCouponStepComplete = (coupon: CouponStepValues) =>
+  getCouponRequiredChecks(coupon).every(Boolean);
+
 const NOT_FOUND_MESSAGE = '캠페인을 찾을 수 없습니다.';
 const NOT_EDITABLE_MESSAGE = '작성 중인 캠페인만 수정할 수 있습니다.';
+const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -165,8 +226,6 @@ export const createInitialCampaignValues = (): CampaignValues => ({
     issueLimit: null,
     usableFrom: USABLE_TIME_START,
     usableUntil: USABLE_TIME_END,
-    minOrderAmount: null,
-    notice: '',
   },
   poster: null,
   target: { radius: 1000, gender: 'ALL', ageGroups: [] },
@@ -235,6 +294,14 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
 
   if (campaign.status !== 'DRAFT') {
     return { ok: false, message: NOT_EDITABLE_MESSAGE };
+  }
+
+  // 서버도 할인율 100% 초과, 발급 수량 0 이하, 허용 범위 밖이거나 1시간 미만인 사용 시간은 저장하지 않는다
+  if (
+    stepKey === 'coupon' &&
+    !isCouponStepComplete(values as CouponStepValues)
+  ) {
+    return { ok: false, message: INVALID_COUPON_MESSAGE };
   }
 
   Object.assign(campaign, { [stepKey]: structuredClone(values) });

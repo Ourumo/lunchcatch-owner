@@ -15,6 +15,7 @@ import {
 } from '@owner/features/signup/signupSteps';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
+import CampaignCouponPage from '@owner/pages/CampaignCouponPage';
 import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
 import CampaignFormPage from '@owner/pages/CampaignFormPage';
 import CampaignListPage from '@owner/pages/CampaignListPage';
@@ -32,7 +33,9 @@ const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
 };
 
 // 캠페인 등록 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
-const campaignStepPages: Partial<Record<CampaignStepId, ReactNode>> = {};
+const campaignStepPages: Partial<Record<CampaignStepId, ReactNode>> = {
+  coupon: <CampaignCouponPage />,
+};
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate replace to="/login" /> },

@@ -66,8 +66,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
-      minOrderAmount: null,
-      notice: '1인 1매, 다른 쿠폰과 함께 쓸 수 없어요.',
     },
     poster: {
       posterId: 'poster-active',
@@ -119,8 +117,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 30,
       usableFrom: '11:30',
       usableUntil: '14:00',
-      minOrderAmount: 10000,
-      notice: '',
     },
     poster: {
       posterId: 'poster-scheduled',
@@ -158,8 +154,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 40,
       usableFrom: '12:00',
       usableUntil: '14:30',
-      minOrderAmount: null,
-      notice: '',
     },
     poster: {
       posterId: 'poster-review-failed',
@@ -195,8 +189,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: null,
       usableFrom: '11:30',
       usableUntil: '15:00',
-      minOrderAmount: null,
-      notice: '',
     },
     poster: null,
     target: { radius: 1000, gender: 'ALL', ageGroups: [] },
@@ -217,8 +209,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
-      minOrderAmount: 12000,
-      notice: '',
     },
     poster: {
       posterId: 'poster-ended-1',
@@ -261,8 +251,6 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '13:30',
-      minOrderAmount: null,
-      notice: '',
     },
     poster: {
       posterId: 'poster-ended-2',

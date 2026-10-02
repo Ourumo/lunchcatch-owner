@@ -162,15 +162,6 @@ const CampaignContent = ({
           label="사용 가능 시간"
           value={`매일 ${coupon.usableFrom} ~ ${coupon.usableUntil}`}
         />
-        <DetailRow
-          label="최소 주문 금액"
-          value={
-            coupon.minOrderAmount === null
-              ? '없음'
-              : `${formatNumber(coupon.minOrderAmount)}원`
-          }
-        />
-        <DetailRow label="유의사항" value={coupon.notice || '없음'} />
       </DetailSection>
 
       <DetailSection title="노출 대상">
