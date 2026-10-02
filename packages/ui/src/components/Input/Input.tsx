@@ -5,6 +5,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   errorMessage?: string;
   label?: string;
   leadingIcon?: ReactNode;
+  // 입력값 뒤에 붙는 단위 등 (예: 원, %)
+  trailing?: ReactNode;
 }
 
 export function Input({
@@ -16,6 +18,7 @@ export function Input({
   id,
   label,
   leadingIcon,
+  trailing,
   ...props
 }: InputProps) {
   const generatedId = useId();
@@ -67,6 +70,11 @@ export function Input({
           id={inputId}
           {...props}
         />
+        {trailing && (
+          <span className="shrink-0 text-caption-web text-text-secondary">
+            {trailing}
+          </span>
+        )}
       </div>
       {errorMessage && (
         <p
