@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger';
+export type ButtonVariant =
+  'primary' | 'secondary' | 'neutral' | 'tertiary' | 'danger';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -14,6 +15,8 @@ const variantClassNames: Record<ButtonVariant, string> = {
     'bg-action-primary text-text-inverse hover:bg-action-primary-hover disabled:bg-action-primary-disabled disabled:text-text-disabled',
   secondary:
     'border-action-primary bg-bg-surface text-action-primary hover:bg-surface-subtle disabled:border-border-subtle disabled:text-text-disabled',
+  neutral:
+    'border-border-subtle bg-bg-surface text-text-secondary hover:bg-surface-subtle hover:text-text-primary disabled:text-text-disabled',
   tertiary:
     'border-transparent bg-transparent text-action-primary hover:bg-surface-subtle disabled:text-text-disabled',
   danger:
