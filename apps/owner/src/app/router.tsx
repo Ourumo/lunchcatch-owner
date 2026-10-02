@@ -10,6 +10,8 @@ import {
   signupSteps,
 } from '@owner/features/signup/signupSteps';
 import AuthLayout from '@owner/layout/AuthLayout';
+import MainLayout from '@owner/layout/MainLayout';
+import CampaignListPage from '@owner/pages/CampaignListPage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupPage from '@owner/pages/SignupPage';
@@ -48,4 +50,8 @@ export const router = createBrowserRouter([
     })),
   },
   { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
+  {
+    element: <MainLayout />,
+    children: [{ path: '/campaigns', element: <CampaignListPage /> }],
+  },
 ]);
