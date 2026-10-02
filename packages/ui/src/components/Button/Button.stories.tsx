@@ -11,7 +11,7 @@ const meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'tertiary', 'danger'],
+      options: ['primary', 'secondary', 'neutral', 'tertiary', 'danger'],
     },
   },
 } satisfies Meta<typeof Button>;
@@ -25,6 +25,12 @@ export const Primary: Story = {};
 export const Secondary: Story = {
   args: {
     variant: 'secondary',
+  },
+};
+
+export const Neutral: Story = {
+  args: {
+    variant: 'neutral',
   },
 };
 
