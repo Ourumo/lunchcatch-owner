@@ -6,6 +6,7 @@ export * from './components/DatePicker/DatePicker';
 export * from './components/DateRangePicker/DateRangePicker';
 export * from './components/FilterChip/FilterChip';
 export * from './components/Input/Input';
+export * from './components/MultiSelectField/MultiSelectField';
 export * from './components/Radio/Radio';
 export * from './components/SearchField/SearchField';
 export * from './components/SegmentedControl/SegmentedControl';
