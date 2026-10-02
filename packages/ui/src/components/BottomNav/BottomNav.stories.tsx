@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
-  ArrowRightLeft,
   ChartNoAxesColumn,
   Compass,
   House,
@@ -9,12 +8,13 @@ import {
   Settings,
   Ticket,
   User,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 import { BottomNav, type BottomNavItem } from './BottomNav';
 
 const userItems: BottomNavItem[] = [
-  { icon: <ArrowRightLeft />, label: '스와이프', value: 'swipe' },
+  { icon: <UtensilsCrossed />, label: '오늘 점심', value: 'swipe' },
   { icon: <Compass />, label: '탐색', value: 'explore' },
   { icon: <Ticket />, label: '쿠폰함', value: 'coupon' },
   { icon: <User />, label: '마이', value: 'my' },
