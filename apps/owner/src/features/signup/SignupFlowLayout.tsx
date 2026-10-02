@@ -66,8 +66,8 @@ export const SignupFlowLayout = () => {
   };
 
   return (
-    <div className="min-h-dvh min-w-mobile-min bg-bg-page">
-      <div className="mx-auto flex min-h-dvh max-w-mobile flex-col">
+    <div className="min-h-dvh min-w-mobile-min">
+      <div className="mx-auto flex min-h-dvh max-w-mobile flex-col bg-bg-page">
         {/* 내용을 스크롤해도 제목과 진행 막대가 위에 붙어 있도록 고정한다 */}
         <div className="sticky top-0 z-10">
           <TopBar

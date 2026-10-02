@@ -33,3 +33,12 @@
     opacity: 0.6;
   }
 }
+
+/* 모바일 폭으로 가운데에 그리는 앱(사용자, 점주)은 PC처럼 넓은 화면에서 바깥을 한 톤 어둡게 칠해 앱 영역을 구분한다 */
+/* <html data-layout="mobile">을 단 앱에만 적용해, 화면 전체를 쓰는 관리자 앱은 그대로 둔다 */
+/* 모바일에서는 당겨서 튕길 때 보이는 배경이 앱과 같도록 그대로 둔다 (480px = --layout-mobile-max-width) */
+@media (width > 480px) {
+  :root[data-layout='mobile'] {
+    background: var(--color-surface-subtle);
+  }
+}
