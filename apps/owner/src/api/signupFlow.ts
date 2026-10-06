@@ -142,17 +142,57 @@ export const isStoreStepComplete = (
 
 export type Weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
-export interface DailyBusinessHours {
-  day: Weekday;
-  isClosed: boolean;
-  // HH:mm
+// 영업 요일 칩에 이 순서대로 보여준다
+export const weekdays: { value: Weekday; label: string }[] = [
+  { value: 'MON', label: '월' },
+  { value: 'TUE', label: '화' },
+  { value: 'WED', label: '수' },
+  { value: 'THU', label: '목' },
+  { value: 'FRI', label: '금' },
+  { value: 'SAT', label: '토' },
+  { value: 'SUN', label: '일' },
+];
+
+// 영업일마다 같은 시간을 쓴다. 고르지 않은 요일은 휴무
+export interface HoursStepValues {
+  openDays: Weekday[];
+  // HH:mm. 입력 전에는 빈 문자열
   openTime: string;
   closeTime: string;
 }
 
-export interface HoursStepValues {
-  businessHours: DailyBusinessHours[];
+// 자정을 넘기는 영업은 받지 않으므로 종료 시간이 시작 시간보다 늦어야 한다
+export const isValidTimeRange = (openTime: string, closeTime: string) =>
+  openTime < closeTime;
+
+export const isHoursStepComplete = ({
+  openDays,
+  openTime,
+  closeTime,
+}: HoursStepValues) =>
+  openDays.length > 0 &&
+  openTime !== '' &&
+  closeTime !== '' &&
+  isValidTimeRange(openTime, closeTime);
+
+// API에 보내는 요일별 영업시간. 휴무일에 시각이 있으면 등록할 수 없어 null로 보낸다
+export interface DailyBusinessHours {
+  day: Weekday;
+  isClosed: boolean;
+  openTime: string | null;
+  closeTime: string | null;
 }
+
+export const toDailyBusinessHours = ({
+  openDays,
+  openTime,
+  closeTime,
+}: HoursStepValues): DailyBusinessHours[] =>
+  weekdays.map(({ value: day }) =>
+    openDays.includes(day)
+      ? { day, isClosed: false, openTime, closeTime }
+      : { day, isClosed: true, openTime: null, closeTime: null },
+  );
 
 export interface MenuItemValues {
   image: File | null;

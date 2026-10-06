@@ -1,13 +1,12 @@
 import { type ReactNode, useState } from 'react';
 
-import type { SignupFlowValues, Weekday } from '@owner/api/signupFlow';
+import type { SignupFlowValues } from '@owner/api/signupFlow';
 
 import {
   SignupFlowContext,
   type SignupFlowContextValue,
 } from './signupFlowContext';
 
-const weekdays: Weekday[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const REQUIRED_MENU_COUNT = 3;
 
 const createInitialValues = (): SignupFlowValues => ({
@@ -21,14 +20,7 @@ const createInitialValues = (): SignupFlowValues => ({
   store: { name: '', category: null, ownerName: '', phone: '' },
   location: { place: null },
   business: { registrationNumber: '' },
-  hours: {
-    businessHours: weekdays.map((day) => ({
-      day,
-      isClosed: false,
-      openTime: '',
-      closeTime: '',
-    })),
-  },
+  hours: { openDays: [], openTime: '', closeTime: '' },
   menu: {
     logoImage: null,
     interiorImages: [],
