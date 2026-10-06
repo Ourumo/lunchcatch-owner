@@ -10,8 +10,8 @@ export interface StatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 const variantStyle: Record<StatusBadgeVariant, CSSProperties> = {
   // 종료, 작성 중처럼 강조하지 않는 상태
   neutral: {
-    backgroundColor: 'var(--color-surface-subtle)',
-    color: 'var(--color-text-primary)',
+    backgroundColor: 'var(--color-status-neutral-bg)',
+    color: 'var(--color-status-neutral-fg)',
   },
   info: {
     backgroundColor: 'var(--color-status-info-bg)',
