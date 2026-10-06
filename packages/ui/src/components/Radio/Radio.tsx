@@ -22,8 +22,8 @@ export function Radio({ className, id, label, ...props }: RadioProps) {
         type="radio"
         {...props}
       />
-      <span className="flex size-4 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-bg-surface peer-checked:border-action-primary peer-checked:[&>span]:opacity-100 peer-disabled:cursor-not-allowed peer-disabled:bg-surface-subtle">
-        <span className="size-2 rounded-full bg-action-primary opacity-0" />
+      <span className="relative flex size-4 shrink-0 rounded-full border border-border-subtle bg-bg-surface peer-checked:border-action-primary peer-checked:[&>span]:opacity-100 peer-disabled:cursor-not-allowed peer-disabled:bg-surface-subtle">
+        <span className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-action-primary opacity-0" />
       </span>
       {label}
     </label>
