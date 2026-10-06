@@ -76,6 +76,9 @@ export interface StoreStepValues {
   ownerName: string;
   // 하이픈 없는 숫자
   phone: string;
+}
+
+export interface LocationStepValues {
   place: StorePlace | null;
 }
 
@@ -91,8 +94,7 @@ export const isValidBusinessNumber = (registrationNumber: string) =>
   /^\d{10}$/.test(registrationNumber);
 
 // 가게 기본 정보 필수 항목별 입력 완료 여부.
-// 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다.
-// 카카오맵 장소 선택은 아직 화면이 없어 place는 검사하지 않는다
+// 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다
 export const getStoreRequiredChecks = (
   store: StoreStepValues,
   business: BusinessStepValues,
@@ -141,6 +143,8 @@ export interface MenuStepValues {
 export interface SignupFlowValues {
   terms: TermsStepValues;
   store: StoreStepValues;
+  location: LocationStepValues;
+  // 별도 단계 없이 가게 기본 정보 화면에서 함께 입력받는다
   business: BusinessStepValues;
   hours: HoursStepValues;
   menu: MenuStepValues;
