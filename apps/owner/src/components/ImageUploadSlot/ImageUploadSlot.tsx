@@ -1,5 +1,7 @@
-import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
+import { type ChangeEvent, useId, useState } from 'react';
 import { Camera, X } from 'lucide-react';
+
+import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
 
 export interface ImageUploadSlotProps {
   // 빈 칸에 보이는 이름. 등록·변경·삭제 버튼의 이름으로도 쓴다
@@ -45,21 +47,8 @@ export const ImageUploadSlot = ({
   multiple = false,
 }: ImageUploadSlotProps) => {
   const errorId = useId();
-  const previewRef = useRef<HTMLImageElement>(null);
   const [fileError, setFileError] = useState<string>();
   const visibleError = errorMessage ?? fileError;
-
-  // 미리보기 주소는 사진이 바뀌거나 칸이 사라질 때 해제한다
-  useEffect(() => {
-    if (!image || !previewRef.current) {
-      return;
-    }
-
-    const url = URL.createObjectURL(image);
-    previewRef.current.src = url;
-
-    return () => URL.revokeObjectURL(url);
-  }, [image]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -105,7 +94,7 @@ export const ImageUploadSlot = ({
             type="file"
           />
           {image ? (
-            <img alt="" className="size-full object-cover" ref={previewRef} />
+            <FilePreviewImage className="size-full object-cover" file={image} />
           ) : (
             <span className="flex flex-col items-center gap-2 px-2 text-center">
               <span className="flex size-10 items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary">
