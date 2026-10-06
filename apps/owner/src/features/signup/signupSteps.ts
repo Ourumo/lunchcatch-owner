@@ -84,7 +84,17 @@ export const signupSteps: SignupStep[] = [
     canProceed: ({ hours }) => isHoursStepComplete(hours),
     progressHint: getHoursProgressHint,
   },
-  { id: 'menu', path: 'menu', title: '가게 이미지·대표 메뉴' },
+  {
+    id: 'images',
+    path: 'images',
+    title: '매장 사진 등록',
+    canProceed: ({ images }) => images.logoImage !== null,
+    progressHint: ({ images }) =>
+      images.logoImage
+        ? '대표 이미지를 등록했어요'
+        : '대표 이미지를 등록해주세요',
+  },
+  { id: 'menu', path: 'menu', title: '대표 메뉴 등록' },
 ];
 
 export const getSignupStepPath = (step: SignupStep) => `/signup/${step.path}`;
