@@ -1,4 +1,3 @@
-import { Input } from '@repo/ui';
 import { Lightbulb } from 'lucide-react';
 
 import {
@@ -6,6 +5,7 @@ import {
   type Weekday,
   weekdays,
 } from '@owner/api/signupFlow';
+import { TimePicker } from '@owner/components/TimePicker/TimePicker';
 import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
 
 // 점심 시간대 추천 안내. 지역별 피크 타임 데이터가 없어 시안 문구를 그대로 쓰는 더미
@@ -67,23 +67,19 @@ export const HoursStep = () => {
       </fieldset>
 
       <div className="grid grid-cols-2 gap-3">
-        <Input
+        <TimePicker
           label="영업 시작시간"
-          onChange={(event) =>
-            updateStepValues('hours', { openTime: event.target.value })
+          onValueChange={(time) =>
+            updateStepValues('hours', { openTime: time })
           }
-          required
-          type="time"
           value={openTime}
         />
-        <Input
+        <TimePicker
           errorMessage={timeRangeError}
           label="영업 종료시간"
-          onChange={(event) =>
-            updateStepValues('hours', { closeTime: event.target.value })
+          onValueChange={(time) =>
+            updateStepValues('hours', { closeTime: time })
           }
-          required
-          type="time"
           value={closeTime}
         />
       </div>
