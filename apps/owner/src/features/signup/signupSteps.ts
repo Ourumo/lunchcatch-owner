@@ -53,7 +53,14 @@ export const signupSteps: SignupStep[] = [
     canProceed: ({ store, business }) => isStoreStepComplete(store, business),
     progressHint: getStoreProgressHint,
   },
-  { id: 'business', path: 'business', title: '사업자 정보' },
+  {
+    id: 'location',
+    path: 'location',
+    title: '매장 위치 등록',
+    canProceed: ({ location }) => location.place !== null,
+    progressHint: ({ location }) =>
+      location.place ? '가게 위치를 선택했어요' : '가게 위치를 선택해주세요',
+  },
   { id: 'hours', path: 'hours', title: '영업시간' },
   { id: 'menu', path: 'menu', title: '가게 이미지·대표 메뉴' },
 ];

@@ -28,6 +28,26 @@ export const Disabled: Story = {
   },
 };
 
+export const Medium: Story = {
+  args: {
+    size: 'md',
+  },
+};
+
+export const MediumChecked: Story = {
+  args: {
+    defaultChecked: true,
+    size: 'md',
+  },
+};
+
+export const MediumDisabled: Story = {
+  args: {
+    disabled: true,
+    size: 'md',
+  },
+};
+
 export const Large: Story = {
   args: {
     label: '약관 전체 동의',

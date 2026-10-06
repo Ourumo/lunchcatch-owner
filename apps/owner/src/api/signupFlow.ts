@@ -1,4 +1,5 @@
 import { mockDelay } from './mocks/delay';
+import { mockStorePlaces } from './mocks/places';
 import { mockOwnerTerms } from './mocks/terms';
 import type { ApiResult } from './types';
 
@@ -40,11 +41,39 @@ export const hasAgreedRequiredTerms = (terms: TermsStepValues) =>
 // 카카오맵 장소 검색에서 선택한 가게 위치 정보
 export interface StorePlace {
   kakaoPlaceId: string;
+  placeName: string;
   roadAddress: string;
+  // 지번 주소. 도로명 주소 아래에 참고용으로 보여준다
+  address: string;
+  // 카카오맵에 등록된 형식(02-1234-5678) 그대로. 없으면 빈 문자열
   phone: string;
   latitude: number;
   longitude: number;
 }
+
+const normalizeSearchText = (text: string) => text.replace(/\s/g, '');
+
+// 주소나 상호명으로 가게 위치를 찾는다. 검색어가 비어 있거나 결과가 없으면 빈 목록을 돌려준다.
+// API 연동 전까지 mock 장소 목록에서 찾는다. 연동하면 카카오맵 장소 검색(키워드 검색)으로 바꾼다
+export const searchStorePlaces = async (
+  query: string,
+): Promise<ApiResult<StorePlace[]>> => {
+  await mockDelay();
+
+  const keyword = normalizeSearchText(query);
+
+  if (!keyword) {
+    return { ok: true, data: [] };
+  }
+
+  const places = mockStorePlaces.filter((place) =>
+    [place.placeName, place.roadAddress, place.address].some((text) =>
+      normalizeSearchText(text).includes(keyword),
+    ),
+  );
+
+  return { ok: true, data: structuredClone(places) };
+};
 
 export type StoreCategory =
   | 'KOREAN'
@@ -76,6 +105,9 @@ export interface StoreStepValues {
   ownerName: string;
   // 하이픈 없는 숫자
   phone: string;
+}
+
+export interface LocationStepValues {
   place: StorePlace | null;
 }
 
@@ -91,8 +123,7 @@ export const isValidBusinessNumber = (registrationNumber: string) =>
   /^\d{10}$/.test(registrationNumber);
 
 // 가게 기본 정보 필수 항목별 입력 완료 여부.
-// 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다.
-// 카카오맵 장소 선택은 아직 화면이 없어 place는 검사하지 않는다
+// 사업자등록번호는 가게 기본 정보 화면에서 함께 입력받는다
 export const getStoreRequiredChecks = (
   store: StoreStepValues,
   business: BusinessStepValues,
@@ -141,6 +172,8 @@ export interface MenuStepValues {
 export interface SignupFlowValues {
   terms: TermsStepValues;
   store: StoreStepValues;
+  location: LocationStepValues;
+  // 별도 단계 없이 가게 기본 정보 화면에서 함께 입력받는다
   business: BusinessStepValues;
   hours: HoursStepValues;
   menu: MenuStepValues;
