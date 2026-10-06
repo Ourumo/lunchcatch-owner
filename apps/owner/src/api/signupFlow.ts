@@ -201,10 +201,12 @@ export interface MenuItemValues {
   description: string;
 }
 
+export const MAX_INTERIOR_IMAGES = 3;
+
 export interface ImagesStepValues {
   // 가게 대표 이미지(로고). 필수
   logoImage: File | null;
-  // 매장 이미지. 선택, 최대 3장
+  // 매장 이미지. 선택, 최대 MAX_INTERIOR_IMAGES장
   interiorImages: File[];
 }
 

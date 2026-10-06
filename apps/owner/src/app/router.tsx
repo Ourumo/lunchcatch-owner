@@ -28,6 +28,7 @@ import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
+import SignupImagesPage from '@owner/pages/SignupImagesPage';
 import SignupLocationPage from '@owner/pages/SignupLocationPage';
 import SignupPage from '@owner/pages/SignupPage';
 import SignupStorePage from '@owner/pages/SignupStorePage';
@@ -39,6 +40,7 @@ const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
   store: <SignupStorePage />,
   location: <SignupLocationPage />,
   hours: <SignupHoursPage />,
+  images: <SignupImagesPage />,
 };
 
 // 캠페인 등록 단계별 화면. 단계를 추가하면 여기에도 화면을 넣어야 타입 검사를 통과한다
