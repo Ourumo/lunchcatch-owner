@@ -194,12 +194,60 @@ export const toDailyBusinessHours = ({
       : { day, isClosed: true, openTime: null, closeTime: null },
   );
 
+export const MAX_MENUS = 3;
+export const MENU_NAME_MAX_LENGTH = 20;
+export const MENU_PRICE_MIN = 100;
+export const MENU_PRICE_MAX = 1_000_000;
+
+// 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격 모두 필수
 export interface MenuItemValues {
+  image: File;
+  name: string;
+  // 쉼표 없는 숫자
+  price: string;
+}
+
+// 바텀시트에서 입력 중인 대표 메뉴. 저장 전이라 비어 있을 수 있다
+export interface MenuDraft {
   image: File | null;
   name: string;
   price: string;
-  description: string;
 }
+
+export type MenuField = keyof MenuDraft;
+
+export const getMenuErrors = ({
+  image,
+  name,
+  price,
+}: MenuDraft): Record<MenuField, string | undefined> => {
+  const priceValue = Number(price);
+
+  return {
+    image: image ? undefined : '메뉴 사진을 등록해주세요',
+    name: !name.trim()
+      ? '메뉴명을 입력해주세요'
+      : name.trim().length > MENU_NAME_MAX_LENGTH
+        ? `메뉴명은 ${MENU_NAME_MAX_LENGTH}자 이내로 입력해주세요`
+        : undefined,
+    price: !price
+      ? '가격을 입력해주세요'
+      : priceValue < MENU_PRICE_MIN || priceValue > MENU_PRICE_MAX
+        ? `가격은 ${MENU_PRICE_MIN.toLocaleString()}원 이상 ${MENU_PRICE_MAX.toLocaleString()}원 이하로 입력해주세요`
+        : undefined,
+  };
+};
+
+// 검사를 통과하면 목록에 넣을 메뉴로, 아니면 null로 돌려준다
+export const toMenuItem = (draft: MenuDraft): MenuItemValues | null => {
+  const errors = getMenuErrors(draft);
+
+  if (!draft.image || Object.values(errors).some(Boolean)) {
+    return null;
+  }
+
+  return { image: draft.image, name: draft.name.trim(), price: draft.price };
+};
 
 export const MAX_INTERIOR_IMAGES = 3;
 
@@ -211,7 +259,7 @@ export interface ImagesStepValues {
 }
 
 export interface MenuStepValues {
-  // 대표 메뉴. 선택, 최대 3개
+  // 대표 메뉴. 선택, 최대 MAX_MENUS개
   menus: MenuItemValues[];
 }
 

@@ -1,5 +1,9 @@
-import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
+import { type ChangeEvent, useId, useState } from 'react';
 import { Camera, X } from 'lucide-react';
+
+import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
+
+export type ImageUploadSlotSize = 'sm' | 'lg';
 
 export interface ImageUploadSlotProps {
   // 빈 칸에 보이는 이름. 등록·변경·삭제 버튼의 이름으로도 쓴다
@@ -9,8 +13,9 @@ export interface ImageUploadSlotProps {
   onSelect: (files: File[]) => void;
   // 없으면 삭제 버튼을 보여주지 않는다
   onRemove?: () => void;
-  // 크기와 비율 (예: aspect-square)
-  className?: string;
+  // lg: 화면 폭을 채우는 16:9 (대표 이미지), sm: 3칸 그리드 한 칸 크기의 정사각형 (매장 이미지, 메뉴 사진).
+  // 폭은 감싸는 요소를 따른다
+  size?: ImageUploadSlotSize;
   disabled?: boolean;
   // 개수 제한처럼 칸 밖의 이유로 보여줄 안내. 파일 검사 오류보다 먼저 보여준다
   errorMessage?: string;
@@ -20,6 +25,32 @@ export interface ImageUploadSlotProps {
 // 요구사항: jpg, png만, 10MB 이하
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const sizeClassNames: Record<
+  ImageUploadSlotSize,
+  {
+    box: string;
+    iconCircle: string;
+    icon: string;
+    label: string;
+    removeButton: string;
+  }
+> = {
+  lg: {
+    box: 'aspect-video',
+    iconCircle: 'size-10',
+    icon: 'size-5',
+    label: 'text-body-sm-mobile',
+    removeButton: 'top-1.5 right-1.5 size-8',
+  },
+  sm: {
+    box: 'aspect-square',
+    iconCircle: 'size-8',
+    icon: 'size-4',
+    label: 'text-caption-mobile',
+    removeButton: 'top-1 right-1 size-7',
+  },
+};
 
 const getFileError = (file: File) => {
   if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -39,27 +70,15 @@ export const ImageUploadSlot = ({
   image,
   onSelect,
   onRemove,
-  className,
+  size = 'lg',
   disabled = false,
   errorMessage,
   multiple = false,
 }: ImageUploadSlotProps) => {
   const errorId = useId();
-  const previewRef = useRef<HTMLImageElement>(null);
   const [fileError, setFileError] = useState<string>();
   const visibleError = errorMessage ?? fileError;
-
-  // 미리보기 주소는 사진이 바뀌거나 칸이 사라질 때 해제한다
-  useEffect(() => {
-    if (!image || !previewRef.current) {
-      return;
-    }
-
-    const url = URL.createObjectURL(image);
-    previewRef.current.src = url;
-
-    return () => URL.revokeObjectURL(url);
-  }, [image]);
+  const sizeClassName = sizeClassNames[size];
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -89,7 +108,7 @@ export const ImageUploadSlot = ({
               ? 'border border-border-subtle bg-bg-surface'
               : 'border border-dashed border-brand-200 bg-surface-brand',
             visibleError ? 'border-status-danger-border' : '',
-            className,
+            sizeClassName.box,
           ]
             .filter(Boolean)
             .join(' ')}
@@ -105,13 +124,17 @@ export const ImageUploadSlot = ({
             type="file"
           />
           {image ? (
-            <img alt="" className="size-full object-cover" ref={previewRef} />
+            <FilePreviewImage className="size-full object-cover" file={image} />
           ) : (
             <span className="flex flex-col items-center gap-2 px-2 text-center">
-              <span className="flex size-10 items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary">
-                <Camera aria-hidden="true" className="size-5" />
+              <span
+                className={`flex items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary ${sizeClassName.iconCircle}`}
+              >
+                <Camera aria-hidden="true" className={sizeClassName.icon} />
               </span>
-              <span className="text-body-sm-mobile break-keep text-text-primary">
+              <span
+                className={`break-keep text-text-primary ${sizeClassName.label}`}
+              >
                 {label}
               </span>
             </span>
@@ -120,7 +143,7 @@ export const ImageUploadSlot = ({
         {image && onRemove && (
           <button
             aria-label={`${label} 삭제`}
-            className="absolute top-1.5 right-1.5 flex size-8 items-center justify-center rounded-full bg-bg-inverse/70 text-text-on-inverse hover:bg-bg-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed"
+            className={`absolute flex items-center justify-center rounded-full bg-bg-inverse/70 text-text-on-inverse hover:bg-bg-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed ${sizeClassName.removeButton}`}
             disabled={disabled}
             onClick={() => {
               setFileError(undefined);

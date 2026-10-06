@@ -94,7 +94,16 @@ export const signupSteps: SignupStep[] = [
         ? '대표 이미지를 등록했어요'
         : '대표 이미지를 등록해주세요',
   },
-  { id: 'menu', path: 'menu', title: '대표 메뉴 등록' },
+  {
+    id: 'menu',
+    path: 'menu',
+    title: '대표 메뉴 등록',
+    // 선택 단계라 다음 버튼 조건을 두지 않는다
+    progressHint: ({ menu }) =>
+      menu.menus.length > 0
+        ? `대표 메뉴 ${menu.menus.length}개를 등록했어요`
+        : '대표 메뉴는 나중에 등록해도 돼요',
+  },
 ];
 
 export const getSignupStepPath = (step: SignupStep) => `/signup/${step.path}`;
