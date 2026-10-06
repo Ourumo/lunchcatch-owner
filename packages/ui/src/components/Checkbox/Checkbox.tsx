@@ -1,7 +1,7 @@
 import { type InputHTMLAttributes, useId } from 'react';
 import { Check } from 'lucide-react';
 
-export type CheckboxSize = 'sm' | 'lg';
+export type CheckboxSize = 'sm' | 'md' | 'lg';
 export type CheckboxVariant = 'primary' | 'inverse';
 
 export interface CheckboxProps extends Omit<
@@ -9,7 +9,7 @@ export interface CheckboxProps extends Omit<
   'size'
 > {
   label: string;
-  // sm: 목록 안의 일반 항목, lg: 전체 동의처럼 화면에서 가장 중요한 선택
+  // sm: 웹의 일반 항목, md: 모바일의 일반 항목, lg: 모바일에서 전체 동의처럼 화면에서 가장 중요한 선택
   size?: CheckboxSize;
   // 체크 상태 색. primary: 브랜드 색, inverse: 반전 색(라이트 테마에서 검은색)
   variant?: CheckboxVariant;
@@ -22,6 +22,11 @@ const sizeClassNames: Record<
   sm: {
     label: 'gap-2 text-body-sm-web',
     box: 'size-4',
+    icon: 'size-4',
+  },
+  md: {
+    label: 'gap-2 text-body-mobile',
+    box: 'size-5',
     icon: 'size-4',
   },
   lg: {

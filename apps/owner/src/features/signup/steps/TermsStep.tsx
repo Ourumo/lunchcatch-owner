@@ -74,6 +74,7 @@ export const TermsStep = () => {
                       [item.id]: event.target.checked,
                     })
                   }
+                  size="md"
                   variant="inverse"
                 />
                 <button
