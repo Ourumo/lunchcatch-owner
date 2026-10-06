@@ -1,7 +1,9 @@
 import {
   getStoreRequiredChecks,
   hasAgreedRequiredTerms,
+  isHoursStepComplete,
   isStoreStepComplete,
+  isValidTimeRange,
   ownerTerms,
   type SignupFlowValues,
 } from '@owner/api/signupFlow';
@@ -37,6 +39,20 @@ const getStoreProgressHint = ({ store, business }: SignupFlowValues) => {
     : `필수 항목 ${checks.length}개 중 ${filledCount}개를 입력했어요`;
 };
 
+const getHoursProgressHint = ({ hours }: SignupFlowValues) => {
+  if (hours.openDays.length === 0) {
+    return '영업 요일을 하루 이상 골라주세요';
+  }
+
+  if (!hours.openTime || !hours.closeTime) {
+    return '영업 시작·종료 시간을 입력해주세요';
+  }
+
+  return isValidTimeRange(hours.openTime, hours.closeTime)
+    ? '영업시간을 모두 입력했어요'
+    : '종료 시간을 시작 시간보다 늦게 설정해주세요';
+};
+
 // 배열 순서대로 진행한다. 단계를 추가할 때는 이 배열, SignupFlowValues, 라우터의 단계 화면에 함께 추가한다
 export const signupSteps: SignupStep[] = [
   {
@@ -61,7 +77,13 @@ export const signupSteps: SignupStep[] = [
     progressHint: ({ location }) =>
       location.place ? '가게 위치를 선택했어요' : '가게 위치를 선택해주세요',
   },
-  { id: 'hours', path: 'hours', title: '영업시간' },
+  {
+    id: 'hours',
+    path: 'hours',
+    title: '영업시간 설정',
+    canProceed: ({ hours }) => isHoursStepComplete(hours),
+    progressHint: getHoursProgressHint,
+  },
   { id: 'menu', path: 'menu', title: '가게 이미지·대표 메뉴' },
 ];
 
