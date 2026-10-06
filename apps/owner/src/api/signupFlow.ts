@@ -201,11 +201,15 @@ export interface MenuItemValues {
   description: string;
 }
 
-export interface MenuStepValues {
+export interface ImagesStepValues {
+  // 가게 대표 이미지(로고). 필수
   logoImage: File | null;
-  // 최대 3개
+  // 매장 이미지. 선택, 최대 3장
   interiorImages: File[];
-  // 대표 메뉴 3개
+}
+
+export interface MenuStepValues {
+  // 대표 메뉴. 선택, 최대 3개
   menus: MenuItemValues[];
 }
 
@@ -216,6 +220,7 @@ export interface SignupFlowValues {
   // 별도 단계 없이 가게 기본 정보 화면에서 함께 입력받는다
   business: BusinessStepValues;
   hours: HoursStepValues;
+  images: ImagesStepValues;
   menu: MenuStepValues;
 }
 

@@ -7,8 +7,6 @@ import {
   type SignupFlowContextValue,
 } from './signupFlowContext';
 
-const REQUIRED_MENU_COUNT = 3;
-
 const createInitialValues = (): SignupFlowValues => ({
   terms: {
     service: false,
@@ -21,16 +19,8 @@ const createInitialValues = (): SignupFlowValues => ({
   location: { place: null },
   business: { registrationNumber: '' },
   hours: { openDays: [], openTime: '', closeTime: '' },
-  menu: {
-    logoImage: null,
-    interiorImages: [],
-    menus: Array.from({ length: REQUIRED_MENU_COUNT }, () => ({
-      image: null,
-      name: '',
-      price: '',
-      description: '',
-    })),
-  },
+  images: { logoImage: null, interiorImages: [] },
+  menu: { menus: [] },
 });
 
 // 회원가입 플로우의 모든 단계 입력값을 한곳에 모아, 단계를 오가도 값이 유지되게 한다
