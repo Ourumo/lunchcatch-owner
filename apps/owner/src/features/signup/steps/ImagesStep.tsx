@@ -37,7 +37,7 @@ export const ImagesStep = () => {
           대표 이미지
         </h3>
         <ImageUploadSlot
-          className="aspect-video"
+          size="lg"
           image={logoImage}
           label="대표 이미지"
           onRemove={() => updateStepValues('images', { logoImage: null })}
@@ -58,7 +58,7 @@ export const ImagesStep = () => {
         <div className="grid grid-cols-3 gap-2">
           {interiorImages.map((image, index) => (
             <ImageUploadSlot
-              className="aspect-square"
+              size="sm"
               image={image}
               // 순서만 의미가 있어 자리 번호로 구분한다
               key={index}
@@ -81,7 +81,7 @@ export const ImagesStep = () => {
           ))}
           {remainingCount > 0 && (
             <ImageUploadSlot
-              className="aspect-square"
+              size="sm"
               image={null}
               label="매장 이미지 추가"
               multiple

@@ -30,7 +30,6 @@ const meta = {
   title: 'Owner/ImageUploadSlot',
   component: ImageUploadSlot,
   args: {
-    className: 'aspect-[4/3]',
     image: null,
     label: '대표 이미지',
     onSelect: () => {},
@@ -57,6 +56,21 @@ export const WithImage: Story = {
   args: {
     image: sampleImage,
   },
+};
+
+// 매장 이미지처럼 3칸 그리드 한 칸 크기
+export const Small: Story = {
+  args: {
+    label: '매장 이미지 추가',
+    size: 'sm',
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 114 }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export const WithError: Story = {

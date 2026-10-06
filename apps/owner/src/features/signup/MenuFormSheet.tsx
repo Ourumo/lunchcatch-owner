@@ -66,10 +66,10 @@ export const MenuFormSheet = ({
     >
       {/* 키보드가 올라와도 저장 버튼까지 닿도록 내용 영역만 스크롤한다 */}
       <div className="flex max-h-[60dvh] flex-col gap-5 overflow-y-auto">
-        {/* 목록 카드의 썸네일처럼 작은 정사각형으로 받는다 */}
-        <div className="w-32">
+        {/* 매장 이미지 칸(3칸 그리드 한 칸)과 같은 폭으로 가운데에 둔다 */}
+        <div className="mx-auto w-[calc((100%-1rem)/3)]">
           <ImageUploadSlot
-            className="aspect-square"
+            size="sm"
             errorMessage={getVisibleError('image')}
             image={draft.image}
             label="메뉴 사진"
