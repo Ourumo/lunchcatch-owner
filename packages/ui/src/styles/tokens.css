@@ -137,6 +137,8 @@
   --semantic-action-secondary-hover: var(--primitive-secondary-600);
 
   --semantic-status-info-bg: var(--primitive-info-50);
+  --semantic-status-neutral-bg: var(--semantic-surface-subtle);
+  --semantic-status-neutral-fg: var(--semantic-text-primary);
   --semantic-status-info-fg: var(--primitive-info-500);
   --semantic-status-info-border: var(--primitive-info-500);
   --semantic-status-success-bg: var(--primitive-success-50);
@@ -186,17 +188,19 @@
   --semantic-action-secondary: var(--primitive-secondary-500);
   --semantic-action-secondary-hover: var(--primitive-secondary-400);
 
+  --semantic-status-neutral-bg: var(--primitive-neutral-500);
+  --semantic-status-neutral-fg: var(--primitive-neutral-100);
   --semantic-status-info-bg: var(--primitive-info-500);
-  --semantic-status-info-fg: var(--primitive-neutral-0);
+  --semantic-status-info-fg: var(--primitive-neutral-100);
   --semantic-status-info-border: var(--primitive-info-500);
   --semantic-status-success-bg: var(--primitive-success-500);
-  --semantic-status-success-fg: var(--primitive-neutral-0);
+  --semantic-status-success-fg: var(--primitive-neutral-100);
   --semantic-status-success-border: var(--primitive-success-500);
   --semantic-status-warning-bg: var(--primitive-warning-500);
-  --semantic-status-warning-fg: var(--primitive-neutral-0);
+  --semantic-status-warning-fg: var(--primitive-neutral-100);
   --semantic-status-warning-border: var(--primitive-warning-500);
   --semantic-status-danger-bg: var(--primitive-danger-500);
-  --semantic-status-danger-fg: var(--primitive-neutral-0);
+  --semantic-status-danger-fg: var(--primitive-neutral-100);
   --semantic-status-danger-border: var(--primitive-danger-500);
 
   --semantic-table-header-text: var(--primitive-neutral-100);
@@ -253,6 +257,8 @@
   --color-action-secondary: var(--semantic-action-secondary);
   --color-action-secondary-hover: var(--semantic-action-secondary-hover);
   --color-status-info-bg: var(--semantic-status-info-bg);
+  --color-status-neutral-bg: var(--semantic-status-neutral-bg);
+  --color-status-neutral-fg: var(--semantic-status-neutral-fg);
   --color-status-info-fg: var(--semantic-status-info-fg);
   --color-status-info-border: var(--semantic-status-info-border);
   --color-status-success-bg: var(--semantic-status-success-bg);
