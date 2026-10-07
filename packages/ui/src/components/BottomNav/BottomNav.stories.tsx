@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
-  ChartNoAxesColumn,
   Compass,
   House,
-  Menu,
-  Settings,
+  Store,
   Ticket,
   User,
   UtensilsCrossed,
@@ -20,12 +18,11 @@ const userItems: BottomNavItem[] = [
   { icon: <User />, label: '마이', value: 'my' },
 ];
 
+// 점주 앱(apps/owner TabLayout)과 같은 구성. 캠페인이 메인 기능이라 가운데에 둔다
 const ownerItems: BottomNavItem[] = [
   { icon: <House />, label: '홈', value: 'home' },
   { icon: <Ticket />, label: '캠페인', value: 'campaign' },
-  { icon: <ChartNoAxesColumn />, label: '통계', value: 'stats' },
-  { icon: <Settings />, label: '매장관리', value: 'store' },
-  { icon: <Menu />, label: '더보기', value: 'more' },
+  { icon: <Store />, label: '가게 관리', value: 'store' },
 ];
 
 const meta = {
