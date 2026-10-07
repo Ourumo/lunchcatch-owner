@@ -195,7 +195,7 @@ const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
   );
 };
 
-// 캠페인 관리 탭. 점주 본인 가게의 캠페인만 보여준다
+// 캠페인 탭. 점주 본인 가게의 캠페인만 보여준다
 export const CampaignList = () => {
   const { retry, state } = useCampaignList();
 
@@ -218,7 +218,7 @@ export const CampaignList = () => {
   return (
     <>
       <div className="sticky top-0 z-10">
-        <TopBar title="캠페인 관리" trailing={<NewCampaignLink />} />
+        <TopBar title="캠페인" trailing={<NewCampaignLink />} />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
     </>
