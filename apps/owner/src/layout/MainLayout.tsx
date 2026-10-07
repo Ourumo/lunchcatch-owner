@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router';
 
-// 로그인한 점주 화면의 틀. 홈, 통계 등 다른 탭 화면이 생기면 하단 탭바를 여기에 추가한다
+// 로그인한 점주의 하위 화면(캠페인 등록·상세 등) 틀. 하단 탭바가 있는 탭 첫 화면은 TabLayout을 쓴다
 const MainLayout = () => {
   return (
     <div className="min-h-dvh min-w-mobile-min">
