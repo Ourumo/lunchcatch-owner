@@ -1,1 +1,44 @@
 /* 앱에서 @repo/ui/styles.css로 불러오는 공통 스타일 */
+@import './tokens.css';
+
+@layer base {
+  * {
+    border-color: var(--color-border-subtle);
+  }
+
+  button,
+  [role='button'],
+  [role='tab'] {
+    user-select: none;
+  }
+
+  /* Tailwind v4부터 버튼 기본 커서가 화살표라, 누를 수 있는 버튼은 손가락, 막힌 버튼은 금지 표시로 맞춘다 */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+}
+
+/* 모바일 폭으로 가운데에 그리는 앱(사용자, 점주)은 PC처럼 넓은 화면에서 바깥을 한 톤 어둡게 칠해 앱 영역을 구분한다 */
+/* <html data-layout="mobile">을 단 앱에만 적용해, 화면 전체를 쓰는 관리자 앱은 그대로 둔다 */
+/* 모바일에서는 당겨서 튕길 때 보이는 배경이 앱과 같도록 그대로 둔다 (480px = --layout-mobile-max-width) */
+@media (width > 480px) {
+  :root[data-layout='mobile'] {
+    background: var(--color-surface-subtle);
+  }
+}

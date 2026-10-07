@@ -12,7 +12,7 @@ import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'storybook-static']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -36,8 +36,8 @@ export default defineConfig([
             ['\\.css$'],
             // react, 외부 패키지
             ['^react', '^@?\\w'],
-            // 절대경로 alias
-            ['^@/'],
+            // 앱별 경로 별칭
+            ['^@(admin|owner|user)/'],
             // 상대경로
             ['^\\.'],
           ],

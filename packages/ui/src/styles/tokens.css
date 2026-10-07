@@ -1,0 +1,405 @@
+/*
+ * LaunchCatch 디자인 토큰의 단일 원본입니다.
+ * 컴포넌트에서는 원시 토큰이 아닌 시맨틱 토큰 또는 Tailwind 유틸리티를 사용합니다.
+ */
+
+/* =========================================================
+   원시 토큰
+   ========================================================= */
+
+:root {
+  /* 브랜드 팔레트 */
+  --primitive-brand-100: #fff0e8;
+  --primitive-brand-200: #ffd8c4;
+  --primitive-brand-300: #ffb58f;
+  --primitive-brand-400: #ff8c4f;
+  --primitive-brand-500: #f56b20;
+  --primitive-brand-600: #d95616;
+  --primitive-brand-700: #b84312;
+  --primitive-brand-800: #8f330f;
+  --primitive-brand-900: #68250c;
+
+  --primitive-secondary-100: #e7f4f5;
+  --primitive-secondary-200: #c7e5e8;
+  --primitive-secondary-300: #9ed2d7;
+  --primitive-secondary-400: #75bdc5;
+  --primitive-secondary-500: #5caab3;
+  --primitive-secondary-600: #468e97;
+  --primitive-secondary-700: #39737a;
+  --primitive-secondary-800: #2e5960;
+  --primitive-secondary-900: #234348;
+
+  /* 중립 팔레트 */
+  --primitive-neutral-0: #fff;
+  --primitive-neutral-50: #faf8f3;
+  --primitive-neutral-100: #f1ede9;
+  --primitive-neutral-200: #e0d8d1;
+  --primitive-neutral-300: #b8b2aa;
+  --primitive-neutral-400: #8d8a84;
+  --primitive-neutral-500: #7a716a;
+  --primitive-neutral-900: #2f2a27;
+
+  /* 상태 팔레트 */
+  --primitive-info-50: #eef4f7;
+  --primitive-info-500: #1b77ac;
+  --primitive-success-50: #edf7f0;
+  --primitive-success-500: #4b8a63;
+  --primitive-warning-50: #fff5de;
+  --primitive-warning-500: #b97808;
+  --primitive-danger-50: #ffe8e4;
+  --primitive-danger-500: #b42318;
+
+  /* 폰트, 간격, 크기 */
+  --font-family-sans: 'Noto Sans KR', 'Noto Sans', sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --font-size-display-web: 32px;
+  --font-size-display-mobile: 36px;
+  --font-size-h1: 24px;
+  --font-size-h2-web: 18px;
+  --font-size-h2-mobile: 20px;
+  --font-size-h3-web: 16px;
+  --font-size-h3-mobile: 17px;
+  --font-size-body-web: 14px;
+  --font-size-body-mobile: 16px;
+  --font-size-body-sm-web: 13px;
+  --font-size-body-sm-mobile: 14px;
+  --font-size-caption-web: 12px;
+  --font-size-caption-mobile: 13px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+
+  --radius-value-sm: 4px;
+  --radius-value-md: 8px;
+  --radius-value-lg: 12px;
+  --radius-value-xl: 16px;
+  --radius-value-full: 999px;
+
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+
+  --grid-web-columns: 12;
+  --grid-web-gutter: 24px;
+  --grid-web-margin: 40px;
+  --grid-mobile-columns: 4;
+  --grid-mobile-gutter: 12px;
+  --grid-mobile-margin: 16px;
+
+  /* 모바일 화면 폭: 360~480px에서 화면 폭에 맞춘다 (디자인 기준 폭은 390px) */
+  --layout-mobile-max-width: 480px;
+  --layout-mobile-min-width: 360px;
+}
+
+/* =========================================================
+   시맨틱 토큰 - 라이트 모드
+   ========================================================= */
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --semantic-bg-page: var(--primitive-neutral-50);
+  --semantic-bg-surface: var(--primitive-neutral-0);
+  --semantic-surface-subtle: var(--primitive-neutral-100);
+
+  --semantic-text-primary: var(--primitive-neutral-900);
+  --semantic-text-secondary: var(--primitive-neutral-500);
+  --semantic-text-tertiary: var(--primitive-neutral-400);
+  --semantic-text-disabled: var(--primitive-neutral-300);
+  --semantic-text-inverse: var(--primitive-neutral-0);
+
+  --semantic-border-subtle: var(--primitive-neutral-200);
+
+  --semantic-action-primary: var(--primitive-brand-500);
+  --semantic-action-primary-hover: var(--primitive-brand-600);
+  --semantic-action-primary-disabled: var(--primitive-neutral-200);
+
+  --semantic-surface-brand: var(--primitive-brand-100);
+  --semantic-bg-brand: var(--primitive-brand-500);
+  --semantic-text-brand: var(--primitive-brand-600);
+  --semantic-bg-inverse: var(--primitive-neutral-900);
+  --semantic-text-on-inverse: var(--primitive-neutral-0);
+  --semantic-action-secondary: var(--primitive-secondary-500);
+  --semantic-action-secondary-hover: var(--primitive-secondary-600);
+
+  --semantic-status-info-bg: var(--primitive-info-50);
+  --semantic-status-neutral-bg: var(--semantic-surface-subtle);
+  --semantic-status-neutral-fg: var(--semantic-text-primary);
+  --semantic-status-info-fg: var(--primitive-info-500);
+  --semantic-status-info-border: var(--primitive-info-500);
+  --semantic-status-success-bg: var(--primitive-success-50);
+  --semantic-status-success-fg: var(--primitive-success-500);
+  --semantic-status-success-border: var(--primitive-success-500);
+  --semantic-status-warning-bg: var(--primitive-warning-50);
+  --semantic-status-warning-fg: var(--primitive-warning-500);
+  --semantic-status-warning-border: var(--primitive-warning-500);
+  --semantic-status-danger-bg: var(--primitive-danger-50);
+  --semantic-status-danger-fg: var(--primitive-danger-500);
+  --semantic-status-danger-border: var(--primitive-danger-500);
+
+  --semantic-table-header-text: var(--primitive-neutral-500);
+  --semantic-table-body-text: var(--primitive-neutral-900);
+  --semantic-table-border: var(--primitive-neutral-200);
+  --semantic-table-divider: var(--primitive-neutral-100);
+}
+
+/* =========================================================
+   시맨틱 토큰 - 다크 모드
+   ========================================================= */
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --semantic-bg-page: var(--primitive-neutral-900);
+  --semantic-bg-surface: var(--primitive-neutral-900);
+  --semantic-surface-subtle: var(--primitive-neutral-500);
+
+  --semantic-text-primary: var(--primitive-neutral-0);
+  --semantic-text-secondary: var(--primitive-neutral-100);
+  --semantic-text-tertiary: var(--primitive-neutral-200);
+  --semantic-text-disabled: var(--primitive-neutral-500);
+  --semantic-text-inverse: var(--primitive-neutral-0);
+
+  --semantic-border-subtle: var(--primitive-neutral-500);
+
+  --semantic-action-primary: var(--primitive-brand-500);
+  --semantic-action-primary-hover: var(--primitive-brand-400);
+  --semantic-action-primary-disabled: var(--primitive-neutral-500);
+
+  --semantic-surface-brand: var(--primitive-brand-900);
+  --semantic-bg-brand: var(--primitive-brand-500);
+  --semantic-text-brand: var(--primitive-brand-400);
+  --semantic-bg-inverse: var(--primitive-neutral-0);
+  --semantic-text-on-inverse: var(--primitive-neutral-900);
+  --semantic-action-secondary: var(--primitive-secondary-500);
+  --semantic-action-secondary-hover: var(--primitive-secondary-400);
+
+  --semantic-status-neutral-bg: var(--primitive-neutral-500);
+  --semantic-status-neutral-fg: var(--primitive-neutral-100);
+  --semantic-status-info-bg: var(--primitive-info-500);
+  --semantic-status-info-fg: var(--primitive-neutral-100);
+  --semantic-status-info-border: var(--primitive-info-500);
+  --semantic-status-success-bg: var(--primitive-success-500);
+  --semantic-status-success-fg: var(--primitive-neutral-100);
+  --semantic-status-success-border: var(--primitive-success-500);
+  --semantic-status-warning-bg: var(--primitive-warning-500);
+  --semantic-status-warning-fg: var(--primitive-neutral-100);
+  --semantic-status-warning-border: var(--primitive-warning-500);
+  --semantic-status-danger-bg: var(--primitive-danger-500);
+  --semantic-status-danger-fg: var(--primitive-neutral-100);
+  --semantic-status-danger-border: var(--primitive-danger-500);
+
+  --semantic-table-header-text: var(--primitive-neutral-100);
+  --semantic-table-body-text: var(--primitive-neutral-0);
+  --semantic-table-border: var(--primitive-neutral-500);
+  --semantic-table-divider: var(--primitive-neutral-500);
+}
+
+/* =========================================================
+   Tailwind 테마 연결
+   ========================================================= */
+
+/* 시맨틱 토큰을 Tailwind 유틸리티와 연결합니다. */
+@theme inline {
+  --font-sans: var(--font-family-sans);
+
+  --color-brand-100: var(--primitive-brand-100);
+  --color-brand-200: var(--primitive-brand-200);
+  --color-brand-300: var(--primitive-brand-300);
+  --color-brand-400: var(--primitive-brand-400);
+  --color-brand-500: var(--primitive-brand-500);
+  --color-brand-600: var(--primitive-brand-600);
+  --color-brand-700: var(--primitive-brand-700);
+  --color-brand-800: var(--primitive-brand-800);
+  --color-brand-900: var(--primitive-brand-900);
+
+  --color-secondary-100: var(--primitive-secondary-100);
+  --color-secondary-200: var(--primitive-secondary-200);
+  --color-secondary-300: var(--primitive-secondary-300);
+  --color-secondary-400: var(--primitive-secondary-400);
+  --color-secondary-500: var(--primitive-secondary-500);
+  --color-secondary-600: var(--primitive-secondary-600);
+  --color-secondary-700: var(--primitive-secondary-700);
+  --color-secondary-800: var(--primitive-secondary-800);
+  --color-secondary-900: var(--primitive-secondary-900);
+
+  --color-bg-page: var(--semantic-bg-page);
+  --color-bg-surface: var(--semantic-bg-surface);
+  --color-surface-subtle: var(--semantic-surface-subtle);
+  --color-text-primary: var(--semantic-text-primary);
+  --color-text-secondary: var(--semantic-text-secondary);
+  --color-text-tertiary: var(--semantic-text-tertiary);
+  --color-text-disabled: var(--semantic-text-disabled);
+  --color-text-inverse: var(--semantic-text-inverse);
+  --color-border-subtle: var(--semantic-border-subtle);
+  --color-action-primary: var(--semantic-action-primary);
+  --color-action-primary-hover: var(--semantic-action-primary-hover);
+  --color-action-primary-disabled: var(--semantic-action-primary-disabled);
+  --color-surface-brand: var(--semantic-surface-brand);
+  --color-bg-brand: var(--semantic-bg-brand);
+  --color-text-brand: var(--semantic-text-brand);
+  --color-bg-inverse: var(--semantic-bg-inverse);
+  --color-text-on-inverse: var(--semantic-text-on-inverse);
+  --color-action-secondary: var(--semantic-action-secondary);
+  --color-action-secondary-hover: var(--semantic-action-secondary-hover);
+  --color-status-info-bg: var(--semantic-status-info-bg);
+  --color-status-neutral-bg: var(--semantic-status-neutral-bg);
+  --color-status-neutral-fg: var(--semantic-status-neutral-fg);
+  --color-status-info-fg: var(--semantic-status-info-fg);
+  --color-status-info-border: var(--semantic-status-info-border);
+  --color-status-success-bg: var(--semantic-status-success-bg);
+  --color-status-success-fg: var(--semantic-status-success-fg);
+  --color-status-success-border: var(--semantic-status-success-border);
+  --color-status-warning-bg: var(--semantic-status-warning-bg);
+  --color-status-warning-fg: var(--semantic-status-warning-fg);
+  --color-status-warning-border: var(--semantic-status-warning-border);
+  --color-status-danger-bg: var(--semantic-status-danger-bg);
+  --color-status-danger-fg: var(--semantic-status-danger-fg);
+  --color-status-danger-border: var(--semantic-status-danger-border);
+  --color-table-header-text: var(--semantic-table-header-text);
+  --color-table-body-text: var(--semantic-table-body-text);
+  --color-table-border: var(--semantic-table-border);
+  --color-table-divider: var(--semantic-table-divider);
+
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-14: var(--space-14);
+  --spacing-16: var(--space-16);
+
+  --radius-sm: var(--radius-value-sm);
+  --radius-md: var(--radius-value-md);
+  --radius-lg: var(--radius-value-lg);
+  --radius-xl: var(--radius-value-xl);
+  --radius-full: var(--radius-value-full);
+
+  --container-mobile: var(--layout-mobile-max-width);
+  --container-mobile-min: var(--layout-mobile-min-width);
+  /* 모바일 화면 좌우 여백 (그리드 margin) */
+  --spacing-page: var(--grid-mobile-margin);
+
+  --text-display-web: var(--font-size-display-web);
+  --text-display-mobile: var(--font-size-display-mobile);
+  --text-h1: var(--font-size-h1);
+  --text-h2-web: var(--font-size-h2-web);
+  --text-h2-mobile: var(--font-size-h2-mobile);
+  --text-h3-web: var(--font-size-h3-web);
+  --text-h3-mobile: var(--font-size-h3-mobile);
+  --text-body-web: var(--font-size-body-web);
+  --text-body-mobile: var(--font-size-body-mobile);
+  --text-body-sm-web: var(--font-size-body-sm-web);
+  --text-body-sm-mobile: var(--font-size-body-sm-mobile);
+  --text-caption-web: var(--font-size-caption-web);
+  --text-caption-mobile: var(--font-size-caption-mobile);
+}
+
+/* =========================================================
+   전역 스타일과 유틸리티
+   ========================================================= */
+
+:root {
+  color: var(--semantic-text-primary);
+  background: var(--semantic-bg-page);
+  font-family: var(--font-family-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer utilities {
+  /* 역할 기반 타이포그래피와 공통 grid utility입니다. */
+  .type-display {
+    font-size: var(--font-size-display-web);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .type-h1 {
+    font-size: var(--font-size-h1);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .type-h2 {
+    font-size: var(--font-size-h2-web);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .type-h3 {
+    font-size: var(--font-size-h3-web);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .type-body {
+    font-size: var(--font-size-body-web);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .type-body-sm {
+    font-size: var(--font-size-body-sm-web);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .type-caption {
+    font-size: var(--font-size-caption-web);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-web-columns), minmax(0, 1fr));
+    column-gap: var(--grid-web-gutter);
+    margin-inline: var(--grid-web-margin);
+  }
+}
+
+@media (max-width: 767px) {
+  .type-display {
+    font-size: var(--font-size-display-mobile);
+  }
+
+  .type-h2 {
+    font-size: var(--font-size-h2-mobile);
+  }
+
+  .type-h3 {
+    font-size: var(--font-size-h3-mobile);
+  }
+
+  .type-body {
+    font-size: var(--font-size-body-mobile);
+  }
+
+  .type-body-sm {
+    font-size: var(--font-size-body-sm-mobile);
+  }
+
+  .type-caption {
+    font-size: var(--font-size-caption-mobile);
+  }
+
+  .layout-grid {
+    grid-template-columns: repeat(var(--grid-mobile-columns), minmax(0, 1fr));
+    column-gap: var(--grid-mobile-gutter);
+    margin-inline: var(--grid-mobile-margin);
+  }
+}

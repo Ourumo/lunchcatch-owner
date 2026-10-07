@@ -11,12 +11,16 @@
     "lint": "eslint .",
     "typecheck": "tsc -b"
   },
+  "dependencies": {
+    "lucide-react": "catalog:"
+  },
   "peerDependencies": {
     "react": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@storybook/react-vite": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "react": "catalog:",

@@ -10,6 +10,25 @@
       "outputs": ["dist/**"]
     },
     "lint": {},
-    "typecheck": {}
+    "typecheck": {},
+    "storybook": {
+      "cache": false,
+      "persistent": true
+    },
+    "build-storybook": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/ui/src/**",
+        "$TURBO_ROOT$/apps/*/src/components/**"
+      ],
+      "outputs": ["storybook-static/**"]
+    },
+    "test:storybook": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/ui/src/**",
+        "$TURBO_ROOT$/apps/*/src/components/**"
+      ]
+    }
   }
 }

@@ -1,0 +1,169 @@
+import { type ChangeEvent, useId, useState } from 'react';
+import { Camera, X } from 'lucide-react';
+
+import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
+
+export type ImageUploadSlotSize = 'sm' | 'lg';
+
+export interface ImageUploadSlotProps {
+  // 빈 칸에 보이는 이름. 등록·변경·삭제 버튼의 이름으로도 쓴다
+  label: string;
+  image: File | null;
+  // 허용하는 파일만 넘긴다. multiple이 아니면 1장만 넘긴다
+  onSelect: (files: File[]) => void;
+  // 없으면 삭제 버튼을 보여주지 않는다
+  onRemove?: () => void;
+  // lg: 화면 폭을 채우는 16:9 (대표 이미지), sm: 3칸 그리드 한 칸 크기의 정사각형 (매장 이미지, 메뉴 사진).
+  // 폭은 감싸는 요소를 따른다
+  size?: ImageUploadSlotSize;
+  disabled?: boolean;
+  // 개수 제한처럼 칸 밖의 이유로 보여줄 안내. 파일 검사 오류보다 먼저 보여준다
+  errorMessage?: string;
+  multiple?: boolean;
+}
+
+// 요구사항: jpg, png만, 10MB 이하
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const sizeClassNames: Record<
+  ImageUploadSlotSize,
+  {
+    box: string;
+    iconCircle: string;
+    icon: string;
+    label: string;
+    removeButton: string;
+  }
+> = {
+  lg: {
+    box: 'aspect-video',
+    iconCircle: 'size-10',
+    icon: 'size-5',
+    label: 'text-body-sm-mobile',
+    removeButton: 'top-1.5 right-1.5 size-8',
+  },
+  sm: {
+    box: 'aspect-square',
+    iconCircle: 'size-8',
+    icon: 'size-4',
+    label: 'text-caption-mobile',
+    removeButton: 'top-1 right-1 size-7',
+  },
+};
+
+const getFileError = (file: File) => {
+  if (!ACCEPTED_TYPES.includes(file.type)) {
+    return 'jpg, png 파일만 등록할 수 있어요';
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return '10MB 이하 사진만 등록할 수 있어요';
+  }
+
+  return undefined;
+};
+
+// 점주 화면용 사진 등록 칸. 빈 칸을 누르면 사진을 고르고, 사진이 있으면 미리보기를 보여주며 누르면 교체한다
+export const ImageUploadSlot = ({
+  label,
+  image,
+  onSelect,
+  onRemove,
+  size = 'lg',
+  disabled = false,
+  errorMessage,
+  multiple = false,
+}: ImageUploadSlotProps) => {
+  const errorId = useId();
+  const [fileError, setFileError] = useState<string>();
+  const visibleError = errorMessage ?? fileError;
+  const sizeClassName = sizeClassNames[size];
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    // 같은 사진을 다시 골라도 change가 일어나도록 비운다
+    event.target.value = '';
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const errors = files.map(getFileError);
+    const acceptedFiles = files.filter((_, index) => !errors[index]);
+    setFileError(errors.find(Boolean));
+
+    if (acceptedFiles.length > 0) {
+      onSelect(multiple ? acceptedFiles : acceptedFiles.slice(0, 1));
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="relative">
+        <label
+          className={[
+            'flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-action-primary has-disabled:cursor-not-allowed has-disabled:opacity-60',
+            image
+              ? 'border border-border-subtle bg-bg-surface'
+              : 'border border-dashed border-brand-200 bg-surface-brand',
+            visibleError ? 'border-status-danger-border' : '',
+            sizeClassName.box,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <input
+            accept={ACCEPTED_TYPES.join(',')}
+            aria-describedby={visibleError ? errorId : undefined}
+            aria-label={image ? `${label} 변경` : `${label} 등록`}
+            className="sr-only"
+            disabled={disabled}
+            multiple={multiple}
+            onChange={handleChange}
+            type="file"
+          />
+          {image ? (
+            <FilePreviewImage className="size-full object-cover" file={image} />
+          ) : (
+            <span className="flex flex-col items-center gap-2 px-2 text-center">
+              <span
+                className={`flex items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary ${sizeClassName.iconCircle}`}
+              >
+                <Camera aria-hidden="true" className={sizeClassName.icon} />
+              </span>
+              <span
+                className={`break-keep text-text-primary ${sizeClassName.label}`}
+              >
+                {label}
+              </span>
+            </span>
+          )}
+        </label>
+        {image && onRemove && (
+          <button
+            aria-label={`${label} 삭제`}
+            className={`absolute flex items-center justify-center rounded-full bg-bg-inverse/70 text-text-on-inverse hover:bg-bg-inverse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed ${sizeClassName.removeButton}`}
+            disabled={disabled}
+            onClick={() => {
+              setFileError(undefined);
+              onRemove();
+            }}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        )}
+      </div>
+      {visibleError && (
+        <p
+          className="ml-1 text-caption-mobile break-keep text-status-danger-fg"
+          id={errorId}
+          role="alert"
+        >
+          {visibleError}
+        </p>
+      )}
+    </div>
+  );
+};
