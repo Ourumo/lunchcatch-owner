@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
-import { ChevronRight, QrCode, Wallet } from 'lucide-react';
+import { ChevronRight, CircleAlert, QrCode, Wallet } from 'lucide-react';
 
 import { chargePoints, MIN_CHARGE_AMOUNT } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 
+import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
 import { useHome } from './useHome';
 
@@ -41,6 +42,26 @@ const HomeHeader = ({ balance, onBalanceClick, store }: HomeHeaderProps) => (
       <ChevronRight aria-hidden="true" className="size-4 text-text-tertiary" />
     </button>
   </header>
+);
+
+// 진행 중 캠페인이 잔액 부족으로 멈췄을 때만 보여준다. 충전하면 다시 시작되므로 바로 충전으로 잇는다
+const LowBalanceAlert = ({ onCharge }: { onCharge: () => void }) => (
+  <div className="flex items-center gap-2 rounded-xl bg-status-danger-bg py-2.5 pr-2.5 pl-3.5">
+    <CircleAlert
+      aria-hidden="true"
+      className="size-5 shrink-0 text-status-danger-fg"
+    />
+    <p className="min-w-0 flex-1 text-body-sm-mobile font-bold break-keep text-status-danger-fg">
+      포인트가 부족해 캠페인이 멈췄어요
+    </p>
+    <button
+      className="flex h-9 shrink-0 items-center rounded-full bg-status-danger-border px-3.5 text-body-sm-mobile font-bold text-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+      onClick={onCharge}
+      type="button"
+    >
+      충전
+    </button>
+  </div>
 );
 
 // 점심에 가장 자주 쓰는 기능이라 홈의 주 버튼으로 크게 둔다
@@ -106,13 +127,19 @@ export const HomeDashboard = () => {
       return <HomeError onRetry={retry} />;
     }
 
+    const current = getCurrentCampaign(state.campaigns);
+    const isPausedByNoPoints =
+      current?.status === 'PAUSED' && current.pausedReason === 'NO_POINTS';
+    const openCharge = () => setIsChargeOpen(true);
+
     return (
       <div className="flex flex-col gap-5 px-page py-5">
         <HomeHeader
           balance={state.balance}
-          onBalanceClick={() => setIsChargeOpen(true)}
+          onBalanceClick={openCharge}
           store={state.store}
         />
+        {isPausedByNoPoints && <LowBalanceAlert onCharge={openCharge} />}
         <QrScanLink />
         <HomeCampaignSection
           campaigns={state.campaigns}
