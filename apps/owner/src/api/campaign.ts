@@ -134,6 +134,18 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
+// 준비 중(작성 중 + 시작 대기) 캠페인은 가게당 1건만 둔다.
+// 새 캠페인이 진행 중이 되면 기존 진행 중 캠페인은 종료되고(docs/requirements-common.md "캠페인 상태 정의"),
+// 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
+// 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
+export const MAX_UPCOMING_CAMPAIGNS = 1;
+
+// 준비 중 캠페인 제한으로 새 캠페인을 만들지 못했을 때의 실패 구분 값. 다시 시도해도 같은 결과라 화면이 다르게 안내한다
+export const UPCOMING_LIMIT_ERROR = 'UPCOMING_LIMIT';
+
+export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
+  status === 'DRAFT' || status === 'SCHEDULED';
+
 // 하루 예산 추천과 예상 노출 범위 계산에 필요한 값. 인원은 전날 00:00 집계 값이다.
 // 노출 단가와 최소 하루 예산은 플랫폼 설정값(getPlatformSettings)에서 읽는다
 export interface BudgetRecommendation {
@@ -269,6 +281,10 @@ const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
+const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
+const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 있습니다.';
+const UPCOMING_LIMIT_MESSAGE =
+  '다음 캠페인은 1개만 준비할 수 있습니다. 작성 중이거나 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -312,9 +328,20 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   return { ok: true, data: structuredClone(campaign) };
 };
 
-// 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다
+// 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
+// 준비 중 캠페인이 이미 MAX_UPCOMING_CAMPAIGNS건이면 만들지 않는다
 export const createCampaignDraft = async (): Promise<ApiResult<Campaign>> => {
   await mockDelay();
+
+  if (
+    mockCampaigns.filter(isUpcomingCampaign).length >= MAX_UPCOMING_CAMPAIGNS
+  ) {
+    return {
+      ok: false,
+      code: UPCOMING_LIMIT_ERROR,
+      message: UPCOMING_LIMIT_MESSAGE,
+    };
+  }
 
   const campaign: Campaign = {
     ...createInitialCampaignValues(),
@@ -449,6 +476,51 @@ export const requestCampaignActivation = async (
     ok: true,
     data: { result: 'PASS', campaign: structuredClone(campaign) },
   };
+};
+
+// 작성 중(DRAFT) 캠페인 삭제. 다음 캠페인 자리를 비워 새 캠페인을 만들 수 있게 한다.
+// 명세에 없는 기능이라 API 추가 요청이 필요하다
+export const deleteCampaignDraft = async (
+  id: string,
+): Promise<ApiResult<null>> => {
+  await mockDelay();
+
+  const index = mockCampaigns.findIndex((campaign) => campaign.id === id);
+
+  if (index === -1) {
+    return { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
+  if (mockCampaigns[index].status !== 'DRAFT') {
+    return { ok: false, message: NOT_DELETABLE_MESSAGE };
+  }
+
+  mockCampaigns.splice(index, 1);
+
+  return { ok: true, data: null };
+};
+
+// 시작 대기(SCHEDULED) 취소. 작성 중으로 되돌리고 입력값은 그대로 둔다
+// (docs/requirements-common.md "캠페인 상태 정의"의 SCHEDULED 점주 액션 "취소(DRAFT로)").
+// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
+export const cancelScheduledCampaign = async (
+  id: string,
+): Promise<ApiResult<Campaign>> => {
+  await mockDelay();
+
+  const campaign = findCampaign(id);
+
+  if (!campaign) {
+    return { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
+  if (campaign.status !== 'SCHEDULED') {
+    return { ok: false, message: NOT_CANCELABLE_MESSAGE };
+  }
+
+  campaign.status = 'DRAFT';
+
+  return { ok: true, data: structuredClone(campaign) };
 };
 
 // 저장된 노출 대상(3단계)을 기준으로 계산한다. 노출 대상을 바꿨다면 먼저 저장한 뒤 다시 불러온다

@@ -42,8 +42,113 @@ const createdDaysAgo = (days: number) => {
 
 const [cheeseKatsu, rosuKatsu, soba] = mockStore.menus;
 
+// 다음 캠페인(준비 중 1건)으로 목록에 넣을 캠페인. 바꾸면 캠페인 탭과 홈에서 상태별 화면을 확인할 수 있다
+type MockNextCampaign = 'SCHEDULED' | 'REVIEW_FAILED' | 'DRAFT' | 'NONE';
+
+const MOCK_NEXT_CAMPAIGN: MockNextCampaign = 'SCHEDULED';
+
+// 준비 중 캠페인은 가게당 1건이라(MAX_UPCOMING_CAMPAIGNS) 상태마다 하나씩 두고 그중 하나만 목록에 넣는다
+const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
+  SCHEDULED: {
+    id: 'campaign-scheduled',
+    status: 'SCHEDULED',
+    pausedReason: null,
+    createdAt: createdDaysAgo(1),
+    reviewFailReasons: [],
+    coupon: {
+      discountTarget: 'MENU',
+      menuId: cheeseKatsu.id,
+      discountType: 'AMOUNT',
+      discountValue: 3000,
+      issueLimit: 30,
+      usableFrom: '11:30',
+      usableUntil: '14:00',
+    },
+    poster: {
+      posterId: 'poster-scheduled',
+      templateId: 'template-retro-pop',
+      slots: {
+        eventName: '치즈가 쭉 늘어나는 점심',
+        discountText: `${cheeseKatsu.name} 3,000원 할인`,
+        period: '11:30 ~ 14:00',
+        storeName: mockStore.name,
+        imageUrl: cheeseKatsu.imageUrl,
+      },
+    },
+    target: { radius: 500, gender: 'ALL', ageGroups: [] },
+    budget: {
+      dailyBudget: 8000,
+      startDate: daysFromToday(5),
+      endDate: daysFromToday(11),
+    },
+    performance: null,
+  },
+  REVIEW_FAILED: {
+    id: 'campaign-review-failed',
+    status: 'DRAFT',
+    pausedReason: null,
+    createdAt: createdDaysAgo(1),
+    reviewFailReasons: [
+      '포스터 문구에 금지 표현 "최고"가 들어 있어요.',
+      '이미지 속 글자가 차지하는 비율이 기준보다 높아요.',
+    ],
+    coupon: {
+      discountTarget: 'MENU',
+      menuId: soba.id,
+      discountType: 'PERCENT',
+      discountValue: 15,
+      issueLimit: 40,
+      usableFrom: '12:00',
+      usableUntil: '14:30',
+    },
+    poster: {
+      posterId: 'poster-review-failed',
+      templateId: 'template-classic-wood',
+      slots: {
+        eventName: '여름 최고의 한 그릇',
+        discountText: `${soba.name} 15% 할인`,
+        period: '12:00 ~ 14:30',
+        storeName: mockStore.name,
+        imageUrl: soba.imageUrl,
+      },
+    },
+    target: { radius: 2000, gender: 'FEMALE', ageGroups: ['TWENTIES'] },
+    budget: {
+      dailyBudget: 6000,
+      startDate: daysFromToday(2),
+      endDate: daysFromToday(6),
+    },
+    performance: null,
+  },
+  DRAFT: {
+    // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다
+    id: 'campaign-draft',
+    status: 'DRAFT',
+    pausedReason: null,
+    createdAt: createdDaysAgo(0),
+    reviewFailReasons: [],
+    coupon: {
+      discountTarget: 'ALL',
+      menuId: null,
+      discountType: 'PERCENT',
+      discountValue: 10,
+      issueLimit: null,
+      usableFrom: '11:30',
+      usableUntil: '15:00',
+    },
+    poster: null,
+    target: { radius: 1000, gender: 'ALL', ageGroups: [] },
+    budget: { dailyBudget: null, startDate: '', endDate: '' },
+    performance: null,
+  },
+};
+
+const getMockNextCampaigns = (kind: MockNextCampaign) =>
+  kind === 'NONE' ? [] : [mockNextCampaigns[kind]];
+
 // 점주 계정 하나의 캠페인 목록이라고 가정한다. 가게당 ACTIVE(또는 PAUSED) 캠페인은 1건만 있을 수 있다.
 // 중단 상태 화면을 확인하려면 첫 캠페인의 status를 PAUSED로, pausedReason을 OWNER, NO_POINTS, ADMIN 중 하나로 바꾼다
+// 다음 캠페인(시작 대기, 검수 실패, 작성 중, 없음)은 위의 MOCK_NEXT_CAMPAIGN으로 고른다
 export const mockCampaigns: Campaign[] = [
   {
     id: 'campaign-active',
@@ -96,98 +201,7 @@ export const mockCampaigns: Campaign[] = [
       },
     },
   },
-  {
-    id: 'campaign-scheduled',
-    status: 'SCHEDULED',
-    pausedReason: null,
-    createdAt: createdDaysAgo(1),
-    reviewFailReasons: [],
-    coupon: {
-      discountTarget: 'MENU',
-      menuId: cheeseKatsu.id,
-      discountType: 'AMOUNT',
-      discountValue: 3000,
-      issueLimit: 30,
-      usableFrom: '11:30',
-      usableUntil: '14:00',
-    },
-    poster: {
-      posterId: 'poster-scheduled',
-      templateId: 'template-retro-pop',
-      slots: {
-        eventName: '치즈가 쭉 늘어나는 점심',
-        discountText: `${cheeseKatsu.name} 3,000원 할인`,
-        period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
-        imageUrl: cheeseKatsu.imageUrl,
-      },
-    },
-    target: { radius: 500, gender: 'ALL', ageGroups: [] },
-    budget: {
-      dailyBudget: 8000,
-      startDate: daysFromToday(5),
-      endDate: daysFromToday(11),
-    },
-    performance: null,
-  },
-  {
-    id: 'campaign-review-failed',
-    status: 'DRAFT',
-    pausedReason: null,
-    createdAt: createdDaysAgo(1),
-    reviewFailReasons: [
-      '포스터 문구에 금지 표현 "최고"가 들어 있어요.',
-      '이미지 속 글자가 차지하는 비율이 기준보다 높아요.',
-    ],
-    coupon: {
-      discountTarget: 'MENU',
-      menuId: soba.id,
-      discountType: 'PERCENT',
-      discountValue: 15,
-      issueLimit: 40,
-      usableFrom: '12:00',
-      usableUntil: '14:30',
-    },
-    poster: {
-      posterId: 'poster-review-failed',
-      templateId: 'template-classic-wood',
-      slots: {
-        eventName: '여름 최고의 한 그릇',
-        discountText: `${soba.name} 15% 할인`,
-        period: '12:00 ~ 14:30',
-        storeName: mockStore.name,
-        imageUrl: soba.imageUrl,
-      },
-    },
-    target: { radius: 2000, gender: 'FEMALE', ageGroups: ['TWENTIES'] },
-    budget: {
-      dailyBudget: 6000,
-      startDate: daysFromToday(2),
-      endDate: daysFromToday(6),
-    },
-    performance: null,
-  },
-  {
-    // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다
-    id: 'campaign-draft',
-    status: 'DRAFT',
-    pausedReason: null,
-    createdAt: createdDaysAgo(0),
-    reviewFailReasons: [],
-    coupon: {
-      discountTarget: 'ALL',
-      menuId: null,
-      discountType: 'PERCENT',
-      discountValue: 10,
-      issueLimit: null,
-      usableFrom: '11:30',
-      usableUntil: '15:00',
-    },
-    poster: null,
-    target: { radius: 1000, gender: 'ALL', ageGroups: [] },
-    budget: { dailyBudget: null, startDate: '', endDate: '' },
-    performance: null,
-  },
+  ...getMockNextCampaigns(MOCK_NEXT_CAMPAIGN),
   {
     id: 'campaign-ended-1',
     status: 'ENDED',
