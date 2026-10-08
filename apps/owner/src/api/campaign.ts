@@ -140,6 +140,9 @@ export interface Campaign extends CampaignValues {
 // 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
 export const MAX_UPCOMING_CAMPAIGNS = 1;
 
+// 준비 중 캠페인 제한으로 새 캠페인을 만들지 못했을 때의 실패 구분 값. 다시 시도해도 같은 결과라 화면이 다르게 안내한다
+export const UPCOMING_LIMIT_ERROR = 'UPCOMING_LIMIT';
+
 export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'DRAFT' || status === 'SCHEDULED';
 
@@ -333,7 +336,11 @@ export const createCampaignDraft = async (): Promise<ApiResult<Campaign>> => {
   if (
     mockCampaigns.filter(isUpcomingCampaign).length >= MAX_UPCOMING_CAMPAIGNS
   ) {
-    return { ok: false, message: UPCOMING_LIMIT_MESSAGE };
+    return {
+      ok: false,
+      code: UPCOMING_LIMIT_ERROR,
+      message: UPCOMING_LIMIT_MESSAGE,
+    };
   }
 
   const campaign: Campaign = {
