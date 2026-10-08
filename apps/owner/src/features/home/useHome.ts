@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 
+import { type Campaign, getCampaigns } from '@owner/api/campaign';
 import { getPointBalance } from '@owner/api/points';
 import { getMyStore, type MyStore } from '@owner/api/store';
 
 type HomeState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'success'; store: MyStore; balance: number };
+  | {
+      status: 'success';
+      store: MyStore;
+      balance: number;
+      campaigns: Campaign[];
+    };
 
-// 홈 대시보드에 필요한 가게 정보와 포인트 잔액을 함께 불러온다
+// 홈 대시보드에 필요한 가게 정보, 포인트 잔액, 캠페인 목록을 함께 불러온다
 export const useHome = () => {
   const [state, setState] = useState<HomeState>({ status: 'loading' });
   // 값이 바뀌면 다시 불러온다
@@ -17,13 +23,13 @@ export const useHome = () => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getMyStore(), getPointBalance()]).then(
-      ([storeResult, balanceResult]) => {
+    Promise.all([getMyStore(), getPointBalance(), getCampaigns()]).then(
+      ([storeResult, balanceResult, campaignsResult]) => {
         if (ignore) {
           return;
         }
 
-        if (!storeResult.ok || !balanceResult.ok) {
+        if (!storeResult.ok || !balanceResult.ok || !campaignsResult.ok) {
           setState({ status: 'error' });
           return;
         }
@@ -32,6 +38,7 @@ export const useHome = () => {
           status: 'success',
           store: storeResult.data,
           balance: balanceResult.data.balance,
+          campaigns: campaignsResult.data,
         });
       },
     );

@@ -8,6 +8,7 @@ import type { MyStore } from '@owner/api/store';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 
+import { HomeCampaignSection } from './HomeCampaignSection';
 import { useHome } from './useHome';
 
 const QR_SCAN_PATH = '/qr-scan';
@@ -113,6 +114,10 @@ export const HomeDashboard = () => {
           store={state.store}
         />
         <QrScanLink />
+        <HomeCampaignSection
+          campaigns={state.campaigns}
+          menus={state.store.menus}
+        />
 
         {isChargeOpen && (
           <PointChargeSheet
