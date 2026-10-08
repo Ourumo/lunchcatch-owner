@@ -3,7 +3,11 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { ChevronRight, CircleAlert } from 'lucide-react';
 
-import { type Campaign, deleteCampaignDraft } from '@owner/api/campaign';
+import {
+  type Campaign,
+  cancelScheduledCampaign,
+  deleteCampaignDraft,
+} from '@owner/api/campaign';
 import {
   formatCreatedDate,
   formatPeriod,
@@ -12,7 +16,10 @@ import {
 } from '@owner/components/campaignFormat';
 import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 
-import { CampaignActionSheet } from './CampaignActionSheet';
+import {
+  type CampaignActionResult,
+  CampaignActionSheet,
+} from './CampaignActionSheet';
 
 export interface UpcomingCampaignCardProps {
   campaign: Campaign;
@@ -46,10 +53,12 @@ export const UpcomingCampaignCard = ({
 }: UpcomingCampaignCardProps) => {
   const { budget, id, reviewFailReasons, status } = campaign;
   const isReviewFailed = status === 'DRAFT' && reviewFailReasons.length > 0;
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [openSheet, setOpenSheet] = useState<'delete' | 'cancel' | null>(null);
+  const closeSheet = () => setOpenSheet(null);
 
-  const handleDelete = async () => {
-    const result = await deleteCampaignDraft(id);
+  // 처리가 끝나면 목록을 다시 불러와 바뀐 상태(빈 칸, 작성 중)를 보여준다
+  const runAction = async (action: () => Promise<CampaignActionResult>) => {
+    const result = await action();
 
     if (result.ok) {
       onChanged();
@@ -95,7 +104,7 @@ export const UpcomingCampaignCard = ({
         <div className="flex gap-2 border-t border-border-subtle p-3">
           <Button
             className="h-11 flex-1"
-            onClick={() => setIsDeleteOpen(true)}
+            onClick={() => setOpenSheet('delete')}
             variant="neutral"
           >
             삭제
@@ -107,7 +116,19 @@ export const UpcomingCampaignCard = ({
         </div>
       )}
 
-      {isDeleteOpen && (
+      {status === 'SCHEDULED' && (
+        <div className="border-t border-border-subtle p-3">
+          <Button
+            className="h-11 w-full"
+            onClick={() => setOpenSheet('cancel')}
+            variant="neutral"
+          >
+            시작 대기 취소
+          </Button>
+        </div>
+      )}
+
+      {openSheet === 'delete' && (
         <CampaignActionSheet
           confirmLabel="삭제"
           description={
@@ -118,9 +139,20 @@ export const UpcomingCampaignCard = ({
             </>
           }
           isDestructive
-          onClose={() => setIsDeleteOpen(false)}
-          onConfirm={handleDelete}
+          onClose={closeSheet}
+          onConfirm={() => runAction(() => deleteCampaignDraft(id))}
           title="작성 중인 캠페인을 삭제할까요?"
+        />
+      )}
+
+      {/* 다시 활성화를 요청하면 되돌릴 수 있어 위험색 대신 기본 버튼으로 둔다 */}
+      {openSheet === 'cancel' && (
+        <CampaignActionSheet
+          confirmLabel="시작 대기 취소"
+          description="작성 중으로 돌아가요. 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 요청해야 시작일부터 노출돼요."
+          onClose={closeSheet}
+          onConfirm={() => runAction(() => cancelScheduledCampaign(id))}
+          title="시작 대기를 취소할까요?"
         />
       )}
     </div>
