@@ -21,16 +21,20 @@ const chargeFailure = async (): Promise<PointChargeResult> => {
   return { ok: false, message: '결제가 취소되었습니다.' };
 };
 
-// 결제에 성공하면 시트가 닫히고 부른 쪽 잔액이 바뀌도록 상태를 붙여 보여준다
+// 결제에 성공하면 시트가 닫히고 부른 쪽 잔액과 부족분이 바뀌도록 상태를 붙여 보여준다
 const ChargeSheetExample = (props: PointChargeSheetProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [balance, setBalance] = useState(props.balance);
+  const [shortage, setShortage] = useState(props.shortage);
 
   const handleCharge = async (amount: number) => {
     const result = await props.onCharge(amount);
 
-    if (result.ok && balance !== undefined) {
-      setBalance(balance + amount);
+    if (result.ok) {
+      setBalance((prev) => (prev === undefined ? prev : prev + amount));
+      setShortage((prev) =>
+        prev === undefined ? prev : Math.max(0, prev - amount),
+      );
     }
 
     return result;
@@ -48,6 +52,7 @@ const ChargeSheetExample = (props: PointChargeSheetProps) => {
           balance={balance}
           onCharge={handleCharge}
           onClose={() => setIsOpen(false)}
+          shortage={shortage}
         />
       )}
     </div>
@@ -73,6 +78,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+// 캠페인 등록 중 포인트가 부족할 때. 부족분 11,500P를 1,000원 단위로 올려 첫 선택지로 미리 선택한다
+export const WithShortage: Story = {
+  args: {
+    shortage: 11500,
+  },
+};
 
 // 잔액을 넘겨받지 못하면 현재 잔액과 충전 후 잔액을 숨긴다
 export const WithoutBalance: Story = {

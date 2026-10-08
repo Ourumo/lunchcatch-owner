@@ -7,18 +7,54 @@ export type PointChargeResult = { ok: true } | { ok: false; message?: string };
 export interface PointChargeSheetProps {
   // 충전 전 잔액. 없으면 현재 잔액과 충전 후 잔액을 숨긴다
   balance?: number;
-  // 최소 충전 금액(원). 안내 문구에 쓴다
+  // 최소 충전 금액(원). 안내 문구와 부족분 선택지 금액에 쓴다
   minChargeAmount: number;
+  // 부족한 포인트. 넘겨받으면 부족분을 첫 선택지로 두고 미리 선택한다 (캠페인 등록)
+  shortage?: number;
   // 결제 함수. 성공하면 시트를 닫고, 실패하면 시트 안에 오류 문구를 보여준다
   onCharge: (amount: number) => Promise<PointChargeResult>;
   onClose: () => void;
 }
 
-const CHARGE_AMOUNT_OPTIONS = [10000, 30000, 50000, 100000];
+interface ChargeOption {
+  amount: number;
+  isShortage: boolean;
+}
+
+const CHARGE_AMOUNTS = [10000, 30000, 50000, 100000];
+
+// 부족분은 1,000원 단위로 올림한다
+const SHORTAGE_UNIT = 1000;
 
 const DEFAULT_ERROR_MESSAGE = '결제하지 못했어요. 다시 시도해 주세요.';
 
 const formatNumber = (value: number) => value.toLocaleString('ko-KR');
+
+// 부족분이 있으면 맨 앞에 둔다. 최소 충전 금액보다 작으면 최소 금액으로 맞추고,
+// 기본 선택지와 금액이 같으면 같은 금액이 두 번 보이지 않도록 기본 선택지를 뺀다
+const getChargeOptions = (
+  minChargeAmount: number,
+  shortage?: number,
+): ChargeOption[] => {
+  const presets = CHARGE_AMOUNTS.map((amount) => ({
+    amount,
+    isShortage: false,
+  }));
+
+  if (!shortage || shortage <= 0) {
+    return presets;
+  }
+
+  const shortageAmount = Math.max(
+    minChargeAmount,
+    Math.ceil(shortage / SHORTAGE_UNIT) * SHORTAGE_UNIT,
+  );
+
+  return [
+    { amount: shortageAmount, isShortage: true },
+    ...presets.filter((option) => option.amount !== shortageAmount),
+  ];
+};
 
 // 포인트 충전 바텀시트. 홈, 가게 관리, 캠페인 등록에서 함께 쓴다.
 // 실제 결제는 결제대행사 화면을 거칠 수 있어 시트는 금액 선택까지 맡고 결제는 넘겨받은 함수에 맡긴다.
@@ -28,8 +64,10 @@ export const PointChargeSheet = ({
   minChargeAmount,
   onCharge,
   onClose,
+  shortage,
 }: PointChargeSheetProps) => {
-  const [amount, setAmount] = useState(CHARGE_AMOUNT_OPTIONS[0]);
+  const options = getChargeOptions(minChargeAmount, shortage);
+  const [amount, setAmount] = useState(options[0].amount);
   const [isCharging, setIsCharging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -63,21 +101,23 @@ export const PointChargeSheet = ({
     >
       <fieldset>
         <legend className="sr-only">충전 금액</legend>
-        {/* 360px 폭에서도 금액이 잘리지 않도록 두 줄로 나눈다 */}
+        {/* 360px 폭에서도 금액이 잘리지 않도록 두 줄로 나누고, 부족분은 한 줄을 다 쓴다 */}
         <div className="grid grid-cols-2 gap-2">
-          {CHARGE_AMOUNT_OPTIONS.map((option) => (
+          {options.map((option) => (
             <ChoiceChip
-              checked={amount === option}
+              checked={amount === option.amount}
+              className={option.isShortage ? 'col-span-2' : undefined}
               disabled={isCharging}
-              key={option}
+              key={option.amount}
               name="point-charge-amount"
               onChange={() => {
-                setAmount(option);
+                setAmount(option.amount);
                 setErrorMessage(undefined);
               }}
-              value={option}
+              value={option.amount}
             >
-              {formatNumber(option)}P
+              {option.isShortage && '부족분 '}
+              {formatNumber(option.amount)}P
             </ChoiceChip>
           ))}
         </div>
