@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ko-KR
+tone_instructions: '합니다체로 간결하게 작성해줘. 문제마다 왜 문제인지 한 문장으로 설명하고 수정 방향을 제시해줘. 칭찬, 이모지, 인사말은 쓰지 마.'
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - develop
+    ignore_title_keywords:
+      - 'release:'
+  path_filters:
+    - '!pnpm-lock.yaml'
+  path_instructions:
+    - path: '**/*.{ts,tsx}'
+      instructions: |
+        ESLint, Prettier로 잡히는 포맷팅·스타일과 `../` import는 지적하지 말고,
+        로직 오류, 버그 가능성, 보안 문제 위주로 리뷰해줘.
+    - path: 'apps/*/src/**'
+      instructions: |
+        docs/folder-structure.md의 의존 방향(app → pages → features → components)을 지키는지 봐줘.
+        features끼리, 앱끼리 import하지 않아야 해.
+    - path: 'packages/utils/**'
+      instructions: 'React와 DOM에 의존하지 않는 순수 함수만 둬야 해.'
+    - path: '**/*.stories.tsx'
+      instructions: |
+        스토리는 packages/ui와 각 앱의 components에만 둬. pages, features에 있으면 지적해줘.
+        스토리 제목은 공통 컴포넌트는 Shared/..., 앱 컴포넌트는 Admin/...처럼 위치에 맞게 시작해야 해.
+    - path: 'apps/*/src/pages/**'
+      instructions: 'pages는 직접 로직을 갖지 않고 layout과 features를 조합만 해. 상태나 비즈니스 로직이 있으면 features로 옮기라고 제안해줘.'
+  tools:
+    biome:
+      enabled: false
+    gitleaks:
+      enabled: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - 'AGENTS.md'
+      - 'docs/conventions.md'
+      - 'docs/folder-structure.md'
+
+chat:
+  auto_reply: true
