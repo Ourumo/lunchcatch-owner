@@ -12,8 +12,7 @@ const LoginPage = () => {
       return;
     }
 
-    // 대시보드(홈) 화면이 생기면 그쪽으로 바꾼다
-    navigate('/campaigns', { replace: true });
+    navigate('/home', { replace: true });
   };
 
   return (
