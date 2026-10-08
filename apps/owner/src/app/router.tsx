@@ -27,6 +27,8 @@ import CampaignNewPage from '@owner/pages/CampaignNewPage';
 import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
 import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
+import ComingSoonPage from '@owner/pages/ComingSoonPage';
+import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
@@ -83,10 +85,10 @@ export const router = createBrowserRouter([
   },
   { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
   {
-    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면. 홈과 가게 관리는 화면을 만들기 전까지 준비 중으로 둔다
+    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면. 가게 관리는 화면을 만들기 전까지 준비 중으로 둔다
     element: <TabLayout />,
     children: [
-      { path: '/home', element: <ComingSoon title="홈" /> },
+      { path: '/home', element: <HomePage /> },
       { path: '/campaigns', element: <CampaignListPage /> },
       { path: '/store', element: <ComingSoon title="가게 관리" /> },
     ],
@@ -97,6 +99,15 @@ export const router = createBrowserRouter([
       { path: '/campaigns/new', element: <CampaignNewPage /> },
       { path: '/campaigns/:id', element: <CampaignDetailPage /> },
       { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
+      // 홈에서 연결했지만 아직 만들지 않은 화면
+      {
+        path: '/qr-scan',
+        element: <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />,
+      },
+      {
+        path: '/store/analytics',
+        element: <ComingSoonPage fallbackPath="/store" title="분석" />,
+      },
       {
         path: '/campaigns/:id/edit',
         element: <CampaignFormPage />,
