@@ -153,9 +153,14 @@ const CampaignListError = ({ onRetry }: { onRetry: () => void }) => (
 interface CampaignSectionsProps {
   campaigns: Campaign[];
   menus: StoreMenu[];
+  onChanged: () => void;
 }
 
-const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
+const CampaignSections = ({
+  campaigns,
+  menus,
+  onChanged,
+}: CampaignSectionsProps) => {
   const { current, ended, next } = groupCampaigns(campaigns);
   const getTitle = (campaign: Campaign) =>
     getCampaignTitle(campaign.coupon, menus);
@@ -177,7 +182,11 @@ const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
       {(next || current) && (
         <CampaignSection title="다음 캠페인">
           {next ? (
-            <UpcomingCampaignCard campaign={next} title={getTitle(next)} />
+            <UpcomingCampaignCard
+              campaign={next}
+              onChanged={onChanged}
+              title={getTitle(next)}
+            />
           ) : (
             <EmptySlot
               createLabel="다음 캠페인 만들기"
@@ -207,7 +216,7 @@ const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
 
 // 캠페인 탭. 점주 본인 가게의 캠페인만 보여준다
 export const CampaignList = () => {
-  const { retry, state } = useCampaignList();
+  const { reload, retry, state } = useCampaignList();
 
   const renderContent = () => {
     if (state.status === 'loading') {
@@ -222,7 +231,13 @@ export const CampaignList = () => {
       return <EmptyCampaigns />;
     }
 
-    return <CampaignSections campaigns={state.campaigns} menus={state.menus} />;
+    return (
+      <CampaignSections
+        campaigns={state.campaigns}
+        menus={state.menus}
+        onChanged={reload}
+      />
+    );
   };
 
   return (
