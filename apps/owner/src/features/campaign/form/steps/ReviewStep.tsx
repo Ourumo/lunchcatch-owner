@@ -20,14 +20,16 @@ import {
 } from '@owner/api/poster';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 import {
-  formatAgeGroups,
   formatDiscount,
-  formatGender,
   formatNumber,
   formatPeriod,
   formatPoints,
-  formatRadius,
   getPeriodDays,
+} from '@owner/components/campaignFormat';
+import {
+  formatAgeGroups,
+  formatGender,
+  formatRadius,
 } from '@owner/features/campaign/campaignFormat';
 import { DetailRow } from '@owner/features/campaign/detail/DetailSection';
 import {

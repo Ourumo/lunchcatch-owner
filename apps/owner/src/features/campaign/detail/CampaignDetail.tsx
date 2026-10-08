@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CircleAlert, Info } from 'lucide-react';
 
@@ -10,23 +10,26 @@ import {
 } from '@owner/api/campaign';
 import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
-import { TopBar } from '@owner/components/TopBar/TopBar';
 import {
-  formatAgeGroups,
   formatCreatedDate,
   formatDiscount,
-  formatGender,
   formatNumber,
   formatPeriod,
   formatPoints,
-  formatRadius,
   formatShortDate,
   getCampaignTitle,
   getPeriodDays,
   pausedNotices,
+} from '@owner/components/campaignFormat';
+import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
+import { TopBar } from '@owner/components/TopBar/TopBar';
+import {
+  formatAgeGroups,
+  formatGender,
+  formatRadius,
 } from '@owner/features/campaign/campaignFormat';
-import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 import { PosterPreview } from '@owner/features/campaign/PosterPreview';
+import { useGoBack } from '@owner/hooks/useGoBack';
 
 import { DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
@@ -305,7 +308,7 @@ export interface CampaignDetailProps {
 
 // 캠페인 상세 조회. 상태별 액션(중단, 재개, 하루 예산 변경 등)은 이후 하단에 추가한다
 export const CampaignDetail = ({ id }: CampaignDetailProps) => {
-  const navigate = useNavigate();
+  const goBack = useGoBack(LIST_PATH);
   const { retry, state } = useCampaignDetail(id);
 
   const renderContent = () => {
@@ -329,7 +332,7 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
   return (
     <>
       <div className="sticky top-0 z-10">
-        <TopBar onBack={() => navigate(LIST_PATH)} title="캠페인 상세" />
+        <TopBar onBack={goBack} title="캠페인 상세" />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
     </>

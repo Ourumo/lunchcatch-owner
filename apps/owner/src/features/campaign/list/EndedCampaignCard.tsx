@@ -5,8 +5,8 @@ import {
   formatNumber,
   formatPeriod,
   formatPoints,
-} from '@owner/features/campaign/campaignFormat';
-import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
+} from '@owner/components/campaignFormat';
+import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 
 export interface EndedCampaignCardProps {
   campaign: Campaign;

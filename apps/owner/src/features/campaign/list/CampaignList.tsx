@@ -5,10 +5,10 @@ import { CalendarClock, Megaphone, Plus } from 'lucide-react';
 
 import type { Campaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { getCampaignTitle } from '@owner/components/campaignFormat';
+import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/CurrentCampaignCard';
 import { TopBar } from '@owner/components/TopBar/TopBar';
-import { getCampaignTitle } from '@owner/features/campaign/campaignFormat';
 
-import { CurrentCampaignCard } from './CurrentCampaignCard';
 import { EndedCampaignCard } from './EndedCampaignCard';
 import { UpcomingCampaignCard } from './UpcomingCampaignCard';
 import { useCampaignList } from './useCampaignList';

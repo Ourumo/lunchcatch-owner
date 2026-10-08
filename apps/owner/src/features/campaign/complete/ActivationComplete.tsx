@@ -9,7 +9,8 @@ import {
   formatShortDate,
   getCampaignTitle,
   getDaysFromToday,
-} from '@owner/features/campaign/campaignFormat';
+} from '@owner/components/campaignFormat';
+import type { GoBackState } from '@owner/hooks/useGoBack';
 
 export interface ActivationCompleteProps {
   campaignId: string;
@@ -98,6 +99,8 @@ export const ActivationComplete = ({ campaignId }: ActivationCompleteProps) => {
         <Link
           className="flex h-12 items-center justify-center rounded-md bg-action-primary text-body-sm-mobile font-bold text-text-inverse transition-colors hover:bg-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
           replace
+          // 등록 단계 기록이 남아 있어 상세에서 뒤로 가면 목록으로 가게 한다
+          state={{ backTo: '/campaigns' } satisfies GoBackState}
           to={`/campaigns/${campaignId}`}
         >
           캠페인 상세 보기
