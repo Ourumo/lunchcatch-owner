@@ -1,7 +1,7 @@
 import { MemoryRouter } from 'react-router';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import type { Campaign } from '@owner/api/campaign';
+import type { Campaign, CampaignTodayPerformance } from '@owner/api/campaign';
 
 import { CurrentCampaignCard } from './CurrentCampaignCard';
 
@@ -59,6 +59,15 @@ const activeCampaign: Campaign = {
   },
 };
 
+// 오늘 실적만 바꾼 캠페인
+const withToday = (today: CampaignTodayPerformance | null): Campaign => ({
+  ...activeCampaign,
+  performance: activeCampaign.performance && {
+    ...activeCampaign.performance,
+    today,
+  },
+});
+
 const meta = {
   title: 'Owner/CurrentCampaignCard',
   component: CurrentCampaignCard,
@@ -106,12 +115,30 @@ export const PausedNoPoints: Story = {
 // 오늘이 집행 대상이 아니면 오늘 실적 영역 없이 보여준다
 export const WithoutTodayPerformance: Story = {
   args: {
-    campaign: {
-      ...activeCampaign,
-      performance: activeCampaign.performance && {
-        ...activeCampaign.performance,
-        today: null,
-      },
-    },
+    campaign: withToday(null),
+  },
+};
+
+// 오늘 막 열려 아직 발급이 없으면 바탕 막대만 보이고 남은 쿠폰은 전체 수량이다
+export const NothingIssued: Story = {
+  args: {
+    campaign: withToday({
+      issuedCount: 0,
+      redeemedCount: 0,
+      reservedPoints: 10000,
+      spentPoints: 0,
+    }),
+  },
+};
+
+// 발급이 전체 수량을 넘는 데이터가 와도 막대는 카드 밖으로 넘치지 않고, 남은 쿠폰은 0장이다
+export const OverIssued: Story = {
+  args: {
+    campaign: withToday({
+      issuedCount: 55,
+      redeemedCount: 30,
+      reservedPoints: 10000,
+      spentPoints: 9800,
+    }),
   },
 };
