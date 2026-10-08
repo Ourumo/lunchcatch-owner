@@ -134,6 +134,15 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
+// 준비 중(작성 중 + 시작 대기) 캠페인은 가게당 1건만 둔다.
+// 새 캠페인이 진행 중이 되면 기존 진행 중 캠페인은 종료되고(docs/requirements-common.md "캠페인 상태 정의"),
+// 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
+// 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
+export const MAX_UPCOMING_CAMPAIGNS = 1;
+
+export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
+  status === 'DRAFT' || status === 'SCHEDULED';
+
 // 하루 예산 추천과 예상 노출 범위 계산에 필요한 값. 인원은 전날 00:00 집계 값이다.
 // 노출 단가와 최소 하루 예산은 플랫폼 설정값(getPlatformSettings)에서 읽는다
 export interface BudgetRecommendation {
@@ -269,6 +278,8 @@ const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
+const UPCOMING_LIMIT_MESSAGE =
+  '다음 캠페인은 1개만 준비할 수 있습니다. 작성 중이거나 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
 
 // 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -312,9 +323,16 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   return { ok: true, data: structuredClone(campaign) };
 };
 
-// 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다
+// 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
+// 준비 중 캠페인이 이미 MAX_UPCOMING_CAMPAIGNS건이면 만들지 않는다
 export const createCampaignDraft = async (): Promise<ApiResult<Campaign>> => {
   await mockDelay();
+
+  if (
+    mockCampaigns.filter(isUpcomingCampaign).length >= MAX_UPCOMING_CAMPAIGNS
+  ) {
+    return { ok: false, message: UPCOMING_LIMIT_MESSAGE };
+  }
 
   const campaign: Campaign = {
     ...createInitialCampaignValues(),
