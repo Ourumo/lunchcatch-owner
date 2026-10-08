@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CalendarClock, Megaphone, Plus } from 'lucide-react';
 
-import type { Campaign } from '@owner/api/campaign';
+import { type Campaign, isUpcomingCampaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
 import { getCampaignTitle } from '@owner/components/campaignFormat';
 import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/CurrentCampaignCard';
@@ -18,20 +18,15 @@ const NEW_CAMPAIGN_PATH = '/campaigns/new';
 const isCurrent = ({ status }: Campaign) =>
   status === 'ACTIVE' || status === 'PAUSED';
 
-// 가게당 집행 중인 캠페인은 1건이므로, 지금 집행 중인 것 / 준비 중인 것 / 끝난 것으로 나눠 보여준다
+// 진행 중과 준비 중(작성 중 + 시작 대기)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
-  const scheduled = campaigns
-    .filter(({ status }) => status === 'SCHEDULED')
-    .sort((a, b) => a.budget.startDate.localeCompare(b.budget.startDate));
-  // 목록이 등록 시각 최신순으로 오므로 작성 중인 캠페인은 그 순서를 따른다
-  const drafts = campaigns.filter(({ status }) => status === 'DRAFT');
   const ended = campaigns
     .filter(({ status }) => status === 'ENDED')
     .sort((a, b) => b.budget.endDate.localeCompare(a.budget.endDate));
 
   return {
     current: campaigns.find(isCurrent),
-    upcoming: [...scheduled, ...drafts],
+    next: campaigns.find(isUpcomingCampaign),
     ended,
   };
 };
@@ -65,33 +60,44 @@ const CampaignSection = ({ children, count, title }: CampaignSectionProps) => (
   </section>
 );
 
-const NoCurrentCampaign = ({ upcoming }: { upcoming: Campaign[] }) => {
-  const hasScheduled = upcoming.some(({ status }) => status === 'SCHEDULED');
+const createLinkClassName =
+  'mt-3 flex h-10 items-center rounded-full bg-surface-brand px-4 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
 
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-border-subtle bg-bg-surface px-4 py-6 text-center">
-      <CalendarClock
-        aria-hidden="true"
-        className="mb-1 size-6 text-text-tertiary"
-      />
-      <p className="text-body-sm-mobile font-bold text-text-primary">
-        지금 진행 중인 캠페인이 없어요
-      </p>
-      <p className="text-caption-mobile break-keep text-text-secondary">
-        {hasScheduled
-          ? '시작 대기 중인 캠페인은 집행 시작일 00:00부터 노출돼요'
-          : '새 캠페인을 만들어 주변 직장인에게 가게를 알려 보세요'}
-      </p>
-      {!hasScheduled && (
-        <Link
-          className="mt-3 flex h-10 items-center rounded-full bg-surface-brand px-4 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
-          to={NEW_CAMPAIGN_PATH}
-        >
-          캠페인 만들기
-        </Link>
-      )}
-    </div>
-  );
+interface EmptySlotProps {
+  title: string;
+  description: string;
+  // 다음 캠페인 자리가 차 있으면 만들 수 없으므로 링크를 두지 않는다
+  createLabel?: string;
+}
+
+const EmptySlot = ({ createLabel, description, title }: EmptySlotProps) => (
+  <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-border-subtle bg-bg-surface px-4 py-6 text-center">
+    <CalendarClock
+      aria-hidden="true"
+      className="mb-1 size-6 text-text-tertiary"
+    />
+    <p className="text-body-sm-mobile font-bold text-text-primary">{title}</p>
+    <p className="text-caption-mobile break-keep text-text-secondary">
+      {description}
+    </p>
+    {createLabel && (
+      <Link className={createLinkClassName} to={NEW_CAMPAIGN_PATH}>
+        {createLabel}
+      </Link>
+    )}
+  </div>
+);
+
+const getNoCurrentDescription = (next?: Campaign) => {
+  if (next?.status === 'SCHEDULED') {
+    return '시작 대기 중인 캠페인은 집행 시작일 00:00부터 노출돼요';
+  }
+
+  if (next?.status === 'DRAFT') {
+    return '작성 중인 캠페인을 마치고 활성화를 요청하면 시작 대기 상태가 돼요';
+  }
+
+  return '새 캠페인을 만들어 주변 직장인에게 가게를 알려 보세요';
 };
 
 const EmptyCampaigns = () => (
@@ -150,7 +156,7 @@ interface CampaignSectionsProps {
 }
 
 const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
-  const { current, ended, upcoming } = groupCampaigns(campaigns);
+  const { current, ended, next } = groupCampaigns(campaigns);
   const getTitle = (campaign: Campaign) =>
     getCampaignTitle(campaign.coupon, menus);
 
@@ -160,21 +166,25 @@ const CampaignSections = ({ campaigns, menus }: CampaignSectionsProps) => {
         {current ? (
           <CurrentCampaignCard campaign={current} title={getTitle(current)} />
         ) : (
-          <NoCurrentCampaign upcoming={upcoming} />
+          <EmptySlot
+            createLabel={next ? undefined : '캠페인 만들기'}
+            description={getNoCurrentDescription(next)}
+            title="지금 진행 중인 캠페인이 없어요"
+          />
         )}
       </CampaignSection>
-      {upcoming.length > 0 && (
-        <CampaignSection count={upcoming.length} title="준비 중인 캠페인">
-          <ul className="flex flex-col gap-2">
-            {upcoming.map((campaign) => (
-              <li key={campaign.id}>
-                <UpcomingCampaignCard
-                  campaign={campaign}
-                  title={getTitle(campaign)}
-                />
-              </li>
-            ))}
-          </ul>
+      {/* 진행 중도 다음 캠페인도 없으면 위 칸에서 만들기를 권하므로 이 섹션은 숨긴다 */}
+      {(next || current) && (
+        <CampaignSection title="다음 캠페인">
+          {next ? (
+            <UpcomingCampaignCard campaign={next} title={getTitle(next)} />
+          ) : (
+            <EmptySlot
+              createLabel="다음 캠페인 만들기"
+              description="진행 중인 캠페인이 끝나면 이어서 노출할 캠페인을 미리 준비해 두세요"
+              title="준비 중인 캠페인이 없어요"
+            />
+          )}
         </CampaignSection>
       )}
       {ended.length > 0 && (
