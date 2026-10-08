@@ -21,6 +21,7 @@ import CampaignBudgetPage from '@owner/pages/CampaignBudgetPage';
 import CampaignCompletePage from '@owner/pages/CampaignCompletePage';
 import CampaignCouponPage from '@owner/pages/CampaignCouponPage';
 import CampaignDetailPage from '@owner/pages/CampaignDetailPage';
+import CampaignEndedPage from '@owner/pages/CampaignEndedPage';
 import CampaignFormPage from '@owner/pages/CampaignFormPage';
 import CampaignListPage from '@owner/pages/CampaignListPage';
 import CampaignNewPage from '@owner/pages/CampaignNewPage';
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { path: '/campaigns/new', element: <CampaignNewPage /> },
+      { path: '/campaigns/ended', element: <CampaignEndedPage /> },
       { path: '/campaigns/:id', element: <CampaignDetailPage /> },
       { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
       // 홈에서 연결했지만 아직 만들지 않은 화면
