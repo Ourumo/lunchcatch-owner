@@ -22,7 +22,7 @@ const getRemainingLabel = (endDate: string) => {
   return days > 0 ? `${days}일 남음` : '오늘 종료';
 };
 
-// 지금 집행 중인(ACTIVE, PAUSED) 캠페인. 가게당 1건이라 오늘 실적까지 크게 보여준다
+// 지금 집행 중인(ACTIVE, PAUSED) 캠페인. 가게당 1건이라 오늘 실적까지 크게 보여준다. 홈과 캠페인 목록에서 함께 쓴다
 export const CurrentCampaignCard = ({
   campaign,
   title,
