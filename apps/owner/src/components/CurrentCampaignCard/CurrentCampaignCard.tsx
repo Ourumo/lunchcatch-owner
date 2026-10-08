@@ -16,6 +16,10 @@ export interface CurrentCampaignCardProps {
   title: string;
 }
 
+// 전체 발급 수량 대비 비율(%). 데이터가 전체를 넘어도 막대가 카드 밖으로 넘치지 않게 100에서 자른다
+const toRate = (count: number, total: number) =>
+  total > 0 ? Math.min(100, Math.max(0, (count / total) * 100)) : 0;
+
 const getRemainingLabel = (endDate: string) => {
   const days = getDaysFromToday(endDate);
 
@@ -30,10 +34,9 @@ export const CurrentCampaignCard = ({
   const { budget, coupon, pausedReason, performance, status } = campaign;
   const today = performance?.today;
   const issueLimit = coupon.issueLimit ?? 0;
-  const issuedRate =
-    today && issueLimit > 0
-      ? Math.min(100, Math.round((today.issuedCount / issueLimit) * 100))
-      : 0;
+  const issuedCount = today?.issuedCount ?? 0;
+  // 사용은 발급된 쿠폰 중에서만 나오므로 발급 막대를 넘지 않게 한다
+  const redeemedCount = Math.min(today?.redeemedCount ?? 0, issuedCount);
 
   return (
     <Link
@@ -67,31 +70,60 @@ export const CurrentCampaignCard = ({
       {today && (
         <div className="mt-4 border-t border-border-subtle pt-4">
           <div className="flex items-baseline justify-between text-body-sm-mobile">
-            <span className="text-text-secondary">오늘 발급</span>
-            <span className="text-text-primary">
-              <strong className="font-bold">
-                {formatNumber(today.issuedCount)}
-              </strong>{' '}
-              / {formatNumber(issueLimit)}장
+            <span className="text-text-secondary">오늘 쿠폰</span>
+            <span className="text-text-secondary">
+              전체{' '}
+              <strong className="font-bold text-text-primary">
+                {formatNumber(issueLimit)}
+              </strong>
+              장
             </span>
           </div>
-          {/* 수치는 위 문구로 전달하므로 막대는 보조 표시로만 둔다 */}
+          {/* 수치는 범례와 아래 칸으로 전달하므로 막대는 보조 표시로만 둔다.
+              바탕(전체) 위에 발급, 그 위에 사용을 겹치고 길이는 모두 전체 발급 수량 기준이다 */}
           <div
             aria-hidden="true"
-            className="mt-2 h-2 overflow-hidden rounded-full bg-surface-brand"
+            className="relative mt-2 h-2 overflow-hidden rounded-full bg-surface-subtle"
           >
             <div
-              className="h-full rounded-full bg-action-primary"
-              style={{ width: `${issuedRate}%` }}
+              className="absolute inset-y-0 left-0 rounded-full bg-brand-300"
+              style={{ width: `${toRate(issuedCount, issueLimit)}%` }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-action-primary"
+              style={{ width: `${toRate(redeemedCount, issueLimit)}%` }}
             />
           </div>
+          {/* 글자는 기본 글자색으로 두고, 앞의 점이 어느 막대인지 알려준다 */}
+          <ul className="mt-2 flex gap-4 text-caption-mobile text-text-secondary">
+            <li className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className="size-2 rounded-full bg-action-primary"
+              />
+              사용
+              <strong className="font-bold text-text-primary">
+                {formatNumber(today.redeemedCount)}장
+              </strong>
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className="size-2 rounded-full bg-brand-300"
+              />
+              발급
+              <strong className="font-bold text-text-primary">
+                {formatNumber(today.issuedCount)}장
+              </strong>
+            </li>
+          </ul>
           <dl className="mt-4 grid grid-cols-2 gap-3">
             <div>
               <dt className="text-caption-mobile text-text-secondary">
-                오늘 사용
+                남은 쿠폰
               </dt>
               <dd className="mt-0.5 text-body-mobile font-bold text-text-primary">
-                {formatNumber(today.redeemedCount)}장
+                {formatNumber(Math.max(0, issueLimit - today.issuedCount))}장
               </dd>
             </div>
             <div>
