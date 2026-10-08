@@ -10,6 +10,7 @@ import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointCharge
 
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
+import { RecentPerformance } from './RecentPerformance';
 import { useHome } from './useHome';
 
 const QR_SCAN_PATH = '/qr-scan';
@@ -145,6 +146,7 @@ export const HomeDashboard = () => {
           campaigns={state.campaigns}
           menus={state.store.menus}
         />
+        <RecentPerformance days={state.recentDays} />
 
         {isChargeOpen && (
           <PointChargeSheet
