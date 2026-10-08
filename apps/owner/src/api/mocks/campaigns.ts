@@ -26,7 +26,7 @@ const toDateValue = (date: Date) =>
   ).padStart(2, '0')}`;
 
 // 오늘 기준 며칠 뒤(음수면 며칠 전) 날짜. 언제 열어도 캠페인 상태와 집행 기간이 어긋나지 않게 한다
-const daysFromToday = (days: number) => {
+export const daysFromToday = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() + days);
 

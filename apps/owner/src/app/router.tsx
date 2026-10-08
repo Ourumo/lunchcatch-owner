@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 
+import { ComingSoon } from '@owner/components/ComingSoon/ComingSoon';
 import {
   type CampaignStepId,
   campaignSteps,
@@ -15,6 +16,7 @@ import {
 } from '@owner/features/signup/signupSteps';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
+import TabLayout from '@owner/layout/TabLayout';
 import CampaignBudgetPage from '@owner/pages/CampaignBudgetPage';
 import CampaignCompletePage from '@owner/pages/CampaignCompletePage';
 import CampaignCouponPage from '@owner/pages/CampaignCouponPage';
@@ -25,6 +27,8 @@ import CampaignNewPage from '@owner/pages/CampaignNewPage';
 import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
 import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
+import ComingSoonPage from '@owner/pages/ComingSoonPage';
+import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
@@ -81,12 +85,29 @@ export const router = createBrowserRouter([
   },
   { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
   {
+    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면. 가게 관리는 화면을 만들기 전까지 준비 중으로 둔다
+    element: <TabLayout />,
+    children: [
+      { path: '/home', element: <HomePage /> },
+      { path: '/campaigns', element: <CampaignListPage /> },
+      { path: '/store', element: <ComingSoon title="가게 관리" /> },
+    ],
+  },
+  {
     element: <MainLayout />,
     children: [
-      { path: '/campaigns', element: <CampaignListPage /> },
       { path: '/campaigns/new', element: <CampaignNewPage /> },
       { path: '/campaigns/:id', element: <CampaignDetailPage /> },
       { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
+      // 홈에서 연결했지만 아직 만들지 않은 화면
+      {
+        path: '/qr-scan',
+        element: <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />,
+      },
+      {
+        path: '/store/analytics',
+        element: <ComingSoonPage fallbackPath="/store" title="분석" />,
+      },
       {
         path: '/campaigns/:id/edit',
         element: <CampaignFormPage />,

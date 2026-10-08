@@ -71,6 +71,8 @@ apps/* ──→ @repo/ui, @repo/utils
 ```
 
 - 화살표 방향으로만 import합니다. `components`에서 `features`를 import하지 않습니다.
+- 예외로 `components`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
+- `components`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
 - `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 그 코드를 `components`나 `@repo/ui`로 옮깁니다.
 - 앱끼리는 서로 import하지 않습니다.
 - `packages`는 `apps`를 import하지 않습니다.
