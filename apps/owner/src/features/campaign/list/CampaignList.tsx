@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
-import { CalendarClock, Megaphone, Plus } from 'lucide-react';
+import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
 import { type Campaign, isUpcomingCampaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
@@ -10,6 +10,11 @@ import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/Curre
 import { TopBar } from '@owner/components/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
+import {
+  ENDED_CAMPAIGNS_PATH,
+  ENDED_PREVIEW_COUNT,
+  getEndedCampaigns,
+} from './endedCampaigns';
 import { NewCampaignLimitSheet } from './NewCampaignLimitSheet';
 import { UpcomingCampaignCard } from './UpcomingCampaignCard';
 import { useCampaignList } from './useCampaignList';
@@ -21,14 +26,10 @@ const isCurrent = ({ status }: Campaign) =>
 
 // 진행 중과 준비 중(작성 중 + 시작 대기)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
-  const ended = campaigns
-    .filter(({ status }) => status === 'ENDED')
-    .sort((a, b) => b.budget.endDate.localeCompare(a.budget.endDate));
-
   return {
     current: campaigns.find(isCurrent),
     next: campaigns.find(isUpcomingCampaign),
-    ended,
+    ended: getEndedCampaigns(campaigns),
   };
 };
 
@@ -65,21 +66,42 @@ const NewCampaignButton = ({ onLimited }: { onLimited?: () => void }) => {
 interface CampaignSectionProps {
   title: string;
   count?: number;
+  // 제목 오른쪽에 두는 링크 (전체 보기 등)
+  trailing?: ReactNode;
   children: ReactNode;
 }
 
-const CampaignSection = ({ children, count, title }: CampaignSectionProps) => (
+const CampaignSection = ({
+  children,
+  count,
+  title,
+  trailing,
+}: CampaignSectionProps) => (
   <section className="flex flex-col gap-3">
-    <h2 className="flex items-center gap-1.5 text-body-mobile font-bold text-text-primary">
-      {title}
-      {count !== undefined && (
-        <span className="text-body-sm-mobile font-medium text-text-secondary">
-          {count}
-        </span>
-      )}
-    </h2>
+    <div className="flex items-center justify-between gap-2">
+      <h2 className="flex items-center gap-1.5 text-body-mobile font-bold text-text-primary">
+        {title}
+        {count !== undefined && (
+          <span className="text-body-sm-mobile font-medium text-text-secondary">
+            {count}
+          </span>
+        )}
+      </h2>
+      {trailing}
+    </div>
     {children}
   </section>
+);
+
+// 터치 영역은 44px로 두되 제목 줄 높이는 늘리지 않는다
+const ViewAllLink = ({ to }: { to: string }) => (
+  <Link
+    className="-my-2.5 -mr-2 flex h-11 items-center gap-0.5 rounded-full px-2 text-body-sm-mobile text-text-secondary focus-visible:outline-2 focus-visible:outline-action-primary"
+    to={to}
+  >
+    전체 보기
+    <ChevronRight aria-hidden="true" className="size-4" />
+  </Link>
 );
 
 const createLinkClassName =
@@ -219,9 +241,18 @@ const CampaignSections = ({
         </CampaignSection>
       )}
       {ended.length > 0 && (
-        <CampaignSection count={ended.length} title="지난 캠페인">
+        // 숫자는 숨긴 것까지 포함한 전체 개수다
+        <CampaignSection
+          count={ended.length}
+          title="지난 캠페인"
+          trailing={
+            ended.length > ENDED_PREVIEW_COUNT && (
+              <ViewAllLink to={ENDED_CAMPAIGNS_PATH} />
+            )
+          }
+        >
           <ul className="flex flex-col gap-2">
-            {ended.map((campaign) => (
+            {ended.slice(0, ENDED_PREVIEW_COUNT).map((campaign) => (
               <li key={campaign.id}>
                 <EndedCampaignCard
                   campaign={campaign}

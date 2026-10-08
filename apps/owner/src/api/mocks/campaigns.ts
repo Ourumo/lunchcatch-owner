@@ -149,6 +149,7 @@ const getMockNextCampaigns = (kind: MockNextCampaign) =>
 // 점주 계정 하나의 캠페인 목록이라고 가정한다. 가게당 ACTIVE(또는 PAUSED) 캠페인은 1건만 있을 수 있다.
 // 중단 상태 화면을 확인하려면 첫 캠페인의 status를 PAUSED로, pausedReason을 OWNER, NO_POINTS, ADMIN 중 하나로 바꾼다
 // 다음 캠페인(시작 대기, 검수 실패, 작성 중, 없음)은 위의 MOCK_NEXT_CAMPAIGN으로 고른다
+// 지난 캠페인은 캠페인 탭의 미리보기 개수(2건)보다 많게 두어 "전체 보기"를 확인할 수 있게 한다
 export const mockCampaigns: Campaign[] = [
   {
     id: 'campaign-active',
@@ -283,6 +284,94 @@ export const mockCampaigns: Campaign[] = [
         issuedCount: 125,
         redeemedCount: 69,
         spentPoints: 33100,
+      },
+    },
+  },
+  {
+    id: 'campaign-ended-3',
+    status: 'ENDED',
+    pausedReason: null,
+    createdAt: createdDaysAgo(58),
+    reviewFailReasons: [],
+    coupon: {
+      discountTarget: 'MENU',
+      menuId: soba.id,
+      discountType: 'AMOUNT',
+      discountValue: 2000,
+      issueLimit: 40,
+      usableFrom: '11:30',
+      usableUntil: '14:00',
+    },
+    poster: {
+      posterId: 'poster-ended-3',
+      templateId: 'template-classic-wood',
+      slots: {
+        eventName: '여름 한정 시원한 점심',
+        discountText: `${soba.name} 2,000원 할인`,
+        period: '11:30 ~ 14:00',
+        storeName: mockStore.name,
+        imageUrl: soba.imageUrl,
+      },
+    },
+    target: {
+      radius: 1000,
+      gender: 'ALL',
+      ageGroups: ['TWENTIES', 'THIRTIES'],
+    },
+    budget: {
+      dailyBudget: 7000,
+      startDate: daysFromToday(-56),
+      endDate: daysFromToday(-50),
+    },
+    performance: {
+      today: null,
+      total: {
+        savedCount: 260,
+        issuedCount: 180,
+        redeemedCount: 131,
+        spentPoints: 44800,
+      },
+    },
+  },
+  {
+    id: 'campaign-ended-4',
+    status: 'ENDED',
+    pausedReason: null,
+    createdAt: createdDaysAgo(79),
+    reviewFailReasons: [],
+    coupon: {
+      discountTarget: 'MENU',
+      menuId: cheeseKatsu.id,
+      discountType: 'PERCENT',
+      discountValue: 25,
+      issueLimit: 30,
+      usableFrom: '11:30',
+      usableUntil: '15:00',
+    },
+    poster: {
+      posterId: 'poster-ended-4',
+      templateId: 'template-retro-pop',
+      slots: {
+        eventName: '첫 캠페인 기념',
+        discountText: `${cheeseKatsu.name} 25% 할인`,
+        period: '11:30 ~ 15:00',
+        storeName: mockStore.name,
+        imageUrl: cheeseKatsu.imageUrl,
+      },
+    },
+    target: { radius: 500, gender: 'ALL', ageGroups: [] },
+    budget: {
+      dailyBudget: 6000,
+      startDate: daysFromToday(-77),
+      endDate: daysFromToday(-71),
+    },
+    performance: {
+      today: null,
+      total: {
+        savedCount: 150,
+        issuedCount: 98,
+        redeemedCount: 52,
+        spentPoints: 27300,
       },
     },
   },
