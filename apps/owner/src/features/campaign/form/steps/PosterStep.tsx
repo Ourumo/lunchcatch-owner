@@ -10,7 +10,7 @@ import {
   type PosterTemplate,
 } from '@owner/api/poster';
 import { getMyStore, type MyStore } from '@owner/api/store';
-import { getCampaignTitle } from '@owner/features/campaign/campaignFormat';
+import { getCampaignTitle } from '@owner/components/campaignFormat';
 import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
 import { PosterPreview } from '@owner/features/campaign/PosterPreview';
 

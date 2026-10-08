@@ -16,7 +16,7 @@ import {
   USABLE_TIME_STEP_MINUTES,
 } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
-import { formatNumber } from '@owner/features/campaign/campaignFormat';
+import { formatNumber } from '@owner/components/campaignFormat';
 import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
 
 const AMOUNT_MAX_DIGITS = 7;

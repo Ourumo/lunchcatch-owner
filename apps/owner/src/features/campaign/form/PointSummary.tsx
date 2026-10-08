@@ -3,7 +3,7 @@ import { Button } from '@repo/ui';
 import { CircleCheck } from 'lucide-react';
 
 import type { PointBalance } from '@owner/api/points';
-import { formatPoints } from '@owner/features/campaign/campaignFormat';
+import { formatPoints } from '@owner/components/campaignFormat';
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;

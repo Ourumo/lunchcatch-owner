@@ -10,22 +10,24 @@ import {
 } from '@owner/api/campaign';
 import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
-import { TopBar } from '@owner/components/TopBar/TopBar';
 import {
-  formatAgeGroups,
   formatCreatedDate,
   formatDiscount,
-  formatGender,
   formatNumber,
   formatPeriod,
   formatPoints,
-  formatRadius,
   formatShortDate,
   getCampaignTitle,
   getPeriodDays,
   pausedNotices,
+} from '@owner/components/campaignFormat';
+import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
+import { TopBar } from '@owner/components/TopBar/TopBar';
+import {
+  formatAgeGroups,
+  formatGender,
+  formatRadius,
 } from '@owner/features/campaign/campaignFormat';
-import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
 import { PosterPreview } from '@owner/features/campaign/PosterPreview';
 
 import { DetailRow, DetailSection } from './DetailSection';

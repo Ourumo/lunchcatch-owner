@@ -8,8 +8,8 @@ import {
   formatPoints,
   getDaysFromToday,
   pausedNotices,
-} from '@owner/features/campaign/campaignFormat';
-import { CampaignStatusBadge } from '@owner/features/campaign/CampaignStatusBadge';
+} from '@owner/components/campaignFormat';
+import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 
 export interface CurrentCampaignCardProps {
   campaign: Campaign;

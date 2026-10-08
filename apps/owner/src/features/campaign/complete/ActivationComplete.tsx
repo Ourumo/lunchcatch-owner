@@ -9,7 +9,7 @@ import {
   formatShortDate,
   getCampaignTitle,
   getDaysFromToday,
-} from '@owner/features/campaign/campaignFormat';
+} from '@owner/components/campaignFormat';
 
 export interface ActivationCompleteProps {
   campaignId: string;
