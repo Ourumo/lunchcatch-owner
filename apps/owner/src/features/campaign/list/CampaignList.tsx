@@ -10,6 +10,7 @@ import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/Curre
 import { TopBar } from '@owner/components/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
+import { getEndedCampaigns } from './endedCampaigns';
 import { NewCampaignLimitSheet } from './NewCampaignLimitSheet';
 import { UpcomingCampaignCard } from './UpcomingCampaignCard';
 import { useCampaignList } from './useCampaignList';
@@ -21,14 +22,10 @@ const isCurrent = ({ status }: Campaign) =>
 
 // 진행 중과 준비 중(작성 중 + 시작 대기)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
-  const ended = campaigns
-    .filter(({ status }) => status === 'ENDED')
-    .sort((a, b) => b.budget.endDate.localeCompare(a.budget.endDate));
-
   return {
     current: campaigns.find(isCurrent),
     next: campaigns.find(isUpcomingCampaign),
-    ended,
+    ended: getEndedCampaigns(campaigns),
   };
 };
 
