@@ -13,8 +13,29 @@ export interface PointBalance {
   reservedPoints: number;
 }
 
+// 최소 충전 금액(원). 명세에 값이 없어 임시로 둔다. 기획 확인 후 바꾼다
+export const MIN_CHARGE_AMOUNT = 10000;
+
+const BELOW_MIN_CHARGE_MESSAGE = `${MIN_CHARGE_AMOUNT.toLocaleString('ko-KR')}원부터 충전할 수 있습니다.`;
+
 export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
   await mockDelay();
+
+  return { ok: true, data: { ...mockPointBalance } };
+};
+
+// 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 바뀐 잔액을 돌려준다
+// 실제 결제는 결제대행사 화면을 거친다. mock은 테스트 결제라 바로 충전된다
+export const chargePoints = async (
+  amount: number,
+): Promise<ApiResult<PointBalance>> => {
+  await mockDelay();
+
+  if (!Number.isInteger(amount) || amount < MIN_CHARGE_AMOUNT) {
+    return { ok: false, message: BELOW_MIN_CHARGE_MESSAGE };
+  }
+
+  mockPointBalance.balance += amount;
 
   return { ok: true, data: { ...mockPointBalance } };
 };
