@@ -47,5 +47,10 @@ export const useCampaignList = () => {
     setRequestId((id) => id + 1);
   };
 
-  return { retry, state };
+  // 삭제처럼 목록을 바꾼 뒤 다시 불러온다. 지금 화면을 그대로 둔 채 결과가 오면 바꾼다
+  const reload = () => {
+    setRequestId((id) => id + 1);
+  };
+
+  return { reload, retry, state };
 };
