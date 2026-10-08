@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CalendarClock, Megaphone, Plus } from 'lucide-react';
@@ -10,6 +10,7 @@ import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/Curre
 import { TopBar } from '@owner/components/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
+import { NewCampaignLimitSheet } from './NewCampaignLimitSheet';
 import { UpcomingCampaignCard } from './UpcomingCampaignCard';
 import { useCampaignList } from './useCampaignList';
 
@@ -31,14 +32,35 @@ const groupCampaigns = (campaigns: Campaign[]) => {
   };
 };
 
-const NewCampaignLink = () => (
-  <Link
-    className="-mr-2 flex h-11 items-center gap-1 rounded-full px-2 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-action-primary"
-    to={NEW_CAMPAIGN_PATH}
-  >
-    <Plus aria-hidden="true" className="size-4" />새 캠페인
-  </Link>
-);
+const newCampaignClassName =
+  '-mr-2 flex h-11 items-center gap-1 rounded-full px-2 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-action-primary';
+
+// 다음 캠페인 자리가 차 있으면 이동하지 않고 안내 시트를 연다
+const NewCampaignButton = ({ onLimited }: { onLimited?: () => void }) => {
+  const content = (
+    <>
+      <Plus aria-hidden="true" className="size-4" />새 캠페인
+    </>
+  );
+
+  if (onLimited) {
+    return (
+      <button
+        className={newCampaignClassName}
+        onClick={onLimited}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link className={newCampaignClassName} to={NEW_CAMPAIGN_PATH}>
+      {content}
+    </Link>
+  );
+};
 
 interface CampaignSectionProps {
   title: string;
@@ -217,6 +239,12 @@ const CampaignSections = ({
 // 캠페인 탭. 점주 본인 가게의 캠페인만 보여준다
 export const CampaignList = () => {
   const { reload, retry, state } = useCampaignList();
+  const [isLimitSheetOpen, setIsLimitSheetOpen] = useState(false);
+  // 목록을 불러오기 전에는 자리를 알 수 없어 바로 이동한다. 이때도 작성 화면이 제한을 다시 확인한다
+  const next =
+    state.status === 'success'
+      ? state.campaigns.find(isUpcomingCampaign)
+      : undefined;
 
   const renderContent = () => {
     if (state.status === 'loading') {
@@ -243,9 +271,24 @@ export const CampaignList = () => {
   return (
     <>
       <div className="sticky top-0 z-10">
-        <TopBar title="캠페인" trailing={<NewCampaignLink />} />
+        <TopBar
+          title="캠페인"
+          trailing={
+            <NewCampaignButton
+              onLimited={next ? () => setIsLimitSheetOpen(true) : undefined}
+            />
+          }
+        />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
+
+      {isLimitSheetOpen && next && state.status === 'success' && (
+        <NewCampaignLimitSheet
+          campaign={next}
+          onClose={() => setIsLimitSheetOpen(false)}
+          title={getCampaignTitle(next.coupon, state.menus)}
+        />
+      )}
     </>
   );
 };
