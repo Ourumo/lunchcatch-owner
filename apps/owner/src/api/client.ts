@@ -33,6 +33,10 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(
   '',
 );
 
+// 서버가 연결만 받고 응답하지 않을 때 끝없이 기다리지 않도록 이 시간이 지나면 요청을 끊는다.
+// 앱을 시작할 때 내 정보 조회가 끝나야 화면을 그리므로, 끊지 않으면 빈 화면이 계속된다
+const REQUEST_TIMEOUT_MS = 10_000;
+
 const readEnvelope = async <T>(
   response: Response,
 ): Promise<ResponseEnvelope<T> | null> => {
@@ -45,13 +49,14 @@ const readEnvelope = async <T>(
 
 // API 서버에 요청하고 봉투를 벗긴 data를 돌려준다
 // 인증 토큰은 서버가 HttpOnly 쿠키로 주고받으므로 따로 싣지 않는다
-// 네트워크가 끊겨 응답을 못 받으면 fetch가 던진 오류가 그대로 올라간다
+// 네트워크가 끊겨 응답을 못 받거나 시간이 지나 요청을 끊으면 fetch가 던진 오류가 그대로 올라간다
 export const request = async <T>(
   path: string,
   { body, method = 'GET' }: RequestOptions = {},
 ): Promise<T> => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     // 배포에서는 점주 앱(owner.lunchcatch.com)과 API 서버(api.lunchcatch.com)의 주소가 달라
     // 인증 쿠키를 실으려면 include가 필요하다. 같은 사이트(lunchcatch.com)라서 SameSite=Strict 쿠키도 함께 간다
     credentials: 'include',
