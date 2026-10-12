@@ -2,8 +2,13 @@ import { type ReactNode, useState } from 'react';
 import { Button } from '@repo/ui';
 import { CircleCheck } from 'lucide-react';
 
-import type { PointBalance } from '@owner/api/points';
+import {
+  chargePoints,
+  MIN_CHARGE_AMOUNT,
+  type PointBalance,
+} from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
+import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
@@ -18,16 +23,30 @@ const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
 export interface PointSummaryProps {
   requiredPoints: number;
   balance: Loadable<PointBalance>;
+  // 충전에 성공하면 바뀐 잔액을 넘긴다. 부른 쪽이 잔액을 바꾸면 부족분을 다시 계산한다
+  onBalanceChange: (balance: PointBalance) => void;
 }
 
 // 필요 포인트(하루 예산 x 집행 일수)와 잔액을 비교한다. 하루 예산 단계와 확인 단계에서 함께 쓴다.
-// 잔액이 모자라도 저장과 활성화는 막지 않고 부족분과 충전 버튼만 보여준다
+// 잔액이 모자라도 저장과 활성화는 막지 않고 부족분과 충전 버튼만 보여준다.
+// 충전은 등록 흐름을 끊지 않도록 페이지를 옮기지 않고 충전 시트로 그 자리에서 한다
 export const PointSummary = ({
   balance,
+  onBalanceChange,
   requiredPoints,
 }: PointSummaryProps) => {
-  const [isChargeNoticeVisible, setIsChargeNoticeVisible] = useState(false);
+  const [isChargeOpen, setIsChargeOpen] = useState(false);
   const shortage = balance ? requiredPoints - balance.balance : 0;
+
+  const handleCharge = async (amount: number) => {
+    const result = await chargePoints(amount);
+
+    if (result.ok) {
+      onBalanceChange(result.data);
+    }
+
+    return result;
+  };
 
   return (
     <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
@@ -66,19 +85,11 @@ export const PointSummary = ({
           </p>
           <Button
             className="mt-2 w-full"
-            onClick={() => setIsChargeNoticeVisible(true)}
+            onClick={() => setIsChargeOpen(true)}
             variant="secondary"
           >
             포인트 충전하기
           </Button>
-          {isChargeNoticeVisible && (
-            <p
-              className="mt-2 text-center text-caption-mobile text-text-secondary"
-              role="status"
-            >
-              포인트 충전 화면은 준비 중이에요.
-            </p>
-          )}
         </div>
       )}
       {balance && shortage <= 0 && (
@@ -91,6 +102,15 @@ export const PointSummary = ({
         <p className="mt-3 text-caption-mobile text-text-secondary">
           잔액을 불러오지 못해 부족한 포인트를 계산하지 못했어요.
         </p>
+      )}
+      {balance && isChargeOpen && (
+        <PointChargeSheet
+          balance={balance.balance}
+          minChargeAmount={MIN_CHARGE_AMOUNT}
+          onCharge={handleCharge}
+          onClose={() => setIsChargeOpen(false)}
+          shortage={shortage}
+        />
       )}
     </section>
   );
