@@ -1,5 +1,6 @@
 import { mockDelay } from './mocks/delay';
 import { mockStore } from './mocks/store';
+import type { HoursStepValues } from './signupFlow';
 import type { ApiResult } from './types';
 
 // 로그인한 점주의 가게 정보. 점주 계정 1개에 가게 1개만 등록된다
@@ -16,8 +17,13 @@ export interface MyStore {
   id: string;
   name: string;
   roadAddress: string;
+  // 가게 대표 이미지(로고)
   logoImageUrl: string;
-  // 입점 등록 때 등록한 대표 메뉴 3개
+  // 매장 이미지. 0~3장 (입점 등록 MAX_INTERIOR_IMAGES)
+  interiorImageUrls: string[];
+  // 영업일마다 같은 시간을 쓴다. 입점 등록의 영업시간 입력값과 같은 형태
+  businessHours: HoursStepValues;
+  // 대표 메뉴. 선택, 최대 3개 (입점 등록 MAX_MENUS)
   menus: StoreMenu[];
 }
 

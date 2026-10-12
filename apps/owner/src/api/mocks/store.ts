@@ -9,6 +9,15 @@ export const mockStore: MyStore = {
   name: '카츠쿠라 역삼점',
   roadAddress: '서울 강남구 테헤란로 152',
   logoImageUrl: photo('1504674900247-0877df9cc836'),
+  interiorImageUrls: [
+    photo('1517248135467-4c7edcad34c4'),
+    photo('1555396273-367ea4eb4db5'),
+  ],
+  businessHours: {
+    openDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+    openTime: '11:00',
+    closeTime: '21:00',
+  },
   menus: [
     {
       id: 'menu-1',
