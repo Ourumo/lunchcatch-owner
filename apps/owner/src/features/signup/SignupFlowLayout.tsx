@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { Toast } from '@repo/ui';
 
+import { logout } from '@owner/api/auth';
 import { submitSignupFlow } from '@owner/api/signupFlow';
 import { useAuth } from '@owner/auth/useAuth';
 import { StepActionBar } from '@owner/components/StepActionBar/StepActionBar';
@@ -20,9 +21,9 @@ export const SignupFlowLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { values } = useSignupFlow();
-  const { completeOnboarding } = useAuth();
+  const { clearOwner } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string>();
+  const [error, setError] = useState<{ title: string; description: string }>();
 
   const currentIndex = signupSteps.findIndex(
     (step) => getSignupStepPath(step) === pathname,
@@ -38,10 +39,28 @@ export const SignupFlowLayout = () => {
   const nextStep = signupSteps.at(currentIndex + 1);
   const canProceed = currentStep.canProceed?.(values) ?? true;
 
-  const goPrevious = () => {
-    setSubmitError(undefined);
-    // 첫 단계에서 뒤로 가면 입점 신청을 멈추고 로그인 화면으로 돌아간다
-    navigate(previousStep ? getSignupStepPath(previousStep) : '/login');
+  const goPrevious = async () => {
+    setError(undefined);
+
+    if (previousStep) {
+      navigate(getSignupStepPath(previousStep));
+      return;
+    }
+
+    // 첫 단계에서 뒤로 가면 입점 신청을 멈추고 로그인 화면으로 돌아간다.
+    // 로그인한 채로는 로그인 화면에 들어갈 수 없어 로그아웃한다
+    const result = await logout();
+
+    if (!result.ok) {
+      setError({
+        title: '로그아웃에 실패했습니다',
+        description: result.message ?? '잠시 후 다시 시도해 주세요.',
+      });
+      return;
+    }
+
+    clearOwner();
+    navigate('/login', { replace: true });
   };
 
   const handleNext = async () => {
@@ -55,16 +74,20 @@ export const SignupFlowLayout = () => {
     }
 
     setIsSubmitting(true);
-    setSubmitError(undefined);
+    setError(undefined);
     const result = await submitSignupFlow(values);
     setIsSubmitting(false);
 
     if (!result.ok) {
-      setSubmitError(result.message);
+      if (result.message) {
+        setError({
+          title: '등록 신청에 실패했습니다',
+          description: result.message,
+        });
+      }
       return;
     }
 
-    completeOnboarding();
     navigate(SIGNUP_COMPLETE_PATH, { replace: true });
   };
 
@@ -97,12 +120,12 @@ export const SignupFlowLayout = () => {
         {/* flex-1로 남은 높이를 채워, 내용이 짧아도 하단 버튼이 화면 아래에 붙게 한다 */}
         <main className="flex flex-1 flex-col gap-4">
           <Outlet />
-          {submitError && (
+          {error && (
             <div className="px-page">
               <Toast
-                description={submitError}
+                description={error.description}
                 style={{ maxWidth: 'none' }}
-                title="등록 신청에 실패했습니다"
+                title={error.title}
                 variant="danger"
               />
             </div>
