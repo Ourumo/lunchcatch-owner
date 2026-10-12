@@ -32,6 +32,13 @@ export default defineConfig(({ mode }) => {
           // 개발 서버는 인증 쿠키를 lunchcatch.com 도메인으로 준다. localhost에서는 그 쿠키를 저장하지 않으므로
           // 도메인 지정을 지워 지금 주소(localhost)의 쿠키로 받는다
           cookieDomainRewrite: '',
+          // 브라우저는 같은 주소로 보내는 POST에도 Origin(http://localhost:5174)을 붙인다.
+          // API 서버의 CORS가 localhost를 허용하지 않아 403으로 거절하므로, 넘길 때 Origin을 지운다
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.removeHeader('origin');
+            });
+          },
         },
       },
     },
