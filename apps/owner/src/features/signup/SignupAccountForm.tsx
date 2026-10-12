@@ -1,10 +1,12 @@
 import { Button, Input, Toast } from '@repo/ui';
 import { LockKeyhole, Mail } from 'lucide-react';
 
+import type { LoginResponse } from '@owner/api/auth';
+
 import { useSignupAccountForm } from './useSignupAccountForm';
 
 interface SignupAccountFormProps {
-  onSuccess: () => void;
+  onSuccess: (owner: LoginResponse) => void;
 }
 
 export const SignupAccountForm = ({ onSuccess }: SignupAccountFormProps) => {

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 
+import RequireAuth from '@owner/auth/RequireAuth';
 import {
   type CampaignStepId,
   campaignSteps,
@@ -67,75 +68,99 @@ const campaignStepPages: Record<CampaignStepId, ReactNode> = {
   review: <CampaignReviewPage />,
 };
 
+// 로그인 상태(로그인 전, 입점 신청 중, 입점 완료)마다 들어갈 수 있는 화면을 나눈다.
+// 맞지 않는 화면에 들어오면 RequireAuth가 상태에 맞는 첫 화면으로 보낸다
 export const router = createBrowserRouter([
+  // 첫 화면은 로그인으로 보내고, 로그인한 상태면 RequireAuth가 다시 상태에 맞는 화면으로 보낸다
   { path: '/', element: <Navigate replace to="/login" /> },
   {
-    element: <AuthLayout />,
+    element: <RequireAuth access="guest" />,
     children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/signup', element: <SignupPage /> },
-    ],
-  },
-  {
-    // 단계를 오가도 입력값이 유지되도록 모든 단계를 하나의 Provider 아래에 둔다
-    element: (
-      <SignupFlowProvider>
-        <SignupFlowLayout />
-      </SignupFlowProvider>
-    ),
-    children: signupSteps.map((step) => ({
-      path: getSignupStepPath(step),
-      element: stepPages[step.id] ?? (
-        <p className="px-page py-5 type-body text-text-secondary">
-          {step.title} 화면 준비 중
-        </p>
-      ),
-    })),
-  },
-  { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
-  {
-    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면
-    element: <TabLayout />,
-    children: [
-      { path: '/home', element: <HomePage /> },
-      { path: '/campaigns', element: <CampaignListPage /> },
-      { path: STORE_PATH, element: <StoreManagementPage /> },
-    ],
-  },
-  {
-    element: <MainLayout />,
-    children: [
-      { path: '/campaigns/new', element: <CampaignNewPage /> },
-      { path: '/campaigns/ended', element: <CampaignEndedPage /> },
-      { path: '/campaigns/:id', element: <CampaignDetailPage /> },
-      { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
-      // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
       {
-        path: '/qr-scan',
-        element: <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />,
-      },
-      ...[
-        { path: STORE_ANALYTICS_PATH, title: '분석' },
-        { path: POINT_HISTORY_PATH, title: '포인트 내역' },
-        { path: STORE_HOURS_PATH, title: '영업시간' },
-        { path: STORE_IMAGES_PATH, title: '매장 사진' },
-        { path: STORE_MENUS_PATH, title: '대표 메뉴' },
-      ].map(({ path, title }) => ({
-        path,
-        element: <ComingSoonPage fallbackPath={STORE_PATH} title={title} />,
-      })),
-      {
-        path: '/campaigns/:id/edit',
-        element: <CampaignFormPage />,
+        element: <AuthLayout />,
         children: [
+          { path: '/login', element: <LoginPage /> },
+          { path: '/signup', element: <SignupPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    element: <RequireAuth access="onboarding" />,
+    children: [
+      {
+        // 단계를 오가도 입력값이 유지되도록 모든 단계를 하나의 Provider 아래에 둔다
+        element: (
+          <SignupFlowProvider>
+            <SignupFlowLayout />
+          </SignupFlowProvider>
+        ),
+        children: signupSteps.map((step) => ({
+          path: getSignupStepPath(step),
+          element: stepPages[step.id] ?? (
+            <p className="px-page py-5 type-body text-text-secondary">
+              {step.title} 화면 준비 중
+            </p>
+          ),
+        })),
+      },
+      // 입점 신청을 제출한 뒤의 화면. 홈으로 갈 때 ACTIVE로 바꾼다
+      { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
+    ],
+  },
+  {
+    element: <RequireAuth access="active" />,
+    children: [
+      {
+        // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면
+        element: <TabLayout />,
+        children: [
+          { path: '/home', element: <HomePage /> },
+          { path: '/campaigns', element: <CampaignListPage /> },
+          { path: STORE_PATH, element: <StoreManagementPage /> },
+        ],
+      },
+      {
+        element: <MainLayout />,
+        children: [
+          { path: '/campaigns/new', element: <CampaignNewPage /> },
+          { path: '/campaigns/ended', element: <CampaignEndedPage /> },
+          { path: '/campaigns/:id', element: <CampaignDetailPage /> },
           {
-            index: true,
-            element: <Navigate replace to={campaignSteps[0].path} />,
+            path: '/campaigns/:id/complete',
+            element: <CampaignCompletePage />,
           },
-          ...campaignSteps.map((step) => ({
-            path: step.path,
-            element: campaignStepPages[step.id],
+          // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
+          {
+            path: '/qr-scan',
+            element: (
+              <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />
+            ),
+          },
+          ...[
+            { path: STORE_ANALYTICS_PATH, title: '분석' },
+            { path: POINT_HISTORY_PATH, title: '포인트 내역' },
+            { path: STORE_HOURS_PATH, title: '영업시간' },
+            { path: STORE_IMAGES_PATH, title: '매장 사진' },
+            { path: STORE_MENUS_PATH, title: '대표 메뉴' },
+          ].map(({ path, title }) => ({
+            path,
+            element: <ComingSoonPage fallbackPath={STORE_PATH} title={title} />,
           })),
+          {
+            path: '/campaigns/:id/edit',
+            element: <CampaignFormPage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate replace to={campaignSteps[0].path} />,
+              },
+              ...campaignSteps.map((step) => ({
+                path: step.path,
+                element: campaignStepPages[step.id],
+              })),
+            ],
+          },
         ],
       },
     ],
