@@ -36,6 +36,8 @@ reviews:
   tools:
     biome:
       enabled: false
+    eslint:
+      enabled: false
     gitleaks:
       enabled: true
 
