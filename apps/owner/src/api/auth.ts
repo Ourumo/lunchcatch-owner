@@ -1,8 +1,7 @@
-import { mockDelay } from './mocks/delay';
-import { mockOwners } from './mocks/owners';
+import { ApiError, request } from './client';
 import type { ApiResult } from './types';
 
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 점주 로그인과 회원가입 (docs/requirements-owner.md "점주 회원가입", "점주 로그인")
 
 export type OwnerStatus = 'ONBOARDING' | 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
 
@@ -25,54 +24,106 @@ export interface SignupFieldErrors {
   email?: string;
 }
 
+// 서버 로그인 응답 (POST /v1/owner/auth/tokens). 토큰은 서버가 HttpOnly 쿠키로 내려준다
+interface OwnerLoginResponse {
+  email: string;
+  role: string;
+  status: OwnerStatus;
+  // Swagger에는 있지만 개발 서버 응답에는 아직 없다. 없으면 안 본 것으로 본다
+  tutorialViewed?: boolean;
+}
+
+// 서버 회원가입 응답 (POST /v1/owners). 인증 쿠키는 주지 않는다
+interface OwnerSignupResponse {
+  email: string;
+  role: string;
+  status: OwnerStatus;
+}
+
+// 이미 가입된 이메일 (409)
+const EMAIL_DUPLICATED_CODE = 'OWNER-001';
+
 // 인증 실패 사유(계정 없음, 비밀번호 불일치, 이용 불가 상태)를 구분하지 않는다
 const LOGIN_FAILED_MESSAGE = '이메일 또는 비밀번호가 올바르지 않습니다.';
+// 서버가 꺼져 있거나 네트워크가 끊겨 응답을 받지 못했거나, 서버 오류(5xx)일 때. 로그인과 회원가입이 같이 쓴다.
+// 화면 제목("로그인에 실패했습니다" 등)이 실패를 알리므로 원인만 알린다
+const UNAVAILABLE_MESSAGE =
+  '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
 const EMAIL_DUPLICATED_MESSAGE = '이미 가입된 이메일입니다.';
+// 서버가 입력 형식 오류 등으로 가입을 거절했을 때
+const SIGNUP_REJECTED_MESSAGE = '입력한 정보를 다시 확인해 주세요.';
+// 가입은 됐지만 바로 이어서 한 로그인이 실패했을 때
+const SIGNUP_LOGIN_FAILED_MESSAGE =
+  '가입은 완료되었습니다. 로그인 화면에서 다시 로그인해 주세요.';
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const isLoginAllowedStatus = (
+  status: OwnerStatus,
+): status is LoginResponse['status'] =>
+  status === 'ONBOARDING' || status === 'ACTIVE';
 
-const findOwner = (email: string) =>
-  mockOwners.find((owner) => owner.email === normalizeEmail(email));
+// 서버가 오류 코드와 함께 거절했으면(예: AUTH-001, 입력 형식 오류 COMMON-002) 로그인 실패 문구,
+// 응답을 받지 못했거나 읽지 못했거나 서버 오류(5xx)면 다시 시도 문구를 보여준다
+const getLoginErrorMessage = (error: unknown) =>
+  error instanceof ApiError && error.code !== null && error.status < 500
+    ? LOGIN_FAILED_MESSAGE
+    : UNAVAILABLE_MESSAGE;
 
 export const login = async ({
   email,
   password,
 }: LoginRequest): Promise<ApiResult<LoginResponse>> => {
-  await mockDelay();
+  try {
+    const data = await request<OwnerLoginResponse>('/v1/owner/auth/tokens', {
+      method: 'POST',
+      body: { email, password },
+    });
 
-  const owner = findOwner(email);
+    // 이용 정지·탈퇴 계정은 서버가 거절하지 않고 내려보내도 같은 문구로 막는다
+    if (!isLoginAllowedStatus(data.status)) {
+      return { ok: false, message: LOGIN_FAILED_MESSAGE };
+    }
 
-  if (
-    !owner ||
-    owner.password !== password ||
-    (owner.status !== 'ONBOARDING' && owner.status !== 'ACTIVE')
-  ) {
-    return { ok: false, message: LOGIN_FAILED_MESSAGE };
+    return {
+      ok: true,
+      data: {
+        status: data.status,
+        tutorialViewed: data.tutorialViewed ?? false,
+      },
+    };
+  } catch (error) {
+    return { ok: false, message: getLoginErrorMessage(error) };
   }
-
-  return {
-    ok: true,
-    data: { status: owner.status, tutorialViewed: owner.tutorialViewed },
-  };
 };
+
+// 서버가 오류 코드와 함께 거절한 것(4xx)과, 응답을 받지 못했거나 서버 오류(5xx)인 것을 나눈다
+const getSignupErrorMessage = (error: unknown) =>
+  error instanceof ApiError && error.code !== null && error.status < 500
+    ? SIGNUP_REJECTED_MESSAGE
+    : UNAVAILABLE_MESSAGE;
 
 export const signup = async ({
   email,
   password,
 }: SignupRequest): Promise<ApiResult<null, SignupFieldErrors>> => {
-  await mockDelay();
+  try {
+    await request<OwnerSignupResponse>('/v1/owners', {
+      method: 'POST',
+      body: { email, password },
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === EMAIL_DUPLICATED_CODE) {
+      return { ok: false, fieldErrors: { email: EMAIL_DUPLICATED_MESSAGE } };
+    }
 
-  if (findOwner(email)) {
-    return { ok: false, fieldErrors: { email: EMAIL_DUPLICATED_MESSAGE } };
+    return { ok: false, message: getSignupErrorMessage(error) };
   }
 
-  // 가입한 계정으로 바로 로그인해 볼 수 있도록 메모리에만 추가한다. 새로고침하면 초기화된다
-  mockOwners.push({
-    email: normalizeEmail(email),
-    password,
-    status: 'ONBOARDING',
-    tutorialViewed: false,
-  });
+  // 가입 응답에는 인증 쿠키가 없어, 가입한 계정으로 바로 로그인해 약관 동의 단계로 이어지게 한다
+  const loginResult = await login({ email, password });
+
+  if (!loginResult.ok) {
+    return { ok: false, message: SIGNUP_LOGIN_FAILED_MESSAGE };
+  }
 
   return { ok: true, data: null };
 };
