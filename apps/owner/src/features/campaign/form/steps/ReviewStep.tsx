@@ -7,6 +7,7 @@ import {
   getCampaigns,
   isBudgetStepComplete,
   isCouponStepComplete,
+  isCurrentCampaign,
   ISSUE_OPEN_TIME,
   isValidTarget,
   SERVING_TIME_END,
@@ -117,8 +118,8 @@ export const ReviewStep = () => {
       if (!ignore && result.ok) {
         setRunningCampaign(
           result.data.find(
-            ({ id, status }) =>
-              id !== campaignId && (status === 'ACTIVE' || status === 'PAUSED'),
+            (campaign) =>
+              campaign.id !== campaignId && isCurrentCampaign(campaign),
           ),
         );
       }

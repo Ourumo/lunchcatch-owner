@@ -3,7 +3,11 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
-import { type Campaign, isUpcomingCampaign } from '@owner/api/campaign';
+import {
+  type Campaign,
+  isCurrentCampaign,
+  isUpcomingCampaign,
+} from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
 import { getCampaignTitle } from '@owner/components/campaignFormat';
 import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/CurrentCampaignCard';
@@ -21,13 +25,10 @@ import { useCampaignList } from './useCampaignList';
 
 const NEW_CAMPAIGN_PATH = '/campaigns/new';
 
-const isCurrent = ({ status }: Campaign) =>
-  status === 'ACTIVE' || status === 'PAUSED';
-
 // 진행 중과 준비 중(작성 중 + 시작 대기)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
   return {
-    current: campaigns.find(isCurrent),
+    current: campaigns.find(isCurrentCampaign),
     next: campaigns.find(isUpcomingCampaign),
     ended: getEndedCampaigns(campaigns),
   };

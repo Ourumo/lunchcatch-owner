@@ -146,6 +146,10 @@ export const UPCOMING_LIMIT_ERROR = 'UPCOMING_LIMIT';
 export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'DRAFT' || status === 'SCHEDULED';
 
+// 지금 집행 중인 캠페인(진행 중 또는 중단). 가게당 1건이고, 다음 캠페인이 시작되는 날 종료된다
+export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
+  status === 'ACTIVE' || status === 'PAUSED';
+
 // 하루 예산 추천과 예상 노출 범위 계산에 필요한 값. 인원은 전날 00:00 집계 값이다.
 // 노출 단가와 최소 하루 예산은 플랫폼 설정값(getPlatformSettings)에서 읽는다
 export interface BudgetRecommendation {
