@@ -5,9 +5,13 @@ import { CircleAlert, Sparkles } from 'lucide-react';
 import {
   type BudgetRecommendation,
   type BudgetStepValues,
+  type Campaign,
   DAILY_EXPOSURE_CAP,
+  endsCurrentCampaignEarly,
   getBudgetRecommendation,
+  getCampaigns,
   getDateValueFromToday,
+  isCurrentCampaign,
   isValidDailyBudget,
   isValidPeriod,
 } from '@owner/api/campaign';
@@ -15,6 +19,7 @@ import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
   formatNumber,
   formatPoints,
+  formatShortDate,
   getPeriodDays,
 } from '@owner/components/campaignFormat';
 import { DateRangePicker } from '@owner/components/DateRangePicker/DateRangePicker';
@@ -189,6 +194,8 @@ export const BudgetStep = () => {
   const [recommendation, setRecommendation] =
     useState<Loadable<BudgetRecommendation>>();
   const [balance, setBalance] = useState<Loadable<PointBalance>>();
+  // 이 캠페인이 시작되는 날 종료되는 진행 중 캠페인. 없거나 불러오지 못하면 경고하지 않는다
+  const [currentCampaign, setCurrentCampaign] = useState<Campaign>();
   const tomorrow = getDateValueFromToday(1);
 
   useEffect(() => {
@@ -203,6 +210,16 @@ export const BudgetStep = () => {
     getPointBalance().then((result) => {
       if (!ignore) {
         setBalance(result.ok ? result.data : null);
+      }
+    });
+    getCampaigns().then((result) => {
+      if (!ignore && result.ok) {
+        setCurrentCampaign(
+          result.data.find(
+            (campaign) =>
+              campaign.id !== campaignId && isCurrentCampaign(campaign),
+          ),
+        );
       }
     });
 
@@ -228,6 +245,12 @@ export const BudgetStep = () => {
   // 저장해 둔 시작일이 그사이 지나 버린 경우
   const isStartDatePast =
     Boolean(budget.startDate) && budget.startDate < tomorrow;
+  const overlapEndDate =
+    currentCampaign &&
+    !isStartDatePast &&
+    endsCurrentCampaignEarly(budget.startDate, currentCampaign)
+      ? currentCampaign.budget.endDate
+      : undefined;
 
   return (
     <div className="flex flex-col gap-8 px-page">
@@ -291,6 +314,21 @@ export const BudgetStep = () => {
             총 {periodDays}일 동안 노출돼요
           </p>
         )}
+        {/* 경고가 나타날 때 스크린 리더가 읽도록 영역은 늘 두고, 경고가 없으면 화면에서만 숨긴다 */}
+        <div className={overlapEndDate ? undefined : 'sr-only'} role="status">
+          {overlapEndDate && (
+            <p className="flex gap-1.5 rounded-lg bg-status-warning-bg px-3 py-2.5 text-caption-mobile break-keep text-text-primary">
+              <CircleAlert
+                aria-hidden="true"
+                className="mt-0.5 size-3.5 shrink-0 text-status-warning-fg"
+              />
+              진행 중인 캠페인은 {formatShortDate(overlapEndDate)}까지인데, 이
+              캠페인이 시작되는 {formatShortDate(budget.startDate)}에 일찍
+              종료돼요. 이어서 시작하려면 {formatShortDate(overlapEndDate)} 다음
+              날부터 골라 주세요.
+            </p>
+          )}
+        </div>
         {hasPeriod && periodDays < RECOMMENDED_MIN_DAYS && (
           <p className="flex gap-1.5 rounded-lg bg-status-warning-bg px-3 py-2.5 text-caption-mobile break-keep text-text-primary">
             <CircleAlert
