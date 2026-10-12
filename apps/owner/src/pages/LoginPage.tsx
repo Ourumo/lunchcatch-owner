@@ -1,13 +1,17 @@
 import { Link, useNavigate } from 'react-router';
 
 import type { LoginResponse } from '@owner/api/auth';
+import { useAuth } from '@owner/auth/useAuth';
 import { LoginForm } from '@owner/features/login/LoginForm';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { setOwner } = useAuth();
 
-  const handleLoginSuccess = ({ status }: LoginResponse) => {
-    if (status === 'ONBOARDING') {
+  const handleLoginSuccess = (owner: LoginResponse) => {
+    setOwner(owner);
+
+    if (owner.status === 'ONBOARDING') {
       navigate('/signup/terms');
       return;
     }

@@ -5,6 +5,7 @@ import { ChartNoAxesColumn, ChevronRight } from 'lucide-react';
 
 import { chargePoints, MIN_CHARGE_AMOUNT } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
+import { useAuth } from '@owner/auth/useAuth';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
@@ -168,6 +169,7 @@ const StoreManagementError = ({ onRetry }: { onRetry: () => void }) => (
 // 가게 관리 탭. 명세의 필수 기능(포인트 충전·내역, 영업시간·사진·메뉴 수정)만 둔다
 export const StoreManagement = () => {
   const navigate = useNavigate();
+  const { clearOwner } = useAuth();
   const { retry, state, updateBalance } = useStoreManagement();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -245,7 +247,10 @@ export const StoreManagement = () => {
           <LogoutSheet
             onClose={() => setIsLogoutOpen(false)}
             // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
-            onLogout={() => navigate(LOGIN_PATH, { replace: true })}
+            onLogout={() => {
+              clearOwner();
+              navigate(LOGIN_PATH, { replace: true });
+            }}
           />
         )}
       </div>

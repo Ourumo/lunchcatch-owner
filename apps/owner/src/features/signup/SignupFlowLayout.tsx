@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { Toast } from '@repo/ui';
 
 import { submitSignupFlow } from '@owner/api/signupFlow';
+import { useAuth } from '@owner/auth/useAuth';
 import { StepActionBar } from '@owner/components/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/components/StepIndicator/StepIndicator';
 import { TopBar } from '@owner/components/TopBar/TopBar';
@@ -19,6 +20,7 @@ export const SignupFlowLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { values } = useSignupFlow();
+  const { completeOnboarding } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
 
@@ -62,6 +64,7 @@ export const SignupFlowLayout = () => {
       return;
     }
 
+    completeOnboarding();
     navigate(SIGNUP_COMPLETE_PATH, { replace: true });
   };
 
