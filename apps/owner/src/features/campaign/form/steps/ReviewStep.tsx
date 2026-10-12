@@ -4,9 +4,11 @@ import { CircleAlert, Info } from 'lucide-react';
 
 import {
   type Campaign,
+  endsCurrentCampaignEarly,
   getCampaigns,
   isBudgetStepComplete,
   isCouponStepComplete,
+  isCurrentCampaign,
   ISSUE_OPEN_TIME,
   isValidTarget,
   SERVING_TIME_END,
@@ -24,6 +26,7 @@ import {
   formatNumber,
   formatPeriod,
   formatPoints,
+  formatShortDate,
   getPeriodDays,
 } from '@owner/components/campaignFormat';
 import {
@@ -117,8 +120,8 @@ export const ReviewStep = () => {
       if (!ignore && result.ok) {
         setRunningCampaign(
           result.data.find(
-            ({ id, status }) =>
-              id !== campaignId && (status === 'ACTIVE' || status === 'PAUSED'),
+            (campaign) =>
+              campaign.id !== campaignId && isCurrentCampaign(campaign),
           ),
         );
       }
@@ -250,16 +253,19 @@ export const ReviewStep = () => {
         />
       )}
 
-      {runningCampaign && (
-        <p className="flex gap-1.5 rounded-xl bg-status-warning-bg px-4 py-3 text-caption-mobile break-keep text-text-primary">
-          <CircleAlert
-            aria-hidden="true"
-            className="mt-0.5 size-3.5 shrink-0 text-status-warning-fg"
-          />
-          지금 진행 중인 캠페인이 있어요. 가게마다 한 번에 하나만 노출되므로, 이
-          캠페인이 시작되면 진행 중인 캠페인은 종료돼요.
-        </p>
-      )}
+      {/* 4단계와 같은 기준으로, 기간이 겹쳐 진행 중 캠페인이 일찍 끝날 때만 알린다 */}
+      {runningCampaign &&
+        endsCurrentCampaignEarly(budget.startDate, runningCampaign) && (
+          <p className="flex gap-1.5 rounded-xl bg-status-warning-bg px-4 py-3 text-caption-mobile break-keep text-text-primary">
+            <CircleAlert
+              aria-hidden="true"
+              className="mt-0.5 size-3.5 shrink-0 text-status-warning-fg"
+            />
+            진행 중인 캠페인은 {formatShortDate(runningCampaign.budget.endDate)}
+            까지인데, 이 캠페인이 시작되는 {formatShortDate(budget.startDate)}에
+            일찍 종료돼요. 활성화한 뒤에는 집행 기간을 바꿀 수 없어요.
+          </p>
+        )}
 
       <p className="flex gap-1.5 rounded-xl bg-surface-subtle px-4 py-3 text-caption-mobile break-keep text-text-primary">
         <Info
