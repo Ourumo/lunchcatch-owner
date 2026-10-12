@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 
-import { ComingSoon } from '@owner/components/ComingSoon/ComingSoon';
 import {
   type CampaignStepId,
   campaignSteps,
@@ -14,6 +13,14 @@ import {
   type SignupStepId,
   signupSteps,
 } from '@owner/features/signup/signupSteps';
+import {
+  POINT_HISTORY_PATH,
+  STORE_ANALYTICS_PATH,
+  STORE_HOURS_PATH,
+  STORE_IMAGES_PATH,
+  STORE_MENUS_PATH,
+  STORE_PATH,
+} from '@owner/features/store/storePaths';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
 import TabLayout from '@owner/layout/TabLayout';
@@ -39,6 +46,7 @@ import SignupMenuPage from '@owner/pages/SignupMenuPage';
 import SignupPage from '@owner/pages/SignupPage';
 import SignupStorePage from '@owner/pages/SignupStorePage';
 import SignupTermsPage from '@owner/pages/SignupTermsPage';
+import StoreManagementPage from '@owner/pages/StoreManagementPage';
 
 // 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
 const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
@@ -86,12 +94,12 @@ export const router = createBrowserRouter([
   },
   { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
   {
-    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면. 가게 관리는 화면을 만들기 전까지 준비 중으로 둔다
+    // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면
     element: <TabLayout />,
     children: [
       { path: '/home', element: <HomePage /> },
       { path: '/campaigns', element: <CampaignListPage /> },
-      { path: '/store', element: <ComingSoon title="가게 관리" /> },
+      { path: STORE_PATH, element: <StoreManagementPage /> },
     ],
   },
   {
@@ -101,15 +109,21 @@ export const router = createBrowserRouter([
       { path: '/campaigns/ended', element: <CampaignEndedPage /> },
       { path: '/campaigns/:id', element: <CampaignDetailPage /> },
       { path: '/campaigns/:id/complete', element: <CampaignCompletePage /> },
-      // 홈에서 연결했지만 아직 만들지 않은 화면
+      // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
       {
         path: '/qr-scan',
         element: <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />,
       },
-      {
-        path: '/store/analytics',
-        element: <ComingSoonPage fallbackPath="/store" title="분석" />,
-      },
+      ...[
+        { path: STORE_ANALYTICS_PATH, title: '분석' },
+        { path: POINT_HISTORY_PATH, title: '포인트 내역' },
+        { path: STORE_HOURS_PATH, title: '영업시간' },
+        { path: STORE_IMAGES_PATH, title: '매장 사진' },
+        { path: STORE_MENUS_PATH, title: '대표 메뉴' },
+      ].map(({ path, title }) => ({
+        path,
+        element: <ComingSoonPage fallbackPath={STORE_PATH} title={title} />,
+      })),
       {
         path: '/campaigns/:id/edit',
         element: <CampaignFormPage />,
