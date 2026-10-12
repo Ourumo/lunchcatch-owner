@@ -1,7 +1,8 @@
 import { ApiError, request } from './client';
+import { mockDelay } from './mocks/delay';
 import type { ApiResult } from './types';
 
-// 점주 로그인과 회원가입 (docs/requirements-owner.md "점주 회원가입", "점주 로그인")
+// 점주 로그인, 회원가입, 로그아웃 (docs/requirements-owner.md "점주 회원가입", "점주 로그인", "점주 로그아웃")
 
 export type OwnerStatus = 'ONBOARDING' | 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
 
@@ -124,6 +125,14 @@ export const signup = async ({
   if (!loginResult.ok) {
     return { ok: false, message: SIGNUP_LOGIN_FAILED_MESSAGE };
   }
+
+  return { ok: true, data: null };
+};
+
+// 서버가 Refresh Token을 폐기하고 인증 쿠키를 지운다. 폐기에 실패하면 로그아웃도 실패로 돌려준다
+// 개발 서버에 점주 로그아웃 API가 아직 없어 mock으로 둔다. 연동할 때는 이 함수 내부만 교체한다
+export const logout = async (): Promise<ApiResult<null>> => {
+  await mockDelay();
 
   return { ok: true, data: null };
 };

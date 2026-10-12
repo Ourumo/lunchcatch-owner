@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 import { ChartNoAxesColumn, ChevronRight } from 'lucide-react';
 
@@ -9,6 +9,7 @@ import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
 
+import { LogoutSheet } from './LogoutSheet';
 import {
   formatBusinessHours,
   formatMenuCount,
@@ -22,6 +23,8 @@ import {
   STORE_MENUS_PATH,
 } from './storePaths';
 import { useStoreManagement } from './useStoreManagement';
+
+const LOGIN_PATH = '/login';
 
 const rowClassName =
   'flex min-h-14 items-center gap-3 px-4 py-3 text-body-mobile text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-action-primary';
@@ -164,8 +167,10 @@ const StoreManagementError = ({ onRetry }: { onRetry: () => void }) => (
 
 // 가게 관리 탭. 명세의 필수 기능(포인트 충전·내역, 영업시간·사진·메뉴 수정)만 둔다
 export const StoreManagement = () => {
+  const navigate = useNavigate();
   const { retry, state, updateBalance } = useStoreManagement();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
   const handleCharge = async (amount: number) => {
     const result = await chargePoints(amount);
@@ -219,12 +224,28 @@ export const StoreManagement = () => {
           />
         </ManagementSection>
 
+        {/* 자주 쓰지 않고 잘못 누르면 다시 로그인해야 하므로 맨 아래 작은 글씨로 둔다 */}
+        <button
+          className="mx-auto flex h-11 items-center rounded-full px-4 text-body-sm-mobile text-text-secondary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-action-primary"
+          onClick={() => setIsLogoutOpen(true)}
+          type="button"
+        >
+          로그아웃
+        </button>
+
         {isChargeOpen && (
           <PointChargeSheet
             balance={balance}
             minChargeAmount={MIN_CHARGE_AMOUNT}
             onCharge={handleCharge}
             onClose={() => setIsChargeOpen(false)}
+          />
+        )}
+        {isLogoutOpen && (
+          <LogoutSheet
+            onClose={() => setIsLogoutOpen(false)}
+            // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
+            onLogout={() => navigate(LOGIN_PATH, { replace: true })}
           />
         )}
       </div>
