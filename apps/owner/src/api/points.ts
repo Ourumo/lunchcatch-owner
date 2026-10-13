@@ -76,19 +76,23 @@ export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
   return { ok: true, data: getMockBalance() };
 };
 
-// 조회 기간의 첫날 00:00
-const getPeriodStart = (period: PointHistoryPeriod) => {
-  const start = new Date();
+// 한국은 서머타임이 없어 UTC와 늘 9시간 차이다
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-  start.setHours(0, 0, 0, 0);
+// 조회 기간 첫날의 한국 시간 00:00. 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다.
+// 한국 시각에 9시간을 더해 UTC 날짜 계산으로 다룬 뒤 다시 뺀다
+const getPeriodStart = (period: PointHistoryPeriod) => {
+  const start = new Date(Date.now() + KST_OFFSET_MS);
+
+  start.setUTCHours(0, 0, 0, 0);
 
   if (period === '3M') {
-    start.setMonth(start.getMonth() - 3);
+    start.setUTCMonth(start.getUTCMonth() - 3);
   } else {
-    start.setDate(start.getDate() - (period === '7D' ? 6 : 29));
+    start.setUTCDate(start.getUTCDate() - (period === '7D' ? 6 : 29));
   }
 
-  return start;
+  return new Date(start.getTime() - KST_OFFSET_MS);
 };
 
 const toHistoryEntry = (

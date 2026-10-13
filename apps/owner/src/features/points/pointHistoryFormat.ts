@@ -52,10 +52,24 @@ export interface PointHistoryDay {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const padTime = (value: number) => String(value).padStart(2, '0');
+// 집행일(00:00 예약 ~ 13:30 예약 해제)은 한국 시간 기준이라, 브라우저 시간대와 상관없이 한국 날짜와 시각으로 묶고 보여준다.
+// 다른 시간대로 묶으면 00:00 예약이 전날로 넘어가 집행일 묶음이 깨진다
+const kstDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
-const toDateKey = (date: Date) =>
-  `${date.getFullYear()}-${padTime(date.getMonth() + 1)}-${padTime(date.getDate())}`;
+const kstTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Seoul',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+// YYYY-MM-DD
+const toDateKey = (date: Date) => kstDateFormatter.format(date);
 
 const SERVING_TYPES: PointHistoryType[] = ['RESERVE', 'DEDUCT', 'RELEASE'];
 
@@ -159,11 +173,8 @@ export const formatHistoryDate = (dateKey: string) => {
 };
 
 // 09:20
-export const formatHistoryTime = (occurredAt: string) => {
-  const date = new Date(occurredAt);
-
-  return `${padTime(date.getHours())}:${padTime(date.getMinutes())}`;
-};
+export const formatHistoryTime = (occurredAt: string) =>
+  kstTimeFormatter.format(new Date(occurredAt));
 
 // +30,000P, −2,800P. 빼기는 하이픈보다 잘 보이는 마이너스 기호를 쓴다
 export const formatSignedPoints = (amount: number) => {
