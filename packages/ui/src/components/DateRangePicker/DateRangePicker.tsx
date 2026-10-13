@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface DateRangeValue {
@@ -17,6 +17,8 @@ export interface DateRangePickerProps {
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 const emptyDateRange: DateRangeValue = { endDate: '', startDate: '' };
+const popupWidth = 296;
+const popupMargin = 8;
 
 const createDate = (value: string) => {
   const [year, month, day] = value.split('-').map(Number);
@@ -43,6 +45,7 @@ export function DateRangePicker({
   value,
 }: DateRangePickerProps) {
   const fieldRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(true);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
@@ -60,6 +63,70 @@ export function DateRangePicker({
     visibleMonth.getMonth() + 1,
     0,
   ).getDate();
+
+  useLayoutEffect(() => {
+    const popup = popupRef.current;
+    const field = fieldRef.current;
+
+    if (!isOpen || !popup || !field) {
+      return;
+    }
+
+    // Popover API의 최상위 레이어는 부모의 overflow와 stacking context에 영향을 받지 않는다.
+    // manual 모드로 브라우저의 자동 닫기를 끄고, 바깥 클릭·Escape와 isOpen으로 열림 상태를 관리한다.
+    // useLayoutEffect에서 배치해 최초 표시 때 위치가 튀는 것을 막는다.
+    popup.showPopover();
+
+    const updatePosition = () => {
+      // 모바일 키보드나 확대 때문에 실제 보이는 영역이 작아진 경우에도 그 영역 안에 배치한다.
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportWidth =
+        viewport?.width ?? document.documentElement.clientWidth;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const margin = popupMargin;
+      const minLeft = viewportLeft + margin;
+      const minTop = viewportTop + margin;
+      const viewportBottom = viewportTop + viewportHeight - margin;
+      const fieldRect = field.getBoundingClientRect();
+
+      // 좁은 화면에서는 폭에 따라 내용 높이도 달라지므로 크기를 제한한 후 위치 계산에 쓸 높이를 측정한다.
+      popup.style.width = `${Math.min(popupWidth, Math.max(0, viewportWidth - margin * 2))}px`;
+      popup.style.maxHeight = `${Math.max(0, viewportHeight - margin * 2)}px`;
+
+      const popupRect = popup.getBoundingClientRect();
+      const maxLeft = viewportLeft + viewportWidth - margin - popupRect.width;
+      const belowTop = fieldRect.bottom + margin;
+      const aboveTop = fieldRect.top - margin - popupRect.height;
+      // 아래 공간이 부족하면 위로 펼치고, 어느 쪽도 부족하면 화면 안으로 보정한다.
+      const preferredTop =
+        belowTop + popupRect.height <= viewportBottom ? belowTop : aboveTop;
+
+      popup.style.left = `${Math.max(minLeft, Math.min(fieldRect.left, maxLeft))}px`;
+      popup.style.top = `${Math.max(minTop, Math.min(preferredTop, viewportBottom - popupRect.height))}px`;
+    };
+
+    updatePosition();
+
+    // 월 변경으로 달력 높이가 달라지거나 화면을 스크롤해도 입력란을 따라간다.
+    const observer = new ResizeObserver(updatePosition);
+    observer.observe(popup);
+    observer.observe(field);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    window.visualViewport?.addEventListener('resize', updatePosition);
+    window.visualViewport?.addEventListener('scroll', updatePosition);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.visualViewport?.removeEventListener('resize', updatePosition);
+      window.visualViewport?.removeEventListener('scroll', updatePosition);
+      popup.hidePopover();
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -128,7 +195,10 @@ export function DateRangePicker({
   );
 
   return (
-    <div className="relative w-full" ref={fieldRef}>
+    <div
+      className="relative w-[var(--layout-date-range-picker-width)] max-w-full shrink-0"
+      ref={fieldRef}
+    >
       <button
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -154,7 +224,9 @@ export function DateRangePicker({
       {isOpen && (
         <div
           aria-label={`${visibleMonth.getFullYear()}년 ${visibleMonth.getMonth() + 1}월 날짜 범위 선택`}
-          className="absolute left-0 top-full z-30 mt-2 w-[296px] rounded-lg border border-border-subtle bg-bg-surface p-4 shadow-lg"
+          className="fixed inset-auto m-0 overflow-y-auto overscroll-contain rounded-lg border border-border-subtle bg-bg-surface p-4 shadow-lg"
+          popover="manual"
+          ref={popupRef}
           role="dialog"
         >
           <p className="mb-3 text-caption-web text-text-secondary">
