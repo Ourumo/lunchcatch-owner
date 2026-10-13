@@ -165,6 +165,12 @@ export interface HoursStepValues {
 export const isValidTimeRange = (openTime: string, closeTime: string) =>
   openTime < closeTime;
 
+// 두 시간을 모두 입력한 뒤에만 순서를 검사한다. 입점 등록과 가게 관리가 같은 문구를 쓴다
+export const getTimeRangeError = (openTime: string, closeTime: string) =>
+  openTime && closeTime && !isValidTimeRange(openTime, closeTime)
+    ? '시작 시간보다 늦어야 해요'
+    : undefined;
+
 export const isHoursStepComplete = ({
   openDays,
   openTime,
