@@ -50,6 +50,7 @@ import SignupTermsPage from '@owner/pages/SignupTermsPage';
 import StoreHoursPage from '@owner/pages/StoreHoursPage';
 import StoreImagesPage from '@owner/pages/StoreImagesPage';
 import StoreManagementPage from '@owner/pages/StoreManagementPage';
+import StoreMenusPage from '@owner/pages/StoreMenusPage';
 
 // 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
 const stepPages: Partial<Record<SignupStepId, ReactNode>> = {
@@ -134,6 +135,7 @@ export const router = createBrowserRouter([
           },
           { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
           { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
+          { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
           // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
           {
             path: '/qr-scan',
@@ -144,7 +146,6 @@ export const router = createBrowserRouter([
           ...[
             { path: STORE_ANALYTICS_PATH, title: '분석' },
             { path: POINT_HISTORY_PATH, title: '포인트 내역' },
-            { path: STORE_MENUS_PATH, title: '대표 메뉴' },
           ].map(({ path, title }) => ({
             path,
             element: <ComingSoonPage fallbackPath={STORE_PATH} title={title} />,

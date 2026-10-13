@@ -216,11 +216,15 @@ export interface MenuDraft {
 
 export type MenuField = keyof MenuDraft;
 
+// 사진은 있는지만 본다. 가게 관리에서는 이미 올라간 사진 주소도 넘긴다
 export const getMenuErrors = ({
   image,
   name,
   price,
-}: MenuDraft): Record<MenuField, string | undefined> => {
+}: Omit<MenuDraft, 'image'> & { image: File | string | null }): Record<
+  MenuField,
+  string | undefined
+> => {
   const priceValue = Number(price);
 
   return {
