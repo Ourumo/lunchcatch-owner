@@ -182,11 +182,19 @@ export const updateStoreMenus = async (
         ).some(Boolean),
     );
 
-  if (hasInvalidMenu) {
+  // 고치는 메뉴의 ID는 지금 가게 메뉴에 있어야 하고 한 번씩만 와야 한다.
+  // 없는 ID나 같은 ID가 두 번 오면 캠페인이 가리키는 메뉴가 엉키므로 받지 않는다
+  const currentIds = new Set(mockStore.menus.map(({ id }) => id));
+  const requestedIds = menus.flatMap(({ id }) => (id ? [id] : []));
+  const hasInvalidId =
+    requestedIds.some((id) => !currentIds.has(id)) ||
+    new Set(requestedIds).size !== requestedIds.length;
+
+  if (hasInvalidMenu || hasInvalidId) {
     return { ok: false, message: INVALID_STORE_MENUS_MESSAGE };
   }
 
-  const keptIds = new Set(menus.flatMap(({ id }) => (id ? [id] : [])));
+  const keptIds = new Set(requestedIds);
 
   if ([...findMenuIdsInUse()].some((id) => !keptIds.has(id))) {
     return { ok: false, message: MENU_IN_USE_MESSAGE };
