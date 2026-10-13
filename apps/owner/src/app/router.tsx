@@ -47,6 +47,7 @@ import SignupMenuPage from '@owner/pages/SignupMenuPage';
 import SignupPage from '@owner/pages/SignupPage';
 import SignupStorePage from '@owner/pages/SignupStorePage';
 import SignupTermsPage from '@owner/pages/SignupTermsPage';
+import StoreHoursPage from '@owner/pages/StoreHoursPage';
 import StoreManagementPage from '@owner/pages/StoreManagementPage';
 
 // 단계별 화면. 아직 없는 단계는 임시 문구를 보여준다
@@ -130,6 +131,7 @@ export const router = createBrowserRouter([
             path: '/campaigns/:id/complete',
             element: <CampaignCompletePage />,
           },
+          { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
           // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
           {
             path: '/qr-scan',
@@ -140,7 +142,6 @@ export const router = createBrowserRouter([
           ...[
             { path: STORE_ANALYTICS_PATH, title: '분석' },
             { path: POINT_HISTORY_PATH, title: '포인트 내역' },
-            { path: STORE_HOURS_PATH, title: '영업시간' },
             { path: STORE_IMAGES_PATH, title: '매장 사진' },
             { path: STORE_MENUS_PATH, title: '대표 메뉴' },
           ].map(({ path, title }) => ({
