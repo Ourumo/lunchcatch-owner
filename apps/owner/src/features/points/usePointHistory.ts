@@ -10,7 +10,10 @@ import {
   type PointHistoryFilter,
 } from '@owner/api/points';
 import { getMyStore } from '@owner/api/store';
-import { getCampaignTitle } from '@owner/components/campaignFormat';
+import {
+  formatPeriod,
+  getCampaignTitle,
+} from '@owner/components/campaignFormat';
 
 type BalanceState =
   | { status: 'loading' }
@@ -22,9 +25,22 @@ type HistoryState =
   | { status: 'error' }
   | { status: 'success'; entries: PointHistoryEntry[] };
 
+interface CampaignFilterOption {
+  id: string;
+  label: string;
+}
+
+// 쿠폰 조건이 같은 캠페인은 이름이 겹치므로 집행 기간을 붙인다
+const formatCampaignOption = (
+  title: string,
+  startDate: string,
+  endDate: string,
+) => `${title} · ${formatPeriod(startDate, endDate)}`;
+
 // 포인트 내역 화면에 필요한 잔액, 내역, 캠페인 이름을 따로 불러온다.
 // 잔액과 내역은 실패해도 서로의 화면을 막지 않도록 상태를 나눈다
-export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
+export const usePointHistory = (initialFilter: PointHistoryFilter) => {
+  const [filter, setFilter] = useState(initialFilter);
   const [balanceState, setBalanceState] = useState<BalanceState>({
     status: 'loading',
   });
@@ -36,6 +52,10 @@ export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
   const [campaignTitles, setCampaignTitles] = useState<Record<string, string>>(
     {},
   );
+  // 캠페인 필터의 선택지. 집행된 적 있는 캠페인(진행 중, 중단, 종료)만 내역이 있어 이것만 둔다
+  const [campaignOptions, setCampaignOptions] = useState<
+    CampaignFilterOption[]
+  >([]);
   // 값이 바뀌면 다시 불러온다
   const [balanceRequestId, setBalanceRequestId] = useState(0);
   const [historyRequestId, setHistoryRequestId] = useState(0);
@@ -58,6 +78,8 @@ export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
       ignore = true;
     };
   }, [balanceRequestId]);
+
+  const { campaignId, period } = filter;
 
   useEffect(() => {
     let ignore = false;
@@ -86,13 +108,27 @@ export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
           return;
         }
 
+        const campaigns = campaignsResult.data.map((campaign) => ({
+          ...campaign,
+          title: getCampaignTitle(campaign.coupon, storeResult.data.menus),
+        }));
+
         setCampaignTitles(
-          Object.fromEntries(
-            campaignsResult.data.map(({ coupon, id }) => [
+          Object.fromEntries(campaigns.map(({ id, title }) => [id, title])),
+        );
+        setCampaignOptions(
+          campaigns
+            .filter(
+              ({ status }) => status !== 'DRAFT' && status !== 'SCHEDULED',
+            )
+            .map(({ budget, id, title }) => ({
               id,
-              getCampaignTitle(coupon, storeResult.data.menus),
-            ]),
-          ),
+              label: formatCampaignOption(
+                title,
+                budget.startDate,
+                budget.endDate,
+              ),
+            })),
         );
       },
     );
@@ -106,6 +142,22 @@ export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
   const retryBalance = () => {
     setBalanceState({ status: 'loading' });
     setBalanceRequestId((id) => id + 1);
+  };
+
+  // 필터를 바꾸면 이전 조건의 목록을 지우고 새 조건으로 불러온다.
+  // 같은 값을 다시 고르면 다시 불러오지 않으므로 불러오는 중으로 바꾸지 않는다
+  const changeFilter = (patch: Partial<PointHistoryFilter>) => {
+    const nextFilter = { ...filter, ...patch };
+
+    if (
+      nextFilter.campaignId === filter.campaignId &&
+      nextFilter.period === filter.period
+    ) {
+      return;
+    }
+
+    setHistoryState({ status: 'loading' });
+    setFilter(nextFilter);
   };
 
   const retryHistory = () => {
@@ -127,8 +179,11 @@ export const usePointHistory = ({ campaignId, period }: PointHistoryFilter) => {
 
   return {
     balanceState,
+    campaignOptions,
     campaignTitles,
+    changeFilter,
     charge,
+    filter,
     historyState,
     retryBalance,
     retryHistory,

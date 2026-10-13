@@ -1,4 +1,8 @@
-import type { PointHistoryEntry, PointHistoryType } from '@owner/api/points';
+import type {
+  PointHistoryEntry,
+  PointHistoryPeriod,
+  PointHistoryType,
+} from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
 
 // 관리자 앱(billing)의 원장 유형 이름과 맞춘다. 무효 노출 환급은 점주 화면에만 있다
@@ -11,6 +15,15 @@ export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {
   REFUND: '환불',
   ADJUST: '조정',
 };
+
+export const pointHistoryPeriodItems: {
+  label: string;
+  value: PointHistoryPeriod;
+}[] = [
+  { label: '최근 7일', value: '7D' },
+  { label: '최근 30일', value: '30D' },
+  { label: '최근 3개월', value: '3M' },
+];
 
 // 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전(오늘 서빙 중)이면 released가 null이다
 export interface ServingSummary {

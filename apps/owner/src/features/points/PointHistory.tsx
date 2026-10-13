@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Button } from '@repo/ui';
+import { Button, SegmentedControl, SelectField } from '@repo/ui';
 
-import { MIN_CHARGE_AMOUNT, type PointHistoryFilter } from '@owner/api/points';
+import {
+  MIN_CHARGE_AMOUNT,
+  type PointHistoryFilter,
+  type PointHistoryPeriod,
+} from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
@@ -13,11 +17,12 @@ import {
   formatSignedPoints,
   groupPointHistory,
   type PointHistoryItem,
+  pointHistoryPeriodItems,
   pointHistoryTypeLabels,
 } from './pointHistoryFormat';
 import { usePointHistory } from './usePointHistory';
 
-// 기간·캠페인 필터를 붙이기 전까지 최근 30일 전체 내역을 보여준다
+// 처음에는 최근 30일 전체 내역을 보여준다
 const DEFAULT_FILTER: PointHistoryFilter = { period: '30D', campaignId: null };
 
 const skeletonClassName =
@@ -180,8 +185,11 @@ interface PointHistoryProps {
 export const PointHistory = ({ onBack }: PointHistoryProps) => {
   const {
     balanceState,
+    campaignOptions,
     campaignTitles,
+    changeFilter,
     charge,
+    filter,
     historyState,
     retryBalance,
     retryHistory,
@@ -208,7 +216,11 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
     if (days.length === 0) {
       return (
         <HistoryMessage
-          description="충전하거나 캠페인을 집행하면 여기에 내역이 쌓여요"
+          description={
+            filter.campaignId
+              ? '다른 기간이나 캠페인을 골라 보세요'
+              : '충전하거나 캠페인을 집행하면 여기에 내역이 쌓여요'
+          }
           title="이 기간에 포인트 내역이 없어요"
         />
       );
@@ -255,8 +267,31 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
             className="text-body-mobile font-bold text-text-primary"
             id="point-history-title"
           >
-            최근 30일 내역
+            내역
           </h2>
+          <div className="flex flex-col gap-2">
+            <SegmentedControl<PointHistoryPeriod>
+              ariaLabel="조회 기간"
+              items={pointHistoryPeriodItems}
+              onValueChange={(period) => changeFilter({ period })}
+              value={filter.period}
+            />
+            {/* SelectField는 문자열 값만 받으므로 전체는 빈 문자열로 넘긴다 */}
+            <SelectField
+              aria-label="캠페인"
+              onValueChange={(value) =>
+                changeFilter({ campaignId: value || null })
+              }
+              options={[
+                { value: '', label: '전체 캠페인' },
+                ...campaignOptions.map(({ id, label }) => ({
+                  value: id,
+                  label,
+                })),
+              ]}
+              value={filter.campaignId ?? ''}
+            />
+          </div>
           {renderHistory()}
         </section>
       </main>
