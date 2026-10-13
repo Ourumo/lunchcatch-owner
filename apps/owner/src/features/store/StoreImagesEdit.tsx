@@ -20,6 +20,27 @@ const isSameImages = (a: StoreImagesValues, b: StoreImagesValues) =>
 const isValidImages = ({ interiorImages, logoImage }: StoreImagesValues) =>
   Boolean(logoImage) && interiorImages.length <= MAX_INTERIOR_IMAGES;
 
+// 사진 칸의 key. 칸이 들고 있는 파일 오류 문구가 삭제로 칸이 당겨져도 원래 사진에 남도록 자리 번호 대신 사진마다 고정한다.
+// 이미 올라간 사진은 주소를 쓰고, 새로 고른 파일은 주소가 없어 처음 볼 때 번호를 붙인다
+const fileKeys = new WeakMap<File, string>();
+let nextFileKey = 0;
+
+const getImageKey = (image: StoreImage) => {
+  if (typeof image === 'string') {
+    return image;
+  }
+
+  let key = fileKeys.get(image);
+
+  if (!key) {
+    key = `file-${nextFileKey}`;
+    nextFileKey += 1;
+    fileKeys.set(image, key);
+  }
+
+  return key;
+};
+
 interface ImagesFieldsProps {
   values: StoreImagesValues;
   onChange: (values: StoreImagesValues) => void;
@@ -75,8 +96,7 @@ const ImagesFields = ({ onChange, values }: ImagesFieldsProps) => {
           {interiorImages.map((image, index) => (
             <ImageUploadSlot
               image={image}
-              // 순서만 의미가 있어 자리 번호로 구분한다
-              key={index}
+              key={getImageKey(image)}
               label={`매장 이미지 ${index + 1}`}
               onRemove={() =>
                 updateInteriorImages(
