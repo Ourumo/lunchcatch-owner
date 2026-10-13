@@ -185,7 +185,8 @@ export const updateStoreMenus = async (
   // 고치는 메뉴의 ID는 지금 가게 메뉴에 있어야 하고 한 번씩만 와야 한다.
   // 없는 ID나 같은 ID가 두 번 오면 캠페인이 가리키는 메뉴가 엉키므로 받지 않는다
   const currentIds = new Set(mockStore.menus.map(({ id }) => id));
-  const requestedIds = menus.flatMap(({ id }) => (id ? [id] : []));
+  // 새 메뉴는 null로만 구분한다. 빈 문자열도 기존 ID로 보고 검사한다
+  const requestedIds = menus.flatMap(({ id }) => (id !== null ? [id] : []));
   const hasInvalidId =
     requestedIds.some((id) => !currentIds.has(id)) ||
     new Set(requestedIds).size !== requestedIds.length;
