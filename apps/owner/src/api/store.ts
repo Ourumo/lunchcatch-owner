@@ -171,12 +171,15 @@ export const updateStoreMenus = async (
 ): Promise<ApiResult<StoreMenu[]>> => {
   await mockDelay();
 
+  // 가격은 원 단위 정수만 받는다. NaN은 문자열로 바꾸면 범위 검사를 통과하므로 먼저 거른다
   const hasInvalidMenu =
     menus.length > MAX_MENUS ||
-    menus.some(({ image, name, price }) =>
-      Object.values(getMenuErrors({ image, name, price: String(price) })).some(
-        Boolean,
-      ),
+    menus.some(
+      ({ image, name, price }) =>
+        !Number.isInteger(price) ||
+        Object.values(
+          getMenuErrors({ image, name, price: String(price) }),
+        ).some(Boolean),
     );
 
   if (hasInvalidMenu) {
