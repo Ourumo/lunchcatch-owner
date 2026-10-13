@@ -8,7 +8,8 @@ export type ImageUploadSlotSize = 'sm' | 'lg';
 export interface ImageUploadSlotProps {
   // 빈 칸에 보이는 이름. 등록·변경·삭제 버튼의 이름으로도 쓴다
   label: string;
-  image: File | null;
+  // 새로 고른 사진은 File, 이미 올라간 사진은 주소(가게 정보 수정)
+  image: File | string | null;
   // 허용하는 파일만 넘긴다. multiple이 아니면 1장만 넘긴다
   onSelect: (files: File[]) => void;
   // 없으면 삭제 버튼을 보여주지 않는다
@@ -123,7 +124,9 @@ export const ImageUploadSlot = ({
             onChange={handleChange}
             type="file"
           />
-          {image ? (
+          {typeof image === 'string' ? (
+            <img alt="" className="size-full object-cover" src={image} />
+          ) : image ? (
             <FilePreviewImage className="size-full object-cover" file={image} />
           ) : (
             <span className="flex flex-col items-center gap-2 px-2 text-center">

@@ -12,6 +12,11 @@ const sampleImage = new File(
   { type: 'image/svg+xml' },
 );
 
+// 이미 올라간 사진 주소. 네트워크 없이 보이도록 data URL로 둔다
+const uploadedImageUrl = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#e7e5e4"/><rect x="120" y="90" width="160" height="120" rx="12" fill="#78716c"/></svg>',
+)}`;
+
 // 고르거나 지우면 칸에 바로 반영되도록 상태를 붙여 보여준다
 const ControlledImageUploadSlot = (props: ImageUploadSlotProps) => {
   const [image, setImage] = useState(props.image);
@@ -55,6 +60,13 @@ export const Empty: Story = {};
 export const WithImage: Story = {
   args: {
     image: sampleImage,
+  },
+};
+
+// 가게 정보 수정에서 이미 올라간 사진을 주소로 보여준다. 누르면 새로 고른 파일로 바뀐다
+export const Uploaded: Story = {
+  args: {
+    image: uploadedImageUrl,
   },
 };
 
