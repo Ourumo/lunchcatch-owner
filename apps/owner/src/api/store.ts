@@ -1,6 +1,10 @@
 import { mockDelay } from './mocks/delay';
 import { mockStore } from './mocks/store';
-import type { HoursStepValues } from './signupFlow';
+import {
+  type HoursStepValues,
+  isHoursStepComplete,
+  weekdays,
+} from './signupFlow';
 import type { ApiResult } from './types';
 
 // 로그인한 점주의 가게 정보. 점주 계정 1개에 가게 1개만 등록된다
@@ -27,8 +31,37 @@ export interface MyStore {
   menus: StoreMenu[];
 }
 
+const INVALID_BUSINESS_HOURS_MESSAGE = '영업 요일과 시간을 다시 확인해 주세요.';
+
 export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
   await mockDelay();
 
   return { ok: true, data: structuredClone(mockStore) };
+};
+
+// 영업시간 수정 (docs/requirements-owner.md "영업시간 등록/수정").
+// 같은 요일 중복, 영업 요일 없음, 시각 누락, 시작 시각보다 이르거나 같은 종료 시각은 받지 않는다.
+// 요일은 고른 순서와 상관없이 월~일 순서로 저장한다
+export const updateBusinessHours = async (
+  hours: HoursStepValues,
+): Promise<ApiResult<HoursStepValues>> => {
+  await mockDelay();
+
+  const hasDuplicateDay =
+    new Set(hours.openDays).size !== hours.openDays.length;
+
+  if (hasDuplicateDay || !isHoursStepComplete(hours)) {
+    return { ok: false, message: INVALID_BUSINESS_HOURS_MESSAGE };
+  }
+
+  const savedHours: HoursStepValues = {
+    ...hours,
+    openDays: weekdays
+      .map(({ value }) => value)
+      .filter((day) => hours.openDays.includes(day)),
+  };
+
+  mockStore.businessHours = savedHours;
+
+  return { ok: true, data: structuredClone(savedHours) };
 };
