@@ -248,15 +248,11 @@ export const getMenuErrors = ({
   };
 };
 
-// 검사를 통과하면 목록에 넣을 메뉴로, 아니면 null로 돌려준다
-export const toMenuItem = (draft: MenuDraft): MenuItemValues | null => {
-  const errors = getMenuErrors(draft);
-
-  if (!draft.image || Object.values(errors).some(Boolean)) {
-    return null;
-  }
-
-  return { image: draft.image, name: draft.name.trim(), price: draft.price };
+// 대표 메뉴 입력 화면(components/MenuListFields)에 넘기는 규칙. 입점 등록과 가게 관리가 같은 값을 쓴다
+export const menuInputRules = {
+  nameMaxLength: MENU_NAME_MAX_LENGTH,
+  priceMax: MENU_PRICE_MAX,
+  getErrors: getMenuErrors,
 };
 
 export const MAX_INTERIOR_IMAGES = 3;
