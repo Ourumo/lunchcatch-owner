@@ -54,7 +54,11 @@ export const StoreEditLayout = <T,>({
       <main className="flex flex-1 flex-col">
         {edit.status === 'success' ? (
           <>
-            {children}
+            {/* 저장하는 동안 값을 바꾸면 저장되지 않은 채 화면을 떠나므로 입력을 막는다.
+                contents로 두어 레이아웃에는 영향을 주지 않는다 */}
+            <fieldset className="contents" disabled={isSaving}>
+              {children}
+            </fieldset>
             {/* 내용이 짧아도 저장 버튼 바로 위에 붙도록 아래로 민다 */}
             {saveError && (
               <p
