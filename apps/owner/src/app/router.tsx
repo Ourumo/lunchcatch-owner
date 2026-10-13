@@ -39,6 +39,7 @@ import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import ComingSoonPage from '@owner/pages/ComingSoonPage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
+import PointHistoryPage from '@owner/pages/PointHistoryPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
 import SignupImagesPage from '@owner/pages/SignupImagesPage';
@@ -136,6 +137,7 @@ export const router = createBrowserRouter([
           { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
           { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
+          { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
           // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
           {
             path: '/qr-scan',
@@ -143,13 +145,10 @@ export const router = createBrowserRouter([
               <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />
             ),
           },
-          ...[
-            { path: STORE_ANALYTICS_PATH, title: '분석' },
-            { path: POINT_HISTORY_PATH, title: '포인트 내역' },
-          ].map(({ path, title }) => ({
-            path,
-            element: <ComingSoonPage fallbackPath={STORE_PATH} title={title} />,
-          })),
+          {
+            path: STORE_ANALYTICS_PATH,
+            element: <ComingSoonPage fallbackPath={STORE_PATH} title="분석" />,
+          },
           {
             path: '/campaigns/:id/edit',
             element: <CampaignFormPage />,
