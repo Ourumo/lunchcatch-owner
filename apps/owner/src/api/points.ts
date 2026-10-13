@@ -1,8 +1,12 @@
 import { mockDelay } from './mocks/delay';
-import { mockPointBalance } from './mocks/points';
+import {
+  MOCK_LEDGER_FAILS,
+  type MockLedgerEntry,
+  mockPointLedger,
+} from './mocks/points';
 import type { ApiResult } from './types';
 
-// 점주 포인트 잔액 (docs/requirements-owner.md "잔액 및 내역 조회").
+// 점주 포인트 잔액과 내역 (docs/requirements-owner.md "잔액 및 내역 조회").
 // 잔액은 정산만 가지므로 캠페인 API와 분리한다. 캠페인 화면은 잔액 부족 안내를 위해 따로 불러온다
 // API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
@@ -13,18 +17,139 @@ export interface PointBalance {
   reservedPoints: number;
 }
 
+// 원장 유형. 관리자 앱(billing)의 유형에 무효 노출 환급(REFUND_INVALID)을 더한다.
+// REFUND_INVALID는 관리자 앱에 없어 백엔드 확인이 필요하다
+export type PointHistoryType =
+  | 'CHARGE'
+  | 'RESERVE'
+  | 'DEDUCT'
+  | 'RELEASE'
+  | 'REFUND_INVALID'
+  | 'REFUND'
+  | 'ADJUST';
+
+// 조회 기간. 최근 7일, 30일, 3개월이고 오늘을 포함한다
+export type PointHistoryPeriod = '7D' | '30D' | '3M';
+
+export interface PointHistoryFilter {
+  period: PointHistoryPeriod;
+  // 없으면 모든 내역. 있으면 그 캠페인의 내역만 (충전처럼 캠페인이 없는 내역은 빠진다)
+  campaignId: string | null;
+}
+
+export interface PointHistoryEntry {
+  id: string;
+  type: PointHistoryType;
+  // 보여줄 증감(+/−). 소진은 예약 중 포인트에서 빠진 양이라 잔액은 그대로다
+  amount: number;
+  // 이 내역이 반영된 뒤의 잔액
+  balanceAfter: number;
+  // 소진은 캠페인별·일별 합계라 그날 마지막 차감 시각
+  occurredAt: string;
+  campaignId: string | null;
+  // 조정 사유
+  memo: string | null;
+}
+
 // 최소 충전 금액(원). 명세에 값이 없어 임시로 둔다. 기획 확인 후 바꾼다
 export const MIN_CHARGE_AMOUNT = 10000;
 
 const BELOW_MIN_CHARGE_MESSAGE = `${MIN_CHARGE_AMOUNT.toLocaleString('ko-KR')}원부터 충전할 수 있습니다.`;
+const LEDGER_FAILED_MESSAGE = '포인트 원장을 불러오지 못했습니다.';
+
+const getMockBalance = (): PointBalance =>
+  mockPointLedger.reduce(
+    (total, { balanceDelta, reservedDelta }) => ({
+      balance: total.balance + balanceDelta,
+      reservedPoints: total.reservedPoints + reservedDelta,
+    }),
+    { balance: 0, reservedPoints: 0 },
+  );
 
 export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
   await mockDelay();
 
-  return { ok: true, data: { ...mockPointBalance } };
+  if (MOCK_LEDGER_FAILS) {
+    return { ok: false, message: LEDGER_FAILED_MESSAGE };
+  }
+
+  return { ok: true, data: getMockBalance() };
 };
 
-// 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 바뀐 잔액을 돌려준다
+// 조회 기간의 첫날 00:00
+const getPeriodStart = (period: PointHistoryPeriod) => {
+  const start = new Date();
+
+  start.setHours(0, 0, 0, 0);
+
+  if (period === '3M') {
+    start.setMonth(start.getMonth() - 3);
+  } else {
+    start.setDate(start.getDate() - (period === '7D' ? 6 : 29));
+  }
+
+  return start;
+};
+
+const toHistoryEntry = (
+  {
+    balanceDelta,
+    campaignId,
+    id,
+    memo,
+    occurredAt,
+    reservedDelta,
+    type,
+  }: MockLedgerEntry,
+  balanceAfter: number,
+): PointHistoryEntry => ({
+  id,
+  type,
+  amount: type === 'DEDUCT' ? reservedDelta : balanceDelta,
+  balanceAfter,
+  occurredAt,
+  campaignId,
+  memo,
+});
+
+// 포인트 내역. 최신순이고, 그 시점 잔액은 기간·캠페인으로 거르기 전 전체 원장으로 계산한다
+export const getPointHistory = async ({
+  campaignId,
+  period,
+}: PointHistoryFilter): Promise<ApiResult<PointHistoryEntry[]>> => {
+  await mockDelay();
+
+  if (MOCK_LEDGER_FAILS) {
+    return { ok: false, message: LEDGER_FAILED_MESSAGE };
+  }
+
+  const periodStart = getPeriodStart(period);
+  let balance = 0;
+
+  const entries = [...mockPointLedger]
+    .sort(
+      (a, b) =>
+        new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
+    )
+    .map((entry) => {
+      balance += entry.balanceDelta;
+
+      return toHistoryEntry(entry, balance);
+    });
+
+  return {
+    ok: true,
+    data: entries
+      .filter(
+        (entry) =>
+          new Date(entry.occurredAt) >= periodStart &&
+          (campaignId === null || entry.campaignId === campaignId),
+      )
+      .reverse(),
+  };
+};
+
+// 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 원장에 충전을 남긴 뒤 바뀐 잔액을 돌려준다
 // 실제 결제는 결제대행사 화면을 거친다. mock은 테스트 결제라 바로 충전된다
 export const chargePoints = async (
   amount: number,
@@ -35,7 +160,15 @@ export const chargePoints = async (
     return { ok: false, message: BELOW_MIN_CHARGE_MESSAGE };
   }
 
-  mockPointBalance.balance += amount;
+  mockPointLedger.push({
+    id: `ledger-${mockPointLedger.length + 1}`,
+    type: 'CHARGE',
+    occurredAt: new Date().toISOString(),
+    balanceDelta: amount,
+    reservedDelta: 0,
+    campaignId: null,
+    memo: null,
+  });
 
-  return { ok: true, data: { ...mockPointBalance } };
+  return { ok: true, data: getMockBalance() };
 };
