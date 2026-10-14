@@ -23,3 +23,19 @@ export const Default: Story = {
 };
 
 export const Empty: Story = {};
+
+export const Weekly: Story = {
+  args: {
+    selectionMode: 'week',
+    ariaLabel: '주 범위 선택',
+    placeholder: '주 범위 선택',
+  },
+};
+
+export const Monthly: Story = {
+  args: {
+    selectionMode: 'month',
+    ariaLabel: '월 범위 선택',
+    placeholder: '월 범위 선택',
+  },
+};
