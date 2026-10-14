@@ -46,6 +46,7 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <span
+      data-status-badge=""
       className={[
         'inline-flex items-center whitespace-nowrap text-caption-web font-medium',
         className,
