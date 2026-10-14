@@ -37,6 +37,11 @@ const createDate = (value: string) => {
 const isSameDate = (firstDate: Date, secondDate: Date) =>
   formatDateValue(firstDate) === formatDateValue(secondDate);
 
+/**
+ * 시작·종료 구간을 선택하는 달력으로, 일·주는 날짜 격자, 월은 월 목록을 표시한다.
+ * 주는 월요일~일요일, 월은 첫날~마지막 날을 YYYY-MM-DD 범위로 반환한다.
+ * value가 있으면 부모 상태를 사용하고, 없으면 defaultValue에서 시작해 내부 상태로 관리한다.
+ */
 export function DateRangePicker({
   ariaLabel = '날짜 범위 선택',
   defaultValue = emptyDateRange,
