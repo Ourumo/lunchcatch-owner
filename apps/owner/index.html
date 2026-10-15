@@ -21,7 +21,19 @@
         document.documentElement.dataset.theme = theme;
       })();
     </script>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>런치캐치 점주</title>
+    <script>
+      // 개발 사이트를 실제 서비스로 착각하지 않도록 탭 이름 앞에 환경을 붙인다
+      // 실제 서비스 주소에서만 표시를 빼고, 그 밖의 주소(dev, Vercel 미리보기)는 모두 [DEV]로 둔다
+      (() => {
+        const { hostname } = window.location;
+        if (hostname === 'owner.lunchcatch.com') return;
+        const label = hostname === 'localhost' ? '[LOCAL]' : '[DEV]';
+        document.title = `${label} ${document.title}`;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
