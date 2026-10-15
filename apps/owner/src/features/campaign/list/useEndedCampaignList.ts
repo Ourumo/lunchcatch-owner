@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { type Campaign, getEndedCampaignPage } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 
+import { readEndedList, saveEndedList } from './endedListStorage';
+
 // 이어서 불러오기 상태. 처음 불러오기와 따로 두어 실패해도 이미 불러온 목록은 그대로 둔다
 export type LoadMoreStatus = 'idle' | 'loading' | 'error';
 
@@ -19,13 +21,21 @@ export type EndedCampaignListState =
       loadMore: LoadMoreStatus;
     };
 
-// 지난 캠페인 전체 목록을 20건씩 나눠 불러온다. 처음 구간과 가게 메뉴를 함께 받고, 그다음은 loadMore로 이어 붙인다
-export const useEndedCampaignList = () => {
-  const [state, setState] = useState<EndedCampaignListState>({
-    status: 'loading',
-  });
-  // 값이 바뀌면 처음부터 다시 불러온다
+const getInitialState = (historyKey: string): EndedCampaignListState => {
+  const snapshot = readEndedList(historyKey);
+
+  return snapshot
+    ? { status: 'success', ...snapshot, loadMore: 'idle' }
+    : { status: 'loading' };
+};
+
+// 지난 캠페인 전체 목록을 20건씩 나눠 불러온다. 처음 구간과 가게 메뉴를 함께 받고, 그다음은 loadMore로 이어 붙인다.
+// 상세에 갔다가 뒤로 돌아오면(같은 기록 항목) 불러온 목록을 그대로 꺼내 쓰고 다시 불러오지 않는다
+export const useEndedCampaignList = (historyKey: string) => {
+  const [state, setState] = useState(() => getInitialState(historyKey));
+  // 값이 바뀌면 처음부터 다시 불러온다. 복원한 목록이 있으면 처음 불러오기를 건너뛴다
   const [requestId, setRequestId] = useState(0);
+  const [isRestored] = useState(() => state.status === 'success');
   // 이어서 불러오는 요청이 겹치지 않게 막는다. 상태는 다음 렌더링에 바뀌므로 그 사이에 온 요청도 막도록 ref로 둔다
   const isLoadingMoreRef = useRef(false);
   // 화면을 벗어난 뒤 온 응답은 버린다
@@ -40,6 +50,10 @@ export const useEndedCampaignList = () => {
   }, []);
 
   useEffect(() => {
+    if (isRestored && requestId === 0) {
+      return;
+    }
+
     let ignore = false;
 
     Promise.all([getEndedCampaignPage(), getMyStore()]).then(
@@ -66,7 +80,18 @@ export const useEndedCampaignList = () => {
     return () => {
       ignore = true;
     };
-  }, [requestId]);
+  }, [isRestored, requestId]);
+
+  // 불러온 목록이 바뀔 때마다 저장해, 상세에서 돌아오면 같은 목록을 보여준다
+  useEffect(() => {
+    if (state.status === 'success') {
+      saveEndedList(historyKey, {
+        campaigns: state.campaigns,
+        menus: state.menus,
+        nextCursor: state.nextCursor,
+      });
+    }
+  }, [historyKey, state]);
 
   const retry = () => {
     setState({ status: 'loading' });
@@ -117,5 +142,5 @@ export const useEndedCampaignList = () => {
     });
   };
 
-  return { loadMore, retry, state };
+  return { isRestored, loadMore, retry, state };
 };

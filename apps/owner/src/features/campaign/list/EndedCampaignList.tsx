@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useRef } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
+import { useLocation } from 'react-router';
 import { Button } from '@repo/ui';
 
 import { getCampaignTitle } from '@owner/components/campaignFormat';
@@ -6,6 +7,8 @@ import { TopBar } from '@owner/components/TopBar/TopBar';
 import { useGoBack } from '@owner/hooks/useGoBack';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
+import { ENDED_CAMPAIGNS_PATH } from './endedCampaigns';
+import { readEndedListScroll, saveEndedListScroll } from './endedListStorage';
 import {
   type LoadMoreStatus,
   useEndedCampaignList,
@@ -127,11 +130,50 @@ const ListFooter = ({ hasMore, loadMore, onLoadMore }: ListFooterProps) => {
   );
 };
 
+// 스크롤 위치를 기록해 두었다가, 복원한 목록을 처음 그릴 때 그 위치로 돌려놓는다.
+// 상세로 넘어가는 순간에는 화면이 짧아져 브라우저가 스크롤 값을 줄이므로, 떠날 때 읽지 않고 스크롤할 때마다 기록한다
+const useEndedListScroll = (historyKey: string, isRestored: boolean) => {
+  useLayoutEffect(() => {
+    const y = isRestored ? readEndedListScroll(historyKey) : null;
+
+    if (y !== null) {
+      window.scrollTo(0, y);
+    }
+  }, [historyKey, isRestored]);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const handleScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        // 이미 다른 화면으로 넘어갔으면 줄어든 스크롤 값을 기록하지 않는다
+        if (window.location.pathname === ENDED_CAMPAIGNS_PATH) {
+          saveEndedListScroll(historyKey, window.scrollY);
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [historyKey]);
+};
+
 // 지난 캠페인 전체 목록. 캠페인 탭은 최근 몇 건만 보여주고 나머지는 여기서 본다.
-// 20건씩 나눠 받아 목록 끝에 가까워지면 다음 구간을 이어 붙인다
+// 20건씩 나눠 받아 목록 끝에 가까워지면 다음 구간을 이어 붙인다.
+// 상세에 갔다가 뒤로 돌아오면 불러온 목록과 스크롤 위치를 그대로 복원한다
 export const EndedCampaignList = () => {
   const goBack = useGoBack(CAMPAIGN_LIST_PATH);
-  const { loadMore, retry, state } = useEndedCampaignList();
+  // 브라우저 기록 항목마다 다른 값. 뒤로 돌아오면 같고, 새로 들어오면 달라진다
+  const historyKey = useLocation().key;
+  const { isRestored, loadMore, retry, state } =
+    useEndedCampaignList(historyKey);
+
+  useEndedListScroll(historyKey, isRestored);
 
   const renderContent = () => {
     if (state.status === 'loading') {
