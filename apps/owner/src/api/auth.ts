@@ -26,13 +26,22 @@ export interface SignupFieldErrors {
 }
 
 // 서버 로그인 응답 (POST /v1/owner/auth/tokens). 토큰은 서버가 HttpOnly 쿠키로 내려준다
-interface OwnerLoginResponse {
+// 튜토리얼은 입점을 마친 점주만 보므로 tutorialViewed는 ACTIVE일 때만 온다
+interface ActiveOwnerLoginResponse {
   email: string;
   role: string;
-  status: OwnerStatus;
-  // Swagger에는 있지만 개발 서버 응답에는 아직 없다. 없으면 안 본 것으로 본다
+  status: 'ACTIVE';
+  // 명세상 항상 온다. ACTIVE 계정이 없어 개발 서버에서 확인하지 못해, 없으면 응답 형식 오류로 본다
   tutorialViewed?: boolean;
 }
+
+interface InactiveOwnerLoginResponse {
+  email: string;
+  role: string;
+  status: Exclude<OwnerStatus, 'ACTIVE'>;
+}
+
+type OwnerLoginResponse = ActiveOwnerLoginResponse | InactiveOwnerLoginResponse;
 
 // 서버 회원가입 응답 (POST /v1/owners). 인증 쿠키는 주지 않는다
 interface OwnerSignupResponse {
@@ -86,18 +95,28 @@ export const login = async ({
       body: { email, password },
     });
 
-    // 이용 정지·탈퇴 계정은 서버가 거절하지 않고 내려보내도 같은 문구로 막는다
-    if (!isLoginAllowedStatus(data.status)) {
-      return { ok: false, message: LOGIN_FAILED_MESSAGE };
+    // ONBOARDING은 튜토리얼 대상이 아니라 본 적 없는 것으로 둔다
+    if (data.status === 'ONBOARDING') {
+      return {
+        ok: true,
+        data: { status: 'ONBOARDING', tutorialViewed: false },
+      };
     }
 
-    return {
-      ok: true,
-      data: {
-        status: data.status,
-        tutorialViewed: data.tutorialViewed ?? false,
-      },
-    };
+    if (data.status === 'ACTIVE') {
+      // 안 본 것으로 채우면 이미 본 점주에게 튜토리얼이 다시 뜨므로 로그인을 실패로 돌려준다
+      if (data.tutorialViewed === undefined) {
+        return { ok: false, message: UNAVAILABLE_MESSAGE };
+      }
+
+      return {
+        ok: true,
+        data: { status: 'ACTIVE', tutorialViewed: data.tutorialViewed },
+      };
+    }
+
+    // 이용 정지·탈퇴 계정은 서버가 거절하지 않고 내려보내도 같은 문구로 막는다
+    return { ok: false, message: LOGIN_FAILED_MESSAGE };
   } catch (error) {
     return { ok: false, message: getLoginErrorMessage(error) };
   }
