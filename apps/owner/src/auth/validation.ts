@@ -1,6 +1,7 @@
-// 비밀번호 길이 규칙: 8자 이상 20자 미만 (docs/requirements-owner.md 점주 회원가입)
-export const PASSWORD_MIN_LENGTH = 8;
-export const PASSWORD_MAX_LENGTH = 19;
+// 비밀번호 길이 규칙: 10자 이상 20자 이하. 문자 종류 조합은 제한하지 않는다
+// (백엔드 점주 API 명세, Swagger OwnerSignupRequest.password minLength 10, maxLength 20)
+export const PASSWORD_MIN_LENGTH = 10;
+export const PASSWORD_MAX_LENGTH = 20;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -8,7 +9,7 @@ export const VALIDATION_MESSAGES = {
   emailRequired: '이메일을 입력해주세요.',
   emailInvalid: '올바른 이메일 형식이 아닙니다.',
   passwordRequired: '비밀번호를 입력해주세요.',
-  passwordLength: '비밀번호는 8자 이상 20자 미만으로 입력해주세요.',
+  passwordLength: '비밀번호는 10자 이상 20자 이하로 입력해주세요.',
   passwordConfirmRequired: '비밀번호를 한 번 더 입력해주세요.',
   passwordMismatch: '비밀번호가 일치하지 않습니다.',
 } as const;

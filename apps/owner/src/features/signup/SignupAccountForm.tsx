@@ -44,7 +44,7 @@ export const SignupAccountForm = ({ onSuccess }: SignupAccountFormProps) => {
         name="password"
         onBlur={handleBlur('password')}
         onChange={handleChange('password')}
-        placeholder="8자 이상 20자 미만"
+        placeholder="10자 이상 20자 이하"
         type="password"
         value={values.password}
       />
