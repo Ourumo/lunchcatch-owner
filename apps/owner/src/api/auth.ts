@@ -140,7 +140,8 @@ export const signup = async ({
 const UNAUTHENTICATED_CODE = 'AUTH-005';
 
 // 서버가 Refresh Token을 폐기하고 인증 쿠키 두 개를 지운다(204). 쿠키는 서버가 지우므로 화면에서 지우지 않는다.
-// 이미 만료됐거나 로그인하지 않았으면(401 AUTH-005) 서버에 지울 로그인이 없어 성공으로 본다 (사용자 앱 logout과 같다).
+// Access Token만 만료됐으면 client가 재발급하고 다시 보낸다. 그래도 401 AUTH-005면 Refresh Token도 없거나 만료돼
+// 서버에 지울 로그인이 없어 성공으로 본다 (사용자 앱 logout과 같다).
 // 그 밖의 거절(403 AUTH-006 등), 서버 오류, 응답을 받지 못한 경우는 실패로 돌려주고 로그인 상태는 그대로 둔다.
 // 실패 문구는 부른 쪽이 정한다. 개발용 로그인 상태(VITE_MOCK_OWNER_STATUS)여도 서버에 요청한다
 export const logout = async (): Promise<ApiResult<null>> => {
