@@ -1,5 +1,4 @@
 import { ApiError, request } from './client';
-import { mockDelay } from './mocks/delay';
 import type { ApiResult } from './types';
 
 // 점주 로그인, 회원가입, 로그아웃, 내 정보 조회 (docs/requirements-owner.md "점주 회원가입", "점주 로그인", "점주 로그아웃")
@@ -137,10 +136,21 @@ export const signup = async ({
   return loginResult;
 };
 
-// 서버가 Refresh Token을 폐기하고 인증 쿠키를 지운다. 폐기에 실패하면 로그아웃도 실패로 돌려준다
-// 개발 서버에 점주 로그아웃 API가 아직 없어 mock으로 둔다. 연동할 때는 이 함수 내부만 교체한다
+// 이미 만료됐거나 로그인하지 않은 상태 (인증 쿠키 없음)
+const UNAUTHENTICATED_CODE = 'AUTH-005';
+
+// 서버가 Refresh Token을 폐기하고 인증 쿠키 두 개를 지운다(204). 쿠키는 서버가 지우므로 화면에서 지우지 않는다.
+// 이미 만료됐거나 로그인하지 않았으면(401 AUTH-005) 서버에 지울 로그인이 없어 성공으로 본다 (사용자 앱 logout과 같다).
+// 그 밖의 거절(403 AUTH-006 등), 서버 오류, 응답을 받지 못한 경우는 실패로 돌려주고 로그인 상태는 그대로 둔다.
+// 실패 문구는 부른 쪽이 정한다. 개발용 로그인 상태(VITE_MOCK_OWNER_STATUS)여도 서버에 요청한다
 export const logout = async (): Promise<ApiResult<null>> => {
-  await mockDelay();
+  try {
+    await request<void>('/v1/owner/auth/tokens', { method: 'DELETE' });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.code === UNAUTHENTICATED_CODE)) {
+      return { ok: false };
+    }
+  }
 
   return { ok: true, data: null };
 };
