@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CircleAlert, Info } from 'lucide-react';
@@ -310,6 +311,12 @@ export interface CampaignDetailProps {
 export const CampaignDetail = ({ id }: CampaignDetailProps) => {
   const goBack = useGoBack(LIST_PATH);
   const { retry, state } = useCampaignDetail(id);
+
+  // 앱이 화면을 옮길 때 스크롤을 되돌리지 않아, 길게 내린 목록(지난 캠페인 전체 등)에서 들어오면 중간부터 보인다.
+  // 상세는 항상 맨 위에서 시작한다
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const renderContent = () => {
     if (state.status === 'loading') {

@@ -146,10 +146,97 @@ const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
 const getMockNextCampaigns = (kind: MockNextCampaign) =>
   kind === 'NONE' ? [] : [mockNextCampaigns[kind]];
 
+// 지난 캠페인 전체 목록의 무한 스크롤을 확인하기 위한 오래된 지난 캠페인.
+// 아래 mockCampaigns의 지난 캠페인 4건보다 앞선 기간으로, 쿠폰 조건과 성과를 조금씩 바꿔 41건을 만든다
+const ARCHIVED_CAMPAIGN_COUNT = 41;
+
+const archivedCoupons: {
+  menu: (typeof mockStore.menus)[number] | null;
+  discountType: 'PERCENT' | 'AMOUNT';
+  discountValue: number;
+}[] = [
+  { menu: null, discountType: 'PERCENT', discountValue: 10 },
+  { menu: cheeseKatsu, discountType: 'PERCENT', discountValue: 20 },
+  { menu: null, discountType: 'AMOUNT', discountValue: 1000 },
+  { menu: rosuKatsu, discountType: 'AMOUNT', discountValue: 2000 },
+  { menu: soba, discountType: 'PERCENT', discountValue: 15 },
+];
+
+const archivedEventNames = [
+  '점심 한정 특가',
+  '이번 주 점심 할인',
+  '직장인 점심 응원',
+  '든든한 점심 한 끼',
+];
+
+const archivedTemplateIds = [
+  'template-orange-modern',
+  'template-retro-pop',
+  'template-classic-wood',
+];
+
+const createArchivedCampaign = (index: number): Campaign => {
+  const coupon = archivedCoupons[index % archivedCoupons.length];
+  const target = coupon.menu?.name ?? '전 메뉴';
+  const value =
+    coupon.discountType === 'PERCENT'
+      ? `${coupon.discountValue}%`
+      : `${coupon.discountValue.toLocaleString('ko-KR')}원`;
+  // 9일 간격으로 7일씩 집행한다. 5건마다 앞 캠페인과 종료일을 같게 두어 같은 종료일의 정렬(ID순)을 확인한다
+  const endDaysAgo = 80 + (index - Math.floor(index / 5)) * 9;
+  const issuedCount = 60 + ((index * 37) % 90);
+  const dailyBudget = 5000 + (index % 4) * 1000;
+  const number = String(index + 1).padStart(2, '0');
+
+  return {
+    id: `campaign-archived-${number}`,
+    status: 'ENDED',
+    pausedReason: null,
+    createdAt: createdDaysAgo(endDaysAgo + 9),
+    reviewFailReasons: [],
+    coupon: {
+      discountTarget: coupon.menu ? 'MENU' : 'ALL',
+      menuId: coupon.menu?.id ?? null,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      issueLimit: 30 + (index % 3) * 10,
+      usableFrom: '11:30',
+      usableUntil: '14:00',
+    },
+    poster: {
+      posterId: `poster-archived-${number}`,
+      templateId: archivedTemplateIds[index % archivedTemplateIds.length],
+      slots: {
+        eventName: archivedEventNames[index % archivedEventNames.length],
+        discountText: `${target} ${value} 할인`,
+        period: '11:30 ~ 14:00',
+        storeName: mockStore.name,
+        imageUrl: (coupon.menu ?? cheeseKatsu).imageUrl,
+      },
+    },
+    target: { radius: 1000, gender: 'ALL', ageGroups: [] },
+    budget: {
+      dailyBudget,
+      startDate: daysFromToday(-endDaysAgo - 6),
+      endDate: daysFromToday(-endDaysAgo),
+    },
+    performance: {
+      today: null,
+      total: {
+        savedCount: issuedCount * 2,
+        issuedCount,
+        redeemedCount: Math.round(issuedCount * 0.6),
+        spentPoints: dailyBudget * 6,
+      },
+    },
+  };
+};
+
 // 점주 계정 하나의 캠페인 목록이라고 가정한다. 가게당 ACTIVE(또는 PAUSED) 캠페인은 1건만 있을 수 있다.
 // 중단 상태 화면을 확인하려면 첫 캠페인의 status를 PAUSED로, pausedReason을 OWNER, NO_POINTS, ADMIN 중 하나로 바꾼다
 // 다음 캠페인(시작 대기, 검수 실패, 작성 중, 없음)은 위의 MOCK_NEXT_CAMPAIGN으로 고른다
-// 지난 캠페인은 캠페인 탭의 미리보기 개수(2건)보다 많게 두어 "전체 보기"를 확인할 수 있게 한다
+// 지난 캠페인은 캠페인 탭의 미리보기 개수(2건)보다 많게 두어 "전체 보기"를 확인할 수 있게 하고,
+// 오래된 지난 캠페인을 더해 전체 목록의 무한 스크롤(20건씩)을 확인할 수 있게 45건을 둔다
 export const mockCampaigns: Campaign[] = [
   {
     id: 'campaign-active',
@@ -375,4 +462,10 @@ export const mockCampaigns: Campaign[] = [
       },
     },
   },
+  ...Array.from({ length: ARCHIVED_CAMPAIGN_COUNT }, (_, index) =>
+    createArchivedCampaign(index),
+  ),
 ];
+
+// 이어서 불러오기 실패를 확인하려면 true로 바꾼다. 지난 캠페인 전체 목록의 다음 구간마다 첫 요청이 한 번 실패한다
+export const MOCK_ENDED_NEXT_PAGE_FAILS_ONCE = false;
