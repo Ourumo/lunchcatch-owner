@@ -140,7 +140,8 @@ export const signup = async ({
 const UNAUTHENTICATED_CODE = 'AUTH-005';
 
 // 서버가 Refresh Token을 폐기하고 인증 쿠키 두 개를 지운다(204). 쿠키는 서버가 지우므로 화면에서 지우지 않는다.
-// 이미 만료됐거나 로그인하지 않았으면(401 AUTH-005) 서버에 지울 로그인이 없어 성공으로 본다 (사용자 앱 logout과 같다).
+// Access Token만 만료됐으면 client가 재발급하고 다시 보낸다. 그래도 401 AUTH-005면 Refresh Token도 없거나 만료돼
+// 서버에 지울 로그인이 없어 성공으로 본다 (사용자 앱 logout과 같다).
 // 그 밖의 거절(403 AUTH-006 등), 서버 오류, 응답을 받지 못한 경우는 실패로 돌려주고 로그인 상태는 그대로 둔다.
 // 실패 문구는 부른 쪽이 정한다. 개발용 로그인 상태(VITE_MOCK_OWNER_STATUS)여도 서버에 요청한다
 export const logout = async (): Promise<ApiResult<null>> => {
@@ -167,9 +168,11 @@ const getMockOwnerStatus = (): LoginResponse['status'] | null => {
   return status === 'ACTIVE' || status === 'ONBOARDING' ? status : null;
 };
 
-// 인증 쿠키로 로그인한 점주를 확인한다. 화면은 HttpOnly 쿠키를 읽을 수 없어 새로고침 뒤 로그인 상태는 이것으로만 알 수 있다
-// 로그인하지 않았거나 쿠키가 만료됐으면(401 AUTH-005), 이용 정지·탈퇴 상태이거나 응답을 받지 못했으면 로그인 전으로 본다
-export const getMe = async (): Promise<ApiResult<LoginResponse>> => {
+// 인증 쿠키로 로그인한 점주를 확인한다. 화면은 HttpOnly 쿠키를 읽을 수 없어 새로고침 뒤 로그인 상태는 이것으로만 알 수 있다.
+// 로그인 전이면 data가 null이다. 재발급까지 실패해 쿠키로 로그인할 수 없거나(401), 점주가 아닌 계정이거나(403 AUTH-006),
+// 이용 정지·탈퇴 상태인 경우다. 그 밖의 오류(요청 제한 429, 서버 오류 5xx 등)나 응답을 받지 못한 경우는
+// 로그인 전인지 알 수 없어 실패로 돌려준다
+export const getMe = async (): Promise<ApiResult<LoginResponse | null>> => {
   const mockStatus = getMockOwnerStatus();
 
   if (mockStatus) {
@@ -181,14 +184,22 @@ export const getMe = async (): Promise<ApiResult<LoginResponse>> => {
     const data = await request<OwnerProfileResponse>('/v1/owner/me');
 
     if (!isLoginAllowedStatus(data.status)) {
-      return { ok: false };
+      return { ok: true, data: null };
     }
 
     return {
       ok: true,
       data: { status: data.status, tutorialViewed: data.tutorialViewed },
     };
-  } catch {
+  } catch (error) {
+    // 인증을 거절한 응답만 로그인 전으로 본다
+    if (
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403)
+    ) {
+      return { ok: true, data: null };
+    }
+
     return { ok: false };
   }
 };
