@@ -134,6 +134,8 @@
   --semantic-surface-brand: var(--primitive-brand-100);
   --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-600);
+  --semantic-code-selection-bg: var(--primitive-info-500);
+  --semantic-code-selection-fg: var(--primitive-neutral-0);
   --semantic-bg-inverse: var(--primitive-neutral-900);
   --semantic-text-on-inverse: var(--primitive-neutral-0);
   --semantic-action-secondary: var(--primitive-secondary-500);
@@ -186,6 +188,8 @@
   --semantic-surface-brand: var(--primitive-brand-900);
   --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-400);
+  --semantic-code-selection-bg: var(--primitive-info-500);
+  --semantic-code-selection-fg: var(--primitive-neutral-0);
   --semantic-bg-inverse: var(--primitive-neutral-0);
   --semantic-text-on-inverse: var(--primitive-neutral-900);
   --semantic-action-secondary: var(--primitive-secondary-500);
@@ -255,6 +259,8 @@
   --color-surface-brand: var(--semantic-surface-brand);
   --color-bg-brand: var(--semantic-bg-brand);
   --color-text-brand: var(--semantic-text-brand);
+  --color-code-selection: var(--semantic-code-selection-bg);
+  --color-code-selection-fg: var(--semantic-code-selection-fg);
   --color-bg-inverse: var(--semantic-bg-inverse);
   --color-text-on-inverse: var(--semantic-text-on-inverse);
   --color-action-secondary: var(--semantic-action-secondary);
