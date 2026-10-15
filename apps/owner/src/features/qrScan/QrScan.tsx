@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 import { redeemCoupon, type RedeemedCoupon } from '@owner/api/redeem';
 import type { ApiResult } from '@owner/api/types';
 
+import { DevTestQrButtons } from './DevTestQrButtons';
+import { RedeemResult } from './RedeemResult';
 import { type CameraErrorStatus, useCamera } from './useCamera';
 import { useQrDetector } from './useQrDetector';
 
@@ -114,9 +116,16 @@ export const QrScan = ({ onClose }: QrScanProps) => {
 
     setScan({ status: 'processing' });
     redeemCoupon(token).then((result) => {
-      if (!ignoreResultRef.current) {
-        setScan({ status: 'done', result });
+      if (ignoreResultRef.current) {
+        return;
       }
+
+      // 계산대에서 화면을 보지 않아도 알 수 있게 짧게 진동한다. iOS Safari처럼 진동을 지원하지 않으면 건너뛴다
+      if (result.ok && 'vibrate' in navigator) {
+        navigator.vibrate(200);
+      }
+
+      setScan({ status: 'done', result });
     });
   };
 
@@ -127,6 +136,24 @@ export const QrScan = ({ onClose }: QrScanProps) => {
   });
 
   const renderContent = () => {
+    // 개발용 테스트 QR은 카메라 없이도 누를 수 있어 결과를 카메라 상태보다 먼저 본다
+    if (scan.status === 'done') {
+      return (
+        <RedeemResult
+          onScanAgain={() => setScan({ status: 'scanning' })}
+          result={scan.result}
+        />
+      );
+    }
+
+    if (scan.status === 'processing' && camera.state.status !== 'active') {
+      return (
+        <p className="m-auto text-body-mobile" role="status">
+          쿠폰을 확인하는 중이에요
+        </p>
+      );
+    }
+
     if (camera.state.status === 'requesting') {
       return (
         <p className="m-auto text-body-mobile" role="status">
@@ -148,22 +175,6 @@ export const QrScan = ({ onClose }: QrScanProps) => {
             QR 인식을 준비하지 못했어요
           </p>
           <Button onClick={detector.retry}>다시 시도</Button>
-        </div>
-      );
-    }
-
-    if (scan.status === 'done') {
-      // 결과 화면은 다음 단계에서 꾸민다
-      return (
-        <div className="relative m-auto flex flex-col items-center gap-3 px-page text-center">
-          <p className="text-body-mobile font-bold" role="status">
-            {scan.result.ok
-              ? `사용 처리했어요 · ${scan.result.data.couponTitle}`
-              : `사용 처리하지 못했어요 (${scan.result.code})`}
-          </p>
-          <Button onClick={() => setScan({ status: 'scanning' })}>
-            다시 스캔
-          </Button>
         </div>
       );
     }
@@ -215,6 +226,9 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         </button>
       </header>
       {renderContent()}
+      {import.meta.env.DEV && scan.status === 'scanning' && (
+        <DevTestQrButtons onScan={handleDetect} />
+      )}
     </main>
   );
 };
