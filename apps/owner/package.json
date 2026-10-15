@@ -13,10 +13,12 @@
   "dependencies": {
     "@repo/ui": "workspace:*",
     "@repo/utils": "workspace:*",
+    "barcode-detector": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "zxing-wasm": "catalog:"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

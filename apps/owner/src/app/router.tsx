@@ -40,6 +40,7 @@ import ComingSoonPage from '@owner/pages/ComingSoonPage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
 import PointHistoryPage from '@owner/pages/PointHistoryPage';
+import QrScanPage from '@owner/pages/QrScanPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
 import SignupImagesPage from '@owner/pages/SignupImagesPage';
@@ -138,13 +139,8 @@ export const router = createBrowserRouter([
           { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
-          // 홈과 가게 관리에서 연결했지만 아직 만들지 않은 화면
-          {
-            path: '/qr-scan',
-            element: (
-              <ComingSoonPage fallbackPath="/home" title="QR 코드 스캔" />
-            ),
-          },
+          { path: '/qr-scan', element: <QrScanPage /> },
+          // 가게 관리에서 연결했지만 아직 만들지 않은 화면
           {
             path: STORE_ANALYTICS_PATH,
             element: <ComingSoonPage fallbackPath={STORE_PATH} title="분석" />,
