@@ -168,9 +168,10 @@ const getMockOwnerStatus = (): LoginResponse['status'] | null => {
   return status === 'ACTIVE' || status === 'ONBOARDING' ? status : null;
 };
 
-// 인증 쿠키로 로그인한 점주를 확인한다. 화면은 HttpOnly 쿠키를 읽을 수 없어 새로고침 뒤 로그인 상태는 이것으로만 알 수 있다
-// 로그인하지 않았거나 쿠키가 만료됐으면(401 AUTH-005), 이용 정지·탈퇴 상태이거나 응답을 받지 못했으면 로그인 전으로 본다
-export const getMe = async (): Promise<ApiResult<LoginResponse>> => {
+// 인증 쿠키로 로그인한 점주를 확인한다. 화면은 HttpOnly 쿠키를 읽을 수 없어 새로고침 뒤 로그인 상태는 이것으로만 알 수 있다.
+// 로그인 전이면 data가 null이다. 재발급까지 실패해 쿠키로 로그인할 수 없거나(401) 이용 정지·탈퇴 상태인 경우다.
+// 응답을 받지 못했거나 읽지 못했거나 서버 오류(5xx)면 로그인 전인지 알 수 없어 실패로 돌려준다
+export const getMe = async (): Promise<ApiResult<LoginResponse | null>> => {
   const mockStatus = getMockOwnerStatus();
 
   if (mockStatus) {
@@ -182,14 +183,23 @@ export const getMe = async (): Promise<ApiResult<LoginResponse>> => {
     const data = await request<OwnerProfileResponse>('/v1/owner/me');
 
     if (!isLoginAllowedStatus(data.status)) {
-      return { ok: false };
+      return { ok: true, data: null };
     }
 
     return {
       ok: true,
       data: { status: data.status, tutorialViewed: data.tutorialViewed },
     };
-  } catch {
+  } catch (error) {
+    // 로그인 오류 문구와 같은 기준으로, 서버가 오류 코드와 함께 거절한 것만 로그인 전으로 본다
+    if (
+      error instanceof ApiError &&
+      error.code !== null &&
+      error.status < 500
+    ) {
+      return { ok: true, data: null };
+    }
+
     return { ok: false };
   }
 };
