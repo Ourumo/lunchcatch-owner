@@ -1,3 +1,4 @@
+import { request } from './client';
 import { mockDelay } from './mocks/delay';
 import {
   MOCK_LEDGER_FAILS,
@@ -8,7 +9,7 @@ import type { ApiResult } from './types';
 
 // 점주 포인트 잔액과 내역 (docs/requirements-owner.md "잔액 및 내역 조회").
 // 잔액은 정산만 가지므로 캠페인 API와 분리한다. 캠페인 화면은 잔액 부족 안내를 위해 따로 불러온다
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 잔액은 서버 API를 쓰고, 내역과 충전은 아직 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export interface PointBalance {
   // 포인트 원장 합계 (1원 = 1포인트)
@@ -57,23 +58,36 @@ export const MIN_CHARGE_AMOUNT = 10000;
 const BELOW_MIN_CHARGE_MESSAGE = `${MIN_CHARGE_AMOUNT.toLocaleString('ko-KR')}원부터 충전할 수 있습니다.`;
 const LEDGER_FAILED_MESSAGE = '포인트 원장을 불러오지 못했습니다.';
 
-const getMockBalance = (): PointBalance =>
-  mockPointLedger.reduce(
-    (total, { balanceDelta, reservedDelta }) => ({
-      balance: total.balance + balanceDelta,
-      reservedPoints: total.reservedPoints + reservedDelta,
-    }),
-    { balance: 0, reservedPoints: 0 },
-  );
+// 서버 잔액 응답 (GET /v1/owner/points/balance). 잔액은 원장 합계로 계산한 값이다
+interface PointBalanceResponse {
+  balance: number;
+  reservedPoint: number;
+  // 화면에서 쓰지 않는다 (무엇을 합한 값인지 백엔드 확인 필요)
+  unspentTotal: number;
+  businessDate: string;
+}
 
+// 결제 충전 연동 전까지 mock으로 충전한 금액의 합. 서버 잔액은 바꿀 수 없어 앱 안에서만 더해 보여준다.
+// 새로고침하면 사라진다. 개발 중 잔액 부족 → 충전 → 진행 흐름을 확인하려고 둔다
+let mockChargedTotal = 0;
+
+// 원장을 읽지 못했거나(503 BILLING-006) 응답을 받지 못하면 조회 실패로 돌려준다. 이전 잔액으로 대신 보여주지 않는다
 export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
-  await mockDelay();
+  try {
+    const data = await request<PointBalanceResponse>(
+      '/v1/owner/points/balance',
+    );
 
-  if (MOCK_LEDGER_FAILS) {
+    return {
+      ok: true,
+      data: {
+        balance: data.balance + mockChargedTotal,
+        reservedPoints: data.reservedPoint,
+      },
+    };
+  } catch {
     return { ok: false, message: LEDGER_FAILED_MESSAGE };
   }
-
-  return { ok: true, data: getMockBalance() };
 };
 
 // 한국은 서머타임이 없어 UTC와 늘 9시간 차이다
@@ -154,7 +168,7 @@ export const getPointHistory = async ({
 };
 
 // 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 원장에 충전을 남긴 뒤 바뀐 잔액을 돌려준다
-// 실제 결제는 결제대행사 화면을 거친다. mock은 테스트 결제라 바로 충전된다
+// 실제 결제는 결제대행사 화면을 거친다. mock은 테스트 결제라 바로 충전되고, 서버 잔액에 충전 금액을 더해 돌려준다
 export const chargePoints = async (
   amount: number,
 ): Promise<ApiResult<PointBalance>> => {
@@ -164,6 +178,14 @@ export const chargePoints = async (
     return { ok: false, message: BELOW_MIN_CHARGE_MESSAGE };
   }
 
+  // 바뀐 잔액을 받지 못하면 충전하지 않은 것으로 둔다
+  const balanceResult = await getPointBalance();
+
+  if (!balanceResult.ok) {
+    return balanceResult;
+  }
+
+  mockChargedTotal += amount;
   mockPointLedger.push({
     id: `ledger-${mockPointLedger.length + 1}`,
     type: 'CHARGE',
@@ -174,5 +196,11 @@ export const chargePoints = async (
     memo: null,
   });
 
-  return { ok: true, data: getMockBalance() };
+  return {
+    ok: true,
+    data: {
+      ...balanceResult.data,
+      balance: balanceResult.data.balance + amount,
+    },
+  };
 };

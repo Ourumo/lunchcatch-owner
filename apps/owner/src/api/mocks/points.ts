@@ -15,7 +15,7 @@ export interface MockLedgerEntry {
   memo: string | null;
 }
 
-// 원장 조회 실패 화면을 확인하려면 true로 바꾼다. 잔액 조회와 내역 조회가 함께 실패한다
+// 내역 조회 실패 화면을 확인하려면 true로 바꾼다. 잔액은 서버 API라 이 값과 상관없다
 export const MOCK_LEDGER_FAILS = false;
 
 // 오늘 기준 며칠 뒤(음수면 며칠 전)의 한국 시각
