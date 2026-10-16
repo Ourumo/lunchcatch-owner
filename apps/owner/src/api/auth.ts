@@ -80,8 +80,8 @@ const isLoginAllowedStatus = (
 ): status is LoginResponse['status'] =>
   status === 'ONBOARDING' || status === 'ACTIVE';
 
-// 로그인과 재발급의 요청 제한은 1분 고정 구간이라, Retry-After를 읽지 못하면 최대 대기 시간인 60초로 본다
-const DEFAULT_LOGIN_RETRY_AFTER_SECONDS = 60;
+// 로그인과 재발급은 요청 제한(1분 고정 구간)을 함께 쓴다. Retry-After를 읽지 못하면 최대 대기 시간인 60초로 본다
+const DEFAULT_RETRY_AFTER_SECONDS = 60;
 
 // 요청 제한(429)이면 남은 시간과 함께 요청 제한 문구,
 // 서버가 오류 코드와 함께 거절했으면(예: AUTH-001, 입력 형식 오류 COMMON-002) 로그인 실패 문구,
@@ -91,8 +91,7 @@ const getLoginFailure = (error: unknown): ApiResult<never> => {
     return {
       ok: false,
       message: RATE_LIMITED_MESSAGE,
-      retryAfterSeconds:
-        error.retryAfterSeconds ?? DEFAULT_LOGIN_RETRY_AFTER_SECONDS,
+      retryAfterSeconds: error.retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS,
     };
   }
 
@@ -210,7 +209,7 @@ const getMockOwnerStatus = (): LoginResponse['status'] | null => {
 // 인증 쿠키로 로그인한 점주를 확인한다. 화면은 HttpOnly 쿠키를 읽을 수 없어 새로고침 뒤 로그인 상태는 이것으로만 알 수 있다.
 // 로그인 전이면 data가 null이다. 재발급까지 실패해 쿠키로 로그인할 수 없거나(401), 점주가 아닌 계정이거나(403 AUTH-006),
 // 이용 정지·탈퇴 상태인 경우다. 그 밖의 오류(요청 제한 429, 서버 오류 5xx 등)나 응답을 받지 못한 경우는
-// 로그인 전인지 알 수 없어 실패로 돌려준다
+// 로그인 전인지 알 수 없어 실패로 돌려준다. 재발급이 요청 제한(429)에 걸렸으면 남은 시간을 함께 돌려준다
 export const getMe = async (): Promise<ApiResult<LoginResponse | null>> => {
   const mockStatus = getMockOwnerStatus();
 
@@ -237,6 +236,14 @@ export const getMe = async (): Promise<ApiResult<LoginResponse | null>> => {
       (error.status === 401 || error.status === 403)
     ) {
       return { ok: true, data: null };
+    }
+
+    if (error instanceof ApiError && error.status === 429) {
+      return {
+        ok: false,
+        retryAfterSeconds:
+          error.retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS,
+      };
     }
 
     return { ok: false };
