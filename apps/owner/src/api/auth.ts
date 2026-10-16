@@ -31,7 +31,7 @@ interface ActiveOwnerLoginResponse {
   email: string;
   role: string;
   status: 'ACTIVE';
-  // 명세상 항상 온다. ACTIVE 계정이 없어 개발 서버에서 확인하지 못해, 없으면 응답 형식 오류로 본다
+  // 명세상 항상 온다. ACTIVE 계정이 없어 개발 서버에서 확인하지 못해, boolean이 아니면 응답 형식 오류로 본다
   tutorialViewed?: boolean;
 }
 
@@ -125,7 +125,7 @@ export const login = async ({
 
     if (data.status === 'ACTIVE') {
       // 안 본 것으로 채우면 이미 본 점주에게 튜토리얼이 다시 뜨므로 로그인을 실패로 돌려준다
-      if (data.tutorialViewed === undefined) {
+      if (typeof data.tutorialViewed !== 'boolean') {
         return { ok: false, message: UNAVAILABLE_MESSAGE };
       }
 
