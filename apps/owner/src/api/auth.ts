@@ -66,6 +66,8 @@ const LOGIN_FAILED_MESSAGE = '이메일 또는 비밀번호가 올바르지 않�
 // 화면 제목("로그인에 실패했습니다" 등)이 실패를 알리므로 원인만 알린다
 const UNAVAILABLE_MESSAGE =
   '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+// 로그인 요청 제한(429)에 걸렸을 때. 남은 시간은 화면이 따로 보여준다
+const RATE_LIMITED_MESSAGE = '요청이 많아 잠시 후 다시 시도해 주세요.';
 const EMAIL_DUPLICATED_MESSAGE = '이미 가입된 이메일입니다.';
 // 서버가 입력 형식 오류 등으로 가입을 거절했을 때
 const SIGNUP_REJECTED_MESSAGE = '입력한 정보를 다시 확인해 주세요.';
@@ -78,12 +80,30 @@ const isLoginAllowedStatus = (
 ): status is LoginResponse['status'] =>
   status === 'ONBOARDING' || status === 'ACTIVE';
 
+// 로그인과 재발급의 요청 제한은 1분 고정 구간이라, Retry-After를 읽지 못하면 최대 대기 시간인 60초로 본다
+const DEFAULT_LOGIN_RETRY_AFTER_SECONDS = 60;
+
+// 요청 제한(429)이면 남은 시간과 함께 요청 제한 문구,
 // 서버가 오류 코드와 함께 거절했으면(예: AUTH-001, 입력 형식 오류 COMMON-002) 로그인 실패 문구,
-// 응답을 받지 못했거나 읽지 못했거나 서버 오류(5xx)면 다시 시도 문구를 보여준다
-const getLoginErrorMessage = (error: unknown) =>
-  error instanceof ApiError && error.code !== null && error.status < 500
-    ? LOGIN_FAILED_MESSAGE
-    : UNAVAILABLE_MESSAGE;
+// 응답을 받지 못했거나 읽지 못했거나 서버 오류(5xx, 503 AUTH-002 포함)면 다시 시도 문구를 보여준다
+const getLoginFailure = (error: unknown): ApiResult<never> => {
+  if (error instanceof ApiError && error.status === 429) {
+    return {
+      ok: false,
+      message: RATE_LIMITED_MESSAGE,
+      retryAfterSeconds:
+        error.retryAfterSeconds ?? DEFAULT_LOGIN_RETRY_AFTER_SECONDS,
+    };
+  }
+
+  return {
+    ok: false,
+    message:
+      error instanceof ApiError && error.code !== null && error.status < 500
+        ? LOGIN_FAILED_MESSAGE
+        : UNAVAILABLE_MESSAGE,
+  };
+};
 
 export const login = async ({
   email,
@@ -118,7 +138,7 @@ export const login = async ({
     // 이용 정지·탈퇴 계정은 서버가 거절하지 않고 내려보내도 같은 문구로 막는다
     return { ok: false, message: LOGIN_FAILED_MESSAGE };
   } catch (error) {
-    return { ok: false, message: getLoginErrorMessage(error) };
+    return getLoginFailure(error);
   }
 };
 
