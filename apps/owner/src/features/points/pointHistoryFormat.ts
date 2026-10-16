@@ -5,13 +5,12 @@ import type {
 } from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
 
-// 관리자 앱(billing)의 원장 유형 이름과 맞춘다. 무효 노출 환급은 점주 화면에만 있다
+// 관리자 앱(billing)의 원장 유형 이름과 맞춘다
 export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {
   CHARGE: '충전',
   RESERVE: '예약',
   DEDUCT: '소진',
   RELEASE: '예약 해제',
-  REFUND_INVALID: '환급',
   REFUND: '환불',
   ADJUST: '조정',
 };
@@ -37,10 +36,8 @@ export interface PointHistoryItem {
   key: string;
   type: PointHistoryType;
   amount: number;
-  balanceAfter: number;
   occurredAt: string;
   campaignId: string | null;
-  memo: string | null;
   serving: ServingSummary | null;
 }
 
@@ -83,10 +80,8 @@ const toItem = (entry: PointHistoryEntry): PointHistoryItem => ({
   key: entry.id,
   type: entry.type,
   amount: entry.amount,
-  balanceAfter: entry.balanceAfter,
   occurredAt: entry.occurredAt,
   campaignId: entry.campaignId,
-  memo: entry.memo,
   serving: null,
 });
 
@@ -115,7 +110,7 @@ const toServingItem = (
 };
 
 // 최신순 내역을 날짜별로 묶는다. 같은 날 같은 캠페인의 예약, 소진, 예약 해제는 한 줄로 묶고
-// 예약 해제가 있으면 예약 해제 자리에, 없으면 예약 자리에 둔다. 그 줄의 잔액도 그 자리의 잔액이다.
+// 예약 해제가 있으면 예약 해제 자리에, 없으면 예약 자리에 둔다.
 // 예약이 없는 묶음(전날 해제가 실패해 다음 날 되돌린 예약 해제 등)은 묶지 않고 한 줄씩 보여준다
 export const groupPointHistory = (
   entries: PointHistoryEntry[],

@@ -18,16 +18,9 @@ export interface PointBalance {
   reservedPoints: number;
 }
 
-// 원장 유형. 관리자 앱(billing)의 유형에 무효 노출 환급(REFUND_INVALID)을 더한다.
-// REFUND_INVALID는 관리자 앱에 없어 백엔드 확인이 필요하다
+// 원장 유형. 서버 원장(GET /v1/owner/points/ledger)의 유형과 같다
 export type PointHistoryType =
-  | 'CHARGE'
-  | 'RESERVE'
-  | 'DEDUCT'
-  | 'RELEASE'
-  | 'REFUND_INVALID'
-  | 'REFUND'
-  | 'ADJUST';
+  'CHARGE' | 'RESERVE' | 'DEDUCT' | 'RELEASE' | 'REFUND' | 'ADJUST';
 
 // 조회 기간. 최근 7일, 30일, 3개월이고 오늘을 포함한다
 export type PointHistoryPeriod = '7D' | '30D' | '3M';
@@ -43,13 +36,9 @@ export interface PointHistoryEntry {
   type: PointHistoryType;
   // 보여줄 증감(+/−). 소진은 예약 중 포인트에서 빠진 양이라 잔액은 그대로다
   amount: number;
-  // 이 내역이 반영된 뒤의 잔액
-  balanceAfter: number;
   // 소진은 캠페인별·일별 합계라 그날 마지막 차감 시각
   occurredAt: string;
   campaignId: string | null;
-  // 조정 사유
-  memo: string | null;
 }
 
 const LEDGER_FAILED_MESSAGE = '포인트 원장을 불러오지 못했습니다.';
@@ -135,28 +124,22 @@ const getPeriodStart = (period: PointHistoryPeriod) => {
   return new Date(start.getTime() - KST_OFFSET_MS);
 };
 
-const toHistoryEntry = (
-  {
-    balanceDelta,
-    campaignId,
-    id,
-    memo,
-    occurredAt,
-    reservedDelta,
-    type,
-  }: MockLedgerEntry,
-  balanceAfter: number,
-): PointHistoryEntry => ({
+const toHistoryEntry = ({
+  balanceDelta,
+  campaignId,
+  id,
+  occurredAt,
+  reservedDelta,
+  type,
+}: MockLedgerEntry): PointHistoryEntry => ({
   id,
   type,
   amount: type === 'DEDUCT' ? reservedDelta : balanceDelta,
-  balanceAfter,
   occurredAt,
   campaignId,
-  memo,
 });
 
-// 포인트 내역. 최신순이고, 그 시점 잔액은 기간·캠페인으로 거르기 전 전체 원장으로 계산한다
+// 포인트 내역. 최신순
 export const getPointHistory = async ({
   campaignId,
   period,
@@ -168,28 +151,20 @@ export const getPointHistory = async ({
   }
 
   const periodStart = getPeriodStart(period);
-  let balance = 0;
-
-  const entries = [...mockPointLedger]
-    .sort(
-      (a, b) =>
-        new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
-    )
-    .map((entry) => {
-      balance += entry.balanceDelta;
-
-      return toHistoryEntry(entry, balance);
-    });
 
   return {
     ok: true,
-    data: entries
+    data: [...mockPointLedger]
       .filter(
         (entry) =>
           new Date(entry.occurredAt) >= periodStart &&
           (campaignId === null || entry.campaignId === campaignId),
       )
-      .reverse(),
+      .sort(
+        (a, b) =>
+          new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+      )
+      .map(toHistoryEntry),
   };
 };
 
@@ -216,7 +191,6 @@ export const chargePoints = async (
     balanceDelta: amount,
     reservedDelta: 0,
     campaignId: null,
-    memo: null,
   });
 
   return {

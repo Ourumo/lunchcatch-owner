@@ -108,15 +108,13 @@ interface HistoryRowProps {
   campaignTitles: Record<string, string>;
 }
 
-// 내역 한 줄. 왼쪽에 유형과 설명, 오른쪽에 금액과 그 시점 잔액을 둔다.
-// 설명은 캠페인 이름(조정은 사유를 앞에), 캠페인이 없는 충전·환불은 시각이다
+// 내역 한 줄. 왼쪽에 유형과 설명, 오른쪽에 금액을 둔다.
+// 설명은 캠페인 이름이고, 캠페인이 없는 충전·환불은 시각이다
 const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
   const campaignTitle = item.campaignId
     ? (campaignTitles[item.campaignId] ?? '캠페인')
     : null;
-  const description =
-    [item.memo, campaignTitle].filter(Boolean).join(' · ') ||
-    formatHistoryTime(item.occurredAt);
+  const description = campaignTitle ?? formatHistoryTime(item.occurredAt);
 
   return (
     <li className="flex flex-col gap-0.5 px-4 py-3">
@@ -128,10 +126,9 @@ const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
           {formatSignedPoints(item.amount)}
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-3 text-body-sm-mobile text-text-secondary">
-        <span className="min-w-0 truncate">{description}</span>
-        <span className="shrink-0">잔액 {formatPoints(item.balanceAfter)}</span>
-      </div>
+      <p className="truncate text-body-sm-mobile text-text-secondary">
+        {description}
+      </p>
       {item.serving && (
         <p className="text-caption-mobile break-keep text-text-tertiary">
           {formatServingSummary(item.serving)}

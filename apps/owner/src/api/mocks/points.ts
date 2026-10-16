@@ -11,8 +11,6 @@ export interface MockLedgerEntry {
   balanceDelta: number;
   reservedDelta: number;
   campaignId: string | null;
-  // 조정 사유
-  memo: string | null;
 }
 
 // 내역 조회 실패 화면을 확인하려면 true로 바꾼다. 잔액은 서버 API라 이 값과 상관없다
@@ -30,7 +28,6 @@ const charge = (days: number, amount: number): MockLedgerRecord => ({
   balanceDelta: amount,
   reservedDelta: 0,
   campaignId: null,
-  memo: null,
 });
 
 // 집행일 하루의 예약(00:00), 소진, 예약 해제(13:30). 소진은 노출마다가 아니라 서버가 캠페인별·일별로 묶어 준다고 가정한다
@@ -46,7 +43,6 @@ const servingDay = (
     balanceDelta: -reserved,
     reservedDelta: reserved,
     campaignId,
-    memo: null,
   },
   {
     type: 'DEDUCT',
@@ -54,7 +50,6 @@ const servingDay = (
     balanceDelta: 0,
     reservedDelta: -spent,
     campaignId,
-    memo: null,
   },
   {
     type: 'RELEASE',
@@ -62,7 +57,6 @@ const servingDay = (
     balanceDelta: reserved - spent,
     reservedDelta: -(reserved - spent),
     campaignId,
-    memo: null,
   },
 ];
 
@@ -76,20 +70,6 @@ const servingDays = (
   dailySpent.flatMap((spent, index) =>
     servingDay(campaignId, startDays + index, dailyBudget, spent),
   );
-
-// 사후에 무효로 판정된 노출의 차감을 잔액으로 되돌린다
-const refundInvalid = (
-  campaignId: string,
-  days: number,
-  amount: number,
-): MockLedgerRecord => ({
-  type: 'REFUND_INVALID',
-  occurredAt: at(days, '15:00'),
-  balanceDelta: amount,
-  reservedDelta: 0,
-  campaignId,
-  memo: null,
-});
 
 // 최근 3개월 원장. 시간순으로 둔다.
 // 오늘은 진행 중 캠페인의 서빙 중(예약 해제 전)으로 두어, 캠페인 mock의 오늘 예약 10,000P · 소진 2,800P와 맞춘다
@@ -108,7 +88,6 @@ const records: MockLedgerRecord[] = [
     7000,
     [6200, 6500, 6100, 6800, 6400, 7000, 5800],
   ),
-  refundInvalid('campaign-ended-3', -53, 300),
   charge(-40, 30000),
   ...servingDays(
     'campaign-ended-2',
@@ -123,7 +102,6 @@ const records: MockLedgerRecord[] = [
     12000,
     [9800, 10400, 9600, 11200, 10100, 10300, 9000],
   ),
-  refundInvalid('campaign-ended-1', -15, 400),
   // 13:30 예약 해제 뒤에 발견된 소진 누락은 잔액에서 조정으로 뺀다 (공통 명세 "노출 차감 및 원장 기록")
   {
     type: 'ADJUST',
@@ -131,18 +109,15 @@ const records: MockLedgerRecord[] = [
     balanceDelta: -300,
     reservedDelta: 0,
     campaignId: 'campaign-ended-1',
-    memo: '누락된 소진 반영',
   },
   charge(-5, 30000),
   ...servingDays('campaign-active', -3, 10000, [9200, 9600, 9600]),
-  refundInvalid('campaign-active', -2, 200),
   {
     type: 'RESERVE',
     occurredAt: at(0, '00:00'),
     balanceDelta: -10000,
     reservedDelta: 10000,
     campaignId: 'campaign-active',
-    memo: null,
   },
   {
     type: 'DEDUCT',
@@ -150,7 +125,6 @@ const records: MockLedgerRecord[] = [
     balanceDelta: 0,
     reservedDelta: -2800,
     campaignId: 'campaign-active',
-    memo: null,
   },
 ];
 
