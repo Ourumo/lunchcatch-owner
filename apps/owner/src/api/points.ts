@@ -1,15 +1,10 @@
 import { request } from './client';
 import { mockDelay } from './mocks/delay';
-import {
-  MOCK_LEDGER_FAILS,
-  type MockLedgerEntry,
-  mockPointLedger,
-} from './mocks/points';
 import type { ApiResult } from './types';
 
 // 점주 포인트 잔액과 내역 (docs/requirements-owner.md "잔액 및 내역 조회").
 // 잔액은 정산만 가지므로 캠페인 API와 분리한다. 캠페인 화면은 잔액 부족 안내를 위해 따로 불러온다
-// 잔액은 서버 API를 쓰고, 내역과 충전은 아직 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 충전은 결제 연동 전까지 mock으로 동작한다. 연동할 때는 chargePoints 내부만 교체한다
 
 export interface PointBalance {
   // 포인트 원장 합계 (1원 = 1포인트)
@@ -31,15 +26,23 @@ export interface PointHistoryFilter {
   campaignId: string | null;
 }
 
+// 원장 한 줄. 노출마다 쌓이는 소진(DEDUCT)은 서버가 원장으로 내리지 않아 내역에 없다
 export interface PointHistoryEntry {
   id: string;
   type: PointHistoryType;
-  // 보여줄 증감(+/−). 소진은 예약 중 포인트에서 빠진 양이라 잔액은 그대로다
+  // 잔액의 증감(+/−)
   amount: number;
-  // 소진은 캠페인별·일별 합계라 그날 마지막 차감 시각
   occurredAt: string;
   campaignId: string | null;
 }
+
+export interface PointHistoryPage {
+  entries: PointHistoryEntry[];
+  // 다음 구간을 받을 때 넘기는 값. 마지막 구간이면 null
+  nextCursor: string | null;
+}
+
+export const POINT_HISTORY_PAGE_SIZE = 20;
 
 const LEDGER_FAILED_MESSAGE = '포인트 원장을 불러오지 못했습니다.';
 
@@ -108,12 +111,13 @@ export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
 // 한국은 서머타임이 없어 UTC와 늘 9시간 차이다
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-// 조회 기간 첫날의 한국 시간 00:00. 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다.
-// 한국 시각에 9시간을 더해 UTC 날짜 계산으로 다룬 뒤 다시 뺀다
-const getPeriodStart = (period: PointHistoryPeriod) => {
-  const start = new Date(Date.now() + KST_OFFSET_MS);
+// 한국 날짜(YYYY-MM-DD). 한국 시각에 9시간을 더해 UTC 날짜로 읽는다
+const toKstDate = (date: Date) =>
+  new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 
-  start.setUTCHours(0, 0, 0, 0);
+// 조회 기간 첫날의 한국 날짜. 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다
+const getPeriodStartDate = (period: PointHistoryPeriod) => {
+  const start = new Date(Date.now() + KST_OFFSET_MS);
 
   if (period === '3M') {
     start.setUTCMonth(start.getUTCMonth() - 3);
@@ -121,54 +125,145 @@ const getPeriodStart = (period: PointHistoryPeriod) => {
     start.setUTCDate(start.getUTCDate() - (period === '7D' ? 6 : 29));
   }
 
-  return new Date(start.getTime() - KST_OFFSET_MS);
+  return start.toISOString().slice(0, 10);
+};
+
+// 서버 캠페인 ID는 숫자다. 캠페인 API 연동 전의 mock 캠페인 ID(예: campaign-active)는 서버 원장에 내역이 없다
+const isServerCampaignId = (campaignId: string) => /^\d+$/.test(campaignId);
+
+interface CursorPageResponse<T> {
+  items: T[];
+  // 비어 있으면 마지막 구간
+  nextPageToken: string | null;
+}
+
+// 서버 원장 한 줄 (GET /v1/owner/points/ledger)
+interface OwnerLedgerItem {
+  ledgerId: number;
+  entryType: PointHistoryType;
+  amount: number;
+  campaignId: number | null;
+  businessDate: string;
+  paymentId: number | null;
+  createdAt: string;
+}
+
+// 잔액이 느는 유형과 주는 유형. 개발 서버 테스트 계정에 내역이 없어 amount의 부호를 확인하지 못해,
+// 받은 부호와 상관없이 유형으로 부호를 정한다. 조정은 늘 수도 줄 수도 있어 받은 부호를 그대로 쓴다
+const INCREASING_TYPES: PointHistoryType[] = ['CHARGE', 'RELEASE'];
+const DECREASING_TYPES: PointHistoryType[] = ['RESERVE', 'DEDUCT', 'REFUND'];
+
+const getSignedAmount = (type: PointHistoryType, amount: number) => {
+  if (INCREASING_TYPES.includes(type)) {
+    return Math.abs(amount);
+  }
+
+  return DECREASING_TYPES.includes(type) ? -Math.abs(amount) : amount;
 };
 
 const toHistoryEntry = ({
-  balanceDelta,
+  amount,
   campaignId,
-  id,
-  occurredAt,
-  reservedDelta,
-  type,
-}: MockLedgerEntry): PointHistoryEntry => ({
-  id,
-  type,
-  amount: type === 'DEDUCT' ? reservedDelta : balanceDelta,
-  occurredAt,
-  campaignId,
+  createdAt,
+  entryType,
+  ledgerId,
+}: OwnerLedgerItem): PointHistoryEntry => ({
+  id: String(ledgerId),
+  type: entryType,
+  amount: getSignedAmount(entryType, amount),
+  occurredAt: createdAt,
+  campaignId: campaignId === null ? null : String(campaignId),
 });
 
-// 포인트 내역. 최신순
-export const getPointHistory = async ({
+// 포인트 내역 한 구간. 최신순이고, 다음 구간은 받은 커서로 이어서 부른다
+export const getPointHistoryPage = async ({
   campaignId,
+  cursor,
   period,
-}: PointHistoryFilter): Promise<ApiResult<PointHistoryEntry[]>> => {
-  await mockDelay();
-
-  if (MOCK_LEDGER_FAILS) {
-    return { ok: false, message: LEDGER_FAILED_MESSAGE };
+}: PointHistoryFilter & { cursor?: string }): Promise<
+  ApiResult<PointHistoryPage>
+> => {
+  if (campaignId !== null && !isServerCampaignId(campaignId)) {
+    return { ok: true, data: { entries: [], nextCursor: null } };
   }
 
-  const periodStart = getPeriodStart(period);
+  const params = new URLSearchParams({
+    from: getPeriodStartDate(period),
+    to: toKstDate(new Date()),
+    pageSize: String(POINT_HISTORY_PAGE_SIZE),
+  });
 
-  return {
-    ok: true,
-    data: [...mockPointLedger]
-      .filter(
-        (entry) =>
-          new Date(entry.occurredAt) >= periodStart &&
-          (campaignId === null || entry.campaignId === campaignId),
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-      )
-      .map(toHistoryEntry),
-  };
+  if (campaignId) {
+    params.set('campaignId', campaignId);
+  }
+
+  if (cursor) {
+    params.set('pageToken', cursor);
+  }
+
+  try {
+    const data = await request<CursorPageResponse<OwnerLedgerItem>>(
+      `/v1/owner/points/ledger?${params}`,
+    );
+
+    return {
+      ok: true,
+      data: {
+        entries: data.items.map(toHistoryEntry),
+        nextCursor: data.nextPageToken || null,
+      },
+    };
+  } catch {
+    return { ok: false, message: LEDGER_FAILED_MESSAGE };
+  }
 };
 
-// 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 원장에 충전을 남긴 뒤 바뀐 잔액을 돌려준다
+// 서버 소진 집계 한 줄 (GET /v1/owner/points/spend-summary)
+interface SpendSummaryItem {
+  date: string;
+  campaignId: number;
+  spentPoint: number;
+  reservedPoint: number;
+  impressionCount: number;
+}
+
+// 오늘 캠페인별 소진 포인트(캠페인 ID → 포인트). 예약 해제(13:30) 전에는 원장만으로 소진을 알 수 없어 소진 집계로 받는다.
+// 지난날의 소진은 원장의 예약 − 예약 해제로 계산하므로 오늘만 부른다 (소진 집계는 최대 31일까지만 조회된다)
+export const getTodaySpentPoints = async (
+  campaignId: string | null,
+): Promise<ApiResult<Record<string, number>>> => {
+  if (campaignId !== null && !isServerCampaignId(campaignId)) {
+    return { ok: true, data: {} };
+  }
+
+  const today = toKstDate(new Date());
+  const params = new URLSearchParams({
+    groupBy: 'DAY_CAMPAIGN',
+    from: today,
+    to: today,
+  });
+
+  if (campaignId) {
+    params.set('campaignId', campaignId);
+  }
+
+  try {
+    const data = await request<{ items: SpendSummaryItem[] }>(
+      `/v1/owner/points/spend-summary?${params}`,
+    );
+
+    return {
+      ok: true,
+      data: Object.fromEntries(
+        data.items.map((item) => [String(item.campaignId), item.spentPoint]),
+      ),
+    };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// 포인트 충전 (docs/requirements-owner.md "포인트 결제"). 1원 = 1포인트로 잔액에 더하고 바뀐 잔액을 돌려준다
 // 실제 결제는 결제대행사 화면을 거친다. mock은 테스트 결제라 바로 충전되고, 서버 잔액에 충전 금액을 더해 돌려준다
 export const chargePoints = async (
   amount: number,
@@ -183,15 +278,8 @@ export const chargePoints = async (
     return balanceResult;
   }
 
+  // 서버 원장에는 남지 않아 포인트 내역에는 보이지 않는다
   mockChargedTotal += amount;
-  mockPointLedger.push({
-    id: `ledger-${mockPointLedger.length + 1}`,
-    type: 'CHARGE',
-    occurredAt: new Date().toISOString(),
-    balanceDelta: amount,
-    reservedDelta: 0,
-    campaignId: null,
-  });
 
   return {
     ok: true,

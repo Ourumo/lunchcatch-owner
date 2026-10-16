@@ -6,6 +6,7 @@ import {
   type PointHistoryPeriod,
 } from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
+import { LoadMoreTrigger } from '@owner/components/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
@@ -20,7 +21,7 @@ import {
   pointHistoryPeriodItems,
   pointHistoryTypeLabels,
 } from './pointHistoryFormat';
-import { usePointHistory } from './usePointHistory';
+import { type LoadMoreStatus, usePointHistory } from './usePointHistory';
 
 // 처음에는 최근 30일 전체 내역을 보여준다
 const DEFAULT_FILTER: PointHistoryFilter = { period: '30D', campaignId: null };
@@ -101,6 +102,46 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
       )}
     </section>
   );
+};
+
+interface HistoryFooterProps {
+  hasMore: boolean;
+  loadMore: LoadMoreStatus;
+  onLoadMore: () => void;
+}
+
+// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
+const HistoryFooter = ({
+  hasMore,
+  loadMore,
+  onLoadMore,
+}: HistoryFooterProps) => {
+  if (loadMore === 'loading') {
+    return (
+      <div className="flex justify-center py-4" role="status">
+        <span
+          aria-hidden="true"
+          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
+        />
+        <span className="sr-only">포인트 내역을 더 불러오는 중</span>
+      </div>
+    );
+  }
+
+  if (loadMore === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <p className="text-body-sm-mobile text-text-secondary" role="alert">
+          불러오지 못했어요
+        </p>
+        <Button onClick={onLoadMore} variant="secondary">
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
 };
 
 interface HistoryRowProps {
@@ -189,6 +230,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
     charge,
     filter,
     historyState,
+    loadMoreHistory,
     retryBalance,
     retryHistory,
   } = usePointHistory(DEFAULT_FILTER);
@@ -209,7 +251,10 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
       );
     }
 
-    const days = groupPointHistory(historyState.entries);
+    const days = groupPointHistory(
+      historyState.entries,
+      historyState.todaySpent,
+    );
 
     if (days.length === 0) {
       return (
@@ -242,6 +287,11 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
             </ul>
           </section>
         ))}
+        <HistoryFooter
+          hasMore={historyState.nextCursor !== null}
+          loadMore={historyState.loadMore}
+          onLoadMore={loadMoreHistory}
+        />
       </div>
     );
   };

@@ -24,10 +24,11 @@ export const pointHistoryPeriodItems: {
   { label: '최근 3개월', value: '3M' },
 ];
 
-// 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전(오늘 서빙 중)이면 released가 null이다
+// 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전(오늘 서빙 중)이면 released가 null이고,
+// 그때 소진은 소진 집계로 받는데 받지 못했으면 spent가 null이다
 export interface ServingSummary {
   reserved: number;
-  spent: number;
+  spent: number | null;
   released: number | null;
 }
 
@@ -86,26 +87,28 @@ const toItem = (entry: PointHistoryEntry): PointHistoryItem => ({
 });
 
 // 집행일 하루를 한 줄로 묶는다. 예약 해제가 끝난 날은 "예약 − 예약 해제 = 소진"이라 소진 한 줄로 보여주고,
-// 예약 해제 전인 오늘은 아직 소진이 정해지지 않아 예약 한 줄로 보여준다
+// 예약 해제 전인 오늘은 아직 소진이 정해지지 않아 예약 한 줄로 보여준다.
+// 서버 원장에는 소진(DEDUCT)이 없어, 예약 해제 전의 소진은 소진 집계(todaySpent)로 받는다
 const toServingItem = (
   anchor: PointHistoryEntry,
   group: PointHistoryEntry[],
+  todaySpent: Record<string, number> | null,
 ): PointHistoryItem => {
-  const findAmount = (type: PointHistoryType) =>
-    group.find((entry) => entry.type === type)?.amount ?? 0;
-  const reserved = -findAmount('RESERVE');
-  const spent = -findAmount('DEDUCT');
+  const reserved = -(
+    group.find((entry) => entry.type === 'RESERVE')?.amount ?? 0
+  );
   const isReleased = anchor.type === 'RELEASE';
+  const released = isReleased ? anchor.amount : null;
+  // 소진 집계에 없는 캠페인은 아직 노출되지 않아 소진이 0이다
+  const unreleasedSpent =
+    todaySpent === null ? null : (todaySpent[anchor.campaignId ?? ''] ?? 0);
+  const spent = released === null ? unreleasedSpent : reserved - released;
 
   return {
     ...toItem(anchor),
     type: isReleased ? 'DEDUCT' : 'RESERVE',
-    amount: isReleased ? -spent : -reserved,
-    serving: {
-      reserved,
-      spent,
-      released: isReleased ? anchor.amount : null,
-    },
+    amount: isReleased ? -(spent ?? 0) : -reserved,
+    serving: { reserved, spent, released },
   };
 };
 
@@ -114,6 +117,7 @@ const toServingItem = (
 // 예약이 없는 묶음(전날 해제가 실패해 다음 날 되돌린 예약 해제 등)은 묶지 않고 한 줄씩 보여준다
 export const groupPointHistory = (
   entries: PointHistoryEntry[],
+  todaySpent: Record<string, number> | null,
 ): PointHistoryDay[] => {
   const servingGroups = new Map<string, PointHistoryEntry[]>();
 
@@ -141,7 +145,7 @@ export const groupPointHistory = (
         return;
       }
 
-      item = toServingItem(entry, group);
+      item = toServingItem(entry, group, todaySpent);
     }
 
     const date = toDateKey(new Date(entry.occurredAt));
@@ -186,6 +190,8 @@ export const formatServingSummary = ({
   reserved,
   spent,
 }: ServingSummary) =>
-  released === null
-    ? `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 13:30에 해제돼요`
-    : `예약 ${formatPoints(reserved)} · 예약 해제 ${formatPoints(released)}`;
+  released !== null
+    ? `예약 ${formatPoints(reserved)} · 예약 해제 ${formatPoints(released)}`
+    : spent === null
+      ? '남은 예약은 13:30에 해제돼요'
+      : `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 13:30에 해제돼요`;
