@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useState } from 'react';
 
 import { login, type LoginResponse } from '@owner/api/auth';
 import {
@@ -7,6 +7,7 @@ import {
   type LoginValues,
   validateLogin,
 } from '@owner/auth/validation';
+import { useCountdown } from '@owner/hooks/useCountdown';
 
 interface UseLoginFormOptions {
   onSuccess: (response: LoginResponse) => void;
@@ -20,29 +21,11 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
   const [touched, setTouched] = useState(initialTouched);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
-  // 요청 제한(429)이 풀릴 때까지 남은 초. 그 전에는 다시 제출할 수 없다
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (remainingSeconds === null) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      if (remainingSeconds > 1) {
-        setRemainingSeconds(remainingSeconds - 1);
-        return;
-      }
-
-      // 제한이 풀리면 안내를 지우고 다시 제출할 수 있게 한다
-      setRemainingSeconds(null);
-      setSubmitError(undefined);
-    }, 1000);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [remainingSeconds]);
+  // 요청 제한(429)이 풀릴 때까지 남은 초. 그 전에는 다시 제출할 수 없고,
+  // 제한이 풀리면 안내를 지우고 다시 제출할 수 있게 한다
+  const { remainingSeconds, start: startLock } = useCountdown(() =>
+    setSubmitError(undefined),
+  );
 
   const isLocked = remainingSeconds !== null;
 
@@ -86,7 +69,7 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
       setSubmitError(result.message);
 
       if (result.retryAfterSeconds) {
-        setRemainingSeconds(result.retryAfterSeconds);
+        startLock(result.retryAfterSeconds);
       }
 
       return;

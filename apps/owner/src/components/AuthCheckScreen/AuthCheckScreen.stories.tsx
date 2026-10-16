@@ -26,3 +26,23 @@ export const Failed: Story = {
     status: 'failed',
   },
 };
+
+// 요청 제한(429)으로 확인하지 못해 풀릴 때까지 기다리는 중
+export const RateLimited: Story = {
+  args: {
+    isRateLimited: true,
+    onRetry: () => undefined,
+    remainingSeconds: 54,
+    status: 'failed',
+  },
+};
+
+// 요청 제한이 풀려 다시 시도할 수 있을 때
+export const RateLimitEnded: Story = {
+  args: {
+    isRateLimited: true,
+    onRetry: () => undefined,
+    remainingSeconds: null,
+    status: 'failed',
+  },
+};
