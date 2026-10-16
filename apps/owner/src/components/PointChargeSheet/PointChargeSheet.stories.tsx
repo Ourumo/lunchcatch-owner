@@ -64,9 +64,13 @@ const meta = {
   component: PointChargeSheet,
   args: {
     balance: 50000,
-    minChargeAmount: 10000,
     onCharge: chargeSuccess,
     onClose: () => undefined,
+    policy: {
+      status: 'success',
+      minChargeAmount: 10000,
+      chargeAmounts: [10000, 30000, 50000, 100000],
+    },
   },
   parameters: {
     layout: 'fullscreen',
@@ -97,5 +101,19 @@ export const WithoutBalance: Story = {
 export const ChargeFailed: Story = {
   args: {
     onCharge: chargeFailure,
+  },
+};
+
+// 충전 정책을 불러오는 동안. 금액을 고를 수 없어 결제 버튼을 막는다
+export const PolicyLoading: Story = {
+  args: {
+    policy: { status: 'loading' },
+  },
+};
+
+// 충전 정책을 불러오지 못했을 때. 다시 시도할 수 있고 결제 버튼은 막는다
+export const PolicyFailed: Story = {
+  args: {
+    policy: { status: 'error', onRetry: () => undefined },
   },
 };

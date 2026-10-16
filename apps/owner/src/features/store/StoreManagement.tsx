@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 import { ChartNoAxesColumn, ChevronRight } from 'lucide-react';
 
-import { chargePoints, MIN_CHARGE_AMOUNT } from '@owner/api/points';
+import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
 import { useAuth } from '@owner/auth/useAuth';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
+import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 
 import { LogoutSheet } from './LogoutSheet';
 import {
@@ -172,6 +173,7 @@ export const StoreManagement = () => {
   const { clearOwner } = useAuth();
   const { retry, state, updateBalance } = useStoreManagement();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
+  const chargePolicy = useChargePolicy();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
   const handleCharge = async (amount: number) => {
@@ -238,7 +240,7 @@ export const StoreManagement = () => {
         {isChargeOpen && (
           <PointChargeSheet
             balance={balance}
-            minChargeAmount={MIN_CHARGE_AMOUNT}
+            policy={chargePolicy}
             onCharge={handleCharge}
             onClose={() => setIsChargeOpen(false)}
           />

@@ -52,11 +52,37 @@ export interface PointHistoryEntry {
   memo: string | null;
 }
 
-// 최소 충전 금액(원). 명세에 값이 없어 임시로 둔다. 기획 확인 후 바꾼다
-export const MIN_CHARGE_AMOUNT = 10000;
-
-const BELOW_MIN_CHARGE_MESSAGE = `${MIN_CHARGE_AMOUNT.toLocaleString('ko-KR')}원부터 충전할 수 있습니다.`;
 const LEDGER_FAILED_MESSAGE = '포인트 원장을 불러오지 못했습니다.';
+
+// 충전 정책. 오늘 적용 중인 최소 충전 금액(원)과 충전 금액 선택지
+export interface PointPolicy {
+  minChargeAmount: number;
+  chargeAmounts: number[];
+}
+
+// 서버 충전 정책 응답 (GET /v1/owner/point-policy)
+interface PointPolicyResponse {
+  minChargeAmount: number;
+  chargeProducts: number[];
+  effectiveDate: string;
+}
+
+// 실패 문구는 충전 시트가 정한다
+export const getPointPolicy = async (): Promise<ApiResult<PointPolicy>> => {
+  try {
+    const data = await request<PointPolicyResponse>('/v1/owner/point-policy');
+
+    return {
+      ok: true,
+      data: {
+        minChargeAmount: data.minChargeAmount,
+        chargeAmounts: data.chargeProducts,
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
+};
 
 // 서버 잔액 응답 (GET /v1/owner/points/balance). 잔액은 원장 합계로 계산한 값이다
 interface PointBalanceResponse {
@@ -172,11 +198,8 @@ export const getPointHistory = async ({
 export const chargePoints = async (
   amount: number,
 ): Promise<ApiResult<PointBalance>> => {
+  // 최소 충전 금액은 충전 시트가 정책의 선택지로만 고르게 해 막는다. 결제 연동 뒤에는 서버도 거절한다(400 BILLING-001)
   await mockDelay();
-
-  if (!Number.isInteger(amount) || amount < MIN_CHARGE_AMOUNT) {
-    return { ok: false, message: BELOW_MIN_CHARGE_MESSAGE };
-  }
 
   // 바뀐 잔액을 받지 못하면 충전하지 않은 것으로 둔다
   const balanceResult = await getPointBalance();

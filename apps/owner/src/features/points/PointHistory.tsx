@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Button, SegmentedControl, SelectField } from '@repo/ui';
 
 import {
-  MIN_CHARGE_AMOUNT,
   type PointHistoryFilter,
   type PointHistoryPeriod,
 } from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
+import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 
 import {
   formatHistoryDate,
@@ -183,6 +183,7 @@ interface PointHistoryProps {
 // 포인트 내역 (docs/requirements-owner.md "잔액 및 내역 조회").
 // 소진은 캠페인별·일별 합계 한 줄로 보여주고, 그날의 예약과 예약 해제는 그 줄 아래 보조 줄로 보여준다
 export const PointHistory = ({ onBack }: PointHistoryProps) => {
+  const chargePolicy = useChargePolicy();
   const {
     balanceState,
     campaignOptions,
@@ -302,7 +303,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
               ? balanceState.balance.balance
               : undefined
           }
-          minChargeAmount={MIN_CHARGE_AMOUNT}
+          policy={chargePolicy}
           onCharge={charge}
           onClose={() => setIsChargeOpen(false)}
         />
