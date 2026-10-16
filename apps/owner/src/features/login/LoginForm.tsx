@@ -51,20 +51,18 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       />
       {submitError && (
         <Toast
-          // 요청 제한 안내는 남은 시간이 1초마다 바뀌므로 나타날 때만 읽고 바뀔 때마다 다시 읽지 않게 한다
-          aria-live={remainingSeconds === null ? undefined : 'off'}
           className="break-keep"
-          description={
-            remainingSeconds === null
-              ? submitError
-              : `${submitError} ${remainingSeconds}초 남았어요.`
-          }
-          // 다른 오류로 바뀌면 새로 나타난 안내로 읽게 한다
-          key={submitError}
+          description={submitError}
           style={{ maxWidth: 'none' }}
           title="로그인에 실패했습니다"
           variant="danger"
         />
+      )}
+      {remainingSeconds !== null && (
+        // 남은 시간은 1초마다 바뀌어 화면 낭독기가 매번 다시 읽지 않도록 위 안내(알림 영역) 밖에 둔다
+        <p className="-mt-2 text-caption-mobile text-text-secondary">
+          {remainingSeconds}초 후에 다시 시도할 수 있어요.
+        </p>
       )}
       <Button
         className="w-full"
