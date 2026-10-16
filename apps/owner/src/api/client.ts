@@ -11,12 +11,20 @@ export class ApiError extends Error {
   readonly status: number;
   // 응답 본문을 읽지 못하면 null이다 (예: 로컬 백엔드가 꺼져 Vite 프록시가 502를 준 경우)
   readonly code: string | null;
+  // 요청 제한(429)일 때 다시 보낼 수 있을 때까지 남은 초 (Retry-After). 헤더가 없거나 읽지 못하면 없다
+  readonly retryAfterSeconds?: number;
 
-  constructor(status: number, code: string | null, message: string) {
+  constructor(
+    status: number,
+    code: string | null,
+    message: string,
+    retryAfterSeconds?: number,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -52,6 +60,19 @@ const readEnvelope = async <T>(
   }
 };
 
+// Retry-After는 초 또는 HTTP 날짜로 온다
+const readRetryAfterSeconds = (response: Response) => {
+  const header = response.headers.get('Retry-After');
+
+  if (!header) return undefined;
+
+  const seconds = /^\d+$/.test(header)
+    ? Number(header)
+    : (Date.parse(header) - Date.now()) / 1000;
+
+  return Number.isFinite(seconds) ? Math.max(0, Math.ceil(seconds)) : undefined;
+};
+
 // 요청을 한 번 보내고 봉투를 벗긴 data를 돌려준다
 const send = async <T>(
   path: string,
@@ -70,6 +91,16 @@ const send = async <T>(
 
   // 204는 본문과 봉투가 없다
   if (response.status === 204) return undefined as T;
+
+  // 요청 제한(429)은 본문 없이 오므로 읽지 않는다
+  if (response.status === 429) {
+    throw new ApiError(
+      429,
+      null,
+      '요청이 너무 많습니다 (429)',
+      readRetryAfterSeconds(response),
+    );
+  }
 
   const envelope = await readEnvelope<T>(response);
 

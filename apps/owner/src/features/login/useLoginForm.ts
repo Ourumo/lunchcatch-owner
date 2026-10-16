@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 
 import { login, type LoginResponse } from '@owner/api/auth';
 import {
@@ -20,6 +20,31 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
   const [touched, setTouched] = useState(initialTouched);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  // 요청 제한(429)이 풀릴 때까지 남은 초. 그 전에는 다시 제출할 수 없다
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (remainingSeconds === null) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (remainingSeconds > 1) {
+        setRemainingSeconds(remainingSeconds - 1);
+        return;
+      }
+
+      // 제한이 풀리면 안내를 지우고 다시 제출할 수 있게 한다
+      setRemainingSeconds(null);
+      setSubmitError(undefined);
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [remainingSeconds]);
+
+  const isLocked = remainingSeconds !== null;
 
   const errors = validateLogin(values);
   // 입력 중에는 오류를 보여주지 않고, 필드를 벗어난 뒤부터 보여준다
@@ -31,7 +56,11 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
   const handleChange =
     (field: keyof LoginValues) => (event: ChangeEvent<HTMLInputElement>) => {
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
-      setSubmitError(undefined);
+
+      // 요청 제한은 입력과 상관없으므로 풀릴 때까지 안내를 그대로 둔다
+      if (!isLocked) {
+        setSubmitError(undefined);
+      }
     };
 
   const handleBlur = (field: keyof LoginValues) => () => {
@@ -42,7 +71,7 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
     event.preventDefault();
     setTouched({ email: true, password: true });
 
-    if (hasErrors(errors) || isSubmitting) {
+    if (hasErrors(errors) || isSubmitting || isLocked) {
       return;
     }
 
@@ -55,6 +84,11 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
 
     if (!result.ok) {
       setSubmitError(result.message);
+
+      if (result.retryAfterSeconds) {
+        setRemainingSeconds(result.retryAfterSeconds);
+      }
+
       return;
     }
 
@@ -62,12 +96,13 @@ export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {
   };
 
   return {
-    canSubmit: !hasErrors(errors),
+    canSubmit: !hasErrors(errors) && !isLocked,
     errors: visibleErrors,
     handleBlur,
     handleChange,
     handleSubmit,
     isSubmitting,
+    remainingSeconds,
     submitError,
     values,
   };
