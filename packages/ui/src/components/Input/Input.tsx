@@ -3,6 +3,8 @@ import { type InputHTMLAttributes, type ReactNode, useId } from 'react';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
   errorMessage?: string;
+  /** 입력창 아래 안내. 오류가 있으면 오류 문구를 우선 표시한다. */
+  helperText?: string;
   label?: string;
   leadingIcon?: ReactNode;
   // 입력값 뒤에 붙는 단위 등 (예: 원, %)
@@ -15,18 +17,21 @@ export function Input({
   className,
   containerClassName,
   errorMessage,
+  helperText,
   id,
   label,
   leadingIcon,
+  required,
   trailing,
   ...props
 }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
+  const messageId = errorMessage ? errorId : helperText ? helperId : undefined;
   const describedBy =
-    [ariaDescribedBy, errorMessage && errorId].filter(Boolean).join(' ') ||
-    undefined;
+    [ariaDescribedBy, messageId].filter(Boolean).join(' ') || undefined;
   const inputClassName = [
     'h-full min-w-0 flex-1 bg-transparent text-caption-web text-text-primary placeholder:text-text-secondary focus:outline-none disabled:cursor-not-allowed disabled:text-text-disabled',
     className,
@@ -46,6 +51,11 @@ export function Input({
           htmlFor={inputId}
         >
           {label}
+          {required && (
+            <span aria-hidden="true" className="ml-1 text-status-danger-fg">
+              *
+            </span>
+          )}
         </label>
       )}
       <div
@@ -68,6 +78,7 @@ export function Input({
           aria-invalid={errorMessage ? true : ariaInvalid}
           className={inputClassName}
           id={inputId}
+          required={required}
           {...props}
         />
         {trailing && (
@@ -76,13 +87,13 @@ export function Input({
           </span>
         )}
       </div>
-      {errorMessage && (
+      {(errorMessage || helperText) && (
         <p
-          className="-mt-1 ml-1 text-caption-web text-status-danger-fg"
-          id={errorId}
-          role="alert"
+          className={`-mt-1 ml-1 text-caption-web ${errorMessage ? 'text-status-danger-fg' : 'text-text-secondary'}`}
+          id={messageId}
+          role={errorMessage ? 'alert' : undefined}
         >
-          {errorMessage}
+          {errorMessage || helperText}
         </p>
       )}
     </div>
