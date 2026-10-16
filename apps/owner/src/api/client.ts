@@ -60,7 +60,9 @@ const readEnvelope = async <T>(
   }
 };
 
-// Retry-After는 초 또는 HTTP 날짜로 온다
+// Retry-After는 초 또는 HTTP 날짜로 온다.
+// 서버가 남은 시간을 초 단위로 내림해 주므로(58.6초 남았으면 58), 받은 대로 기다리면 풀리기 직전에 다시 보내 또 거절된다.
+// 1초 더 기다린다
 const readRetryAfterSeconds = (response: Response) => {
   const header = response.headers.get('Retry-After');
 
@@ -70,7 +72,9 @@ const readRetryAfterSeconds = (response: Response) => {
     ? Number(header)
     : (Date.parse(header) - Date.now()) / 1000;
 
-  return Number.isFinite(seconds) ? Math.max(0, Math.ceil(seconds)) : undefined;
+  return Number.isFinite(seconds)
+    ? Math.max(0, Math.ceil(seconds)) + 1
+    : undefined;
 };
 
 // 요청을 한 번 보내고 봉투를 벗긴 data를 돌려준다
