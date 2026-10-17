@@ -198,6 +198,14 @@ export const isValidUsableTime = (from: string, until: string) => {
   );
 };
 
+// 전체 메뉴는 금액 할인만 쓸 수 있다. 전체 메뉴 퍼센트 할인은 주문 금액 없이 할인 금액을 정할 수 없어 막는다.
+// 서버도 이 조합을 거절하지만, 예전에 저장된 DRAFT에 남아 있을 수 있어 화면에서도 막는다
+export const isAllowedDiscount = ({
+  discountTarget,
+  discountType,
+}: Pick<CouponStepValues, 'discountTarget' | 'discountType'>) =>
+  discountTarget === 'MENU' || discountType === 'AMOUNT';
+
 // 퍼센트 할인은 1~100%, 금액 할인은 1원 이상의 정수
 export const isValidDiscountValue = ({
   discountType,
@@ -211,9 +219,11 @@ export const isValidDiscountValue = ({
 export const isValidIssueLimit = (issueLimit: number | null) =>
   issueLimit !== null && Number.isInteger(issueLimit) && issueLimit >= 1;
 
-// 쿠폰 조건 필수 항목별 입력 완료 여부 (할인 대상, 할인 값, 발급 수량, 사용 가능 시간)
+// 쿠폰 조건 필수 항목별 입력 완료 여부 (할인 방식, 할인 값, 발급 수량, 사용 가능 시간).
+// 할인 대상과 할인 유형의 조합은 점주가 할인 방식 하나로 고르므로 할인 방식 항목에 합친다
 export const getCouponRequiredChecks = (coupon: CouponStepValues) => [
-  coupon.discountTarget === 'ALL' || coupon.menuId !== null,
+  isAllowedDiscount(coupon) &&
+    (coupon.discountTarget === 'ALL' || coupon.menuId !== null),
   isValidDiscountValue(coupon),
   isValidIssueLimit(coupon.issueLimit),
   isValidUsableTime(coupon.usableFrom, coupon.usableUntil),
@@ -285,12 +295,12 @@ const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 
 const UPCOMING_LIMIT_MESSAGE =
   '다음 캠페인은 1개만 준비할 수 있습니다. 작성 중이거나 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
 
-// 새 캠페인의 기본값. 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
+// 새 캠페인의 기본값. 할인 방식은 전체 메뉴 금액 할인, 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
   coupon: {
     discountTarget: 'ALL',
     menuId: null,
-    discountType: 'PERCENT',
+    discountType: 'AMOUNT',
     discountValue: null,
     issueLimit: null,
     usableFrom: USABLE_TIME_START,
@@ -475,7 +485,7 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
     return { ok: false, message: NOT_EDITABLE_MESSAGE };
   }
 
-  // 서버도 할인율 100% 초과, 발급 수량 0 이하, 허용 범위 밖이거나 1시간 미만인 사용 시간은 저장하지 않는다
+  // 서버도 전체 메뉴 퍼센트 할인, 할인율 100% 초과, 발급 수량 0 이하, 허용 범위 밖이거나 1시간 미만인 사용 시간은 저장하지 않는다
   if (
     stepKey === 'coupon' &&
     !isCouponStepComplete(values as CouponStepValues)
