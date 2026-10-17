@@ -24,6 +24,14 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const ScrollableOptions: Story = {
+  args: {
+    options: Array.from({ length: 24 }, (_, index) => ({
+      value: String(index + 1),
+      label: `선택 항목 ${index + 1}`,
+    })),
+  },
+};
 export const MultipleSelected: Story = {
   args: { defaultValue: ['SCHEDULED', 'ACTIVE'] },
 };
