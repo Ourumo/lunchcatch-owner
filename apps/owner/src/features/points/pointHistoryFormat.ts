@@ -24,12 +24,13 @@ export const pointHistoryPeriodItems: {
   { label: '최근 3개월', value: '3M' },
 ];
 
-// 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전(오늘 서빙 중)이면 released가 null이고,
-// 그때 소진은 소진 집계로 받는데 받지 못했으면 spent가 null이다
+// 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전이면 released가 null이다.
+// 예약 해제 전의 소진은 오늘이면 소진 집계로 받고, 받지 못했거나 지난날(예약 해제가 늦어진 경우)이면 spent가 null이다
 export interface ServingSummary {
   reserved: number;
   spent: number | null;
   released: number | null;
+  isToday: boolean;
 }
 
 // 화면의 내역 한 줄
@@ -99,16 +100,21 @@ const toServingItem = (
   );
   const isReleased = anchor.type === 'RELEASE';
   const released = isReleased ? anchor.amount : null;
+  // 소진 집계는 오늘 것만 받으므로 오늘 묶음에만 쓴다
+  const isToday =
+    toDateKey(new Date(anchor.occurredAt)) === toDateKey(new Date());
   // 소진 집계에 없는 캠페인은 아직 노출되지 않아 소진이 0이다
   const unreleasedSpent =
-    todaySpent === null ? null : (todaySpent[anchor.campaignId ?? ''] ?? 0);
+    !isToday || todaySpent === null
+      ? null
+      : (todaySpent[anchor.campaignId ?? ''] ?? 0);
   const spent = released === null ? unreleasedSpent : reserved - released;
 
   return {
     ...toItem(anchor),
     type: isReleased ? 'DEDUCT' : 'RESERVE',
     amount: isReleased ? -(spent ?? 0) : -reserved,
-    serving: { reserved, spent, released },
+    serving: { reserved, spent, released, isToday },
   };
 };
 
@@ -184,14 +190,22 @@ export const formatSignedPoints = (amount: number) => {
   return amount < 0 ? `−${formatPoints(-amount)}` : formatPoints(0);
 };
 
-// 집행일 묶음의 보조 줄
+// 집행일 묶음의 보조 줄. 예약 해제 전인 지난날은 소진도 해제 시각도 알 수 없어 보여주지 않는다
 export const formatServingSummary = ({
+  isToday,
   released,
   reserved,
   spent,
-}: ServingSummary) =>
-  released !== null
-    ? `예약 ${formatPoints(reserved)} · 예약 해제 ${formatPoints(released)}`
-    : spent === null
-      ? '남은 예약은 13:30에 해제돼요'
-      : `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 13:30에 해제돼요`;
+}: ServingSummary) => {
+  if (released !== null) {
+    return `예약 ${formatPoints(reserved)} · 예약 해제 ${formatPoints(released)}`;
+  }
+
+  if (!isToday) {
+    return null;
+  }
+
+  return spent === null
+    ? '남은 예약은 13:30에 해제돼요'
+    : `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 13:30에 해제돼요`;
+};

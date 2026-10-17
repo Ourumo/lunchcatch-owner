@@ -111,7 +111,7 @@ export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
 // 한국은 서머타임이 없어 UTC와 늘 9시간 차이다
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-// 한국 날짜(YYYY-MM-DD). 한국 시각에 9시간을 더해 UTC 날짜로 읽는다
+// 한국 날짜(YYYY-MM-DD). UTC 시각에 9시간을 더한 뒤 UTC 날짜를 읽는다
 const toKstDate = (date: Date) =>
   new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 

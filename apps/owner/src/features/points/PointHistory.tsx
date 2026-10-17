@@ -156,6 +156,7 @@ const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
     ? (campaignTitles[item.campaignId] ?? '캠페인')
     : null;
   const description = campaignTitle ?? formatHistoryTime(item.occurredAt);
+  const servingSummary = item.serving && formatServingSummary(item.serving);
 
   return (
     <li className="flex flex-col gap-0.5 px-4 py-3">
@@ -170,9 +171,9 @@ const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
       <p className="truncate text-body-sm-mobile text-text-secondary">
         {description}
       </p>
-      {item.serving && (
+      {servingSummary && (
         <p className="text-caption-mobile break-keep text-text-tertiary">
-          {formatServingSummary(item.serving)}
+          {servingSummary}
         </p>
       )}
     </li>
