@@ -17,7 +17,8 @@ import { useStoreEdit } from './useStoreEdit';
 // 수정 화면의 메뉴. 입점 등록과 같은 입력 화면을 쓰므로 가격은 쉼표 없는 숫자 문자열로 다루고 저장할 때 숫자로 바꾼다
 type StoreMenuItem = MenuListItem<StoreImage>;
 
-const IN_USE_NOTICE = '할인 중인 캠페인에 쓰이고 있어 삭제할 수 없어요';
+const IN_USE_NOTICE =
+  '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요';
 
 // 순서, ID, 이름, 가격, 사진이 모두 같으면 바뀌지 않은 것으로 본다
 const isSameMenus = (a: StoreMenuItem[], b: StoreMenuItem[]) =>
@@ -92,10 +93,10 @@ export const StoreMenusEdit = () => {
       {edit.values && (
         <div className="px-page pt-6 pb-8">
           <MenuListFields<StoreImage>
-            // 쓰이는 메뉴 ID를 불러오기 전이거나 불러오지 못하면 잘못 지우지 않도록 삭제 버튼을 모두 숨긴다
-            canDelete={(menu) => menuIdsInUse !== null && !isInUse(menu)}
-            // 지우면 그 캠페인이 없는 메뉴를 가리키게 되어 수정만 허용한다
-            getDeleteLockNotice={(menu) =>
+            // 쓰이는 메뉴 ID를 불러오기 전이거나 불러오지 못하면 잘못 고치거나 지우지 않도록 수정과 삭제 버튼을 모두 숨긴다
+            canEdit={(menu) => menuIdsInUse !== null && !isInUse(menu)}
+            // 고치면 할인 중인 캠페인의 메뉴가 바뀌고, 지우면 그 캠페인이 없는 메뉴를 가리키게 되어 둘 다 막는다
+            getLockNotice={(menu) =>
               isInUse(menu) ? IN_USE_NOTICE : undefined
             }
             maxMenus={MAX_MENUS}

@@ -104,14 +104,14 @@ export const Full: Story = {
   },
 };
 
-// 가게 관리: 할인 중인 캠페인이 쓰는 메뉴는 삭제 버튼 대신 안내를 보여준다
-export const DeleteLocked: Story = {
+// 가게 관리: 할인 중인 캠페인이 쓰는 메뉴는 수정과 삭제 버튼 대신 안내를 보여준다
+export const Locked: Story = {
   args: {
     menus: uploadedMenus,
-    canDelete: (menu) => menu.id !== 'menu-1',
-    getDeleteLockNotice: (menu) =>
+    canEdit: (menu) => menu.id !== 'menu-1',
+    getLockNotice: (menu) =>
       menu.id === 'menu-1'
-        ? '할인 중인 캠페인에 쓰이고 있어 삭제할 수 없어요'
+        ? '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요'
         : undefined,
   },
 };

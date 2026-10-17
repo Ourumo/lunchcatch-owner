@@ -23,10 +23,10 @@ export interface MenuListFieldsProps<TImage extends File | string> {
   onChange: (menus: MenuListItem<TImage | File>[]) => void;
   maxMenus: number;
   rules: MenuFormRules;
-  // 넘기면 메뉴마다 삭제 버튼을 보여줄지 정한다. 없으면 모두 지울 수 있다
-  canDelete?: (menu: MenuListItem<TImage>) => boolean;
-  // 넘기면 삭제할 수 없는 이유를 메뉴 아래에 보여준다
-  getDeleteLockNotice?: (menu: MenuListItem<TImage>) => string | undefined;
+  // 넘기면 메뉴마다 수정과 삭제 버튼을 보여줄지 정한다. 없으면 모두 고치고 지울 수 있다
+  canEdit?: (menu: MenuListItem<TImage>) => boolean;
+  // 넘기면 고치거나 지울 수 없는 이유를 메뉴 아래에 보여준다
+  getLockNotice?: (menu: MenuListItem<TImage>) => string | undefined;
 }
 
 // 바텀시트로 새 메뉴를 추가하는지, 몇 번째 메뉴를 수정하는지
@@ -49,8 +49,8 @@ const MenuImage = ({ image }: { image: File | string }) => {
 // 대표 메뉴 목록과 추가·수정·삭제. 입점 등록과 가게 관리가 함께 쓴다.
 // 개수 제한과 입력 규칙은 api의 값을 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
 export const MenuListFields = <TImage extends File | string>({
-  canDelete,
-  getDeleteLockNotice,
+  canEdit,
+  getLockNotice,
   maxMenus,
   menus,
   onChange,
@@ -81,7 +81,8 @@ export const MenuListFields = <TImage extends File | string>({
       {menus.length > 0 && (
         <ul aria-label="등록한 대표 메뉴" className="flex flex-col gap-3">
           {menus.map((menu, index) => {
-            const lockNotice = getDeleteLockNotice?.(menu);
+            const lockNotice = getLockNotice?.(menu);
+            const isEditable = canEdit?.(menu) ?? true;
 
             return (
               <li
@@ -99,15 +100,17 @@ export const MenuListFields = <TImage extends File | string>({
                       {formatPriceDigits(menu.price)}원
                     </p>
                   </div>
-                  <button
-                    aria-label={`${menu.name} 수정`}
-                    className={iconButtonClassName}
-                    onClick={() => setSheet({ mode: 'edit', index })}
-                    type="button"
-                  >
-                    <SquarePen aria-hidden="true" className="size-5" />
-                  </button>
-                  {(canDelete?.(menu) ?? true) && (
+                  {isEditable && (
+                    <button
+                      aria-label={`${menu.name} 수정`}
+                      className={iconButtonClassName}
+                      onClick={() => setSheet({ mode: 'edit', index })}
+                      type="button"
+                    >
+                      <SquarePen aria-hidden="true" className="size-5" />
+                    </button>
+                  )}
+                  {isEditable && (
                     <button
                       aria-label={`${menu.name} 삭제`}
                       className={`-ml-3 ${iconButtonClassName}`}
