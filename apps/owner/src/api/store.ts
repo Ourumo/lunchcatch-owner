@@ -59,9 +59,10 @@ const INVALID_STORE_IMAGES_MESSAGE =
   '대표 이미지와 매장 이미지를 다시 확인해 주세요.';
 const INVALID_STORE_MENUS_MESSAGE = '대표 메뉴를 다시 확인해 주세요.';
 const MENU_IN_USE_MESSAGE =
-  '할인 중인 캠페인에 쓰이는 메뉴는 삭제할 수 없어요.';
+  '할인 중인 캠페인에 쓰이는 메뉴는 수정하거나 삭제할 수 없어요.';
 
-// 이 상태의 "특정 메뉴 할인" 캠페인이 쓰는 메뉴는 지울 수 없다. 지우면 캠페인이 없는 메뉴를 가리키게 된다.
+// 이 상태의 "특정 메뉴 할인" 캠페인이 쓰는 메뉴는 고치거나 지울 수 없다.
+// 고치면 할인 중인 캠페인의 메뉴가 바뀌고, 지우면 캠페인이 없는 메뉴를 가리키게 된다.
 // 작성 중 캠페인은 막지 않고, 이어서 작성할 때 메뉴를 다시 고르게 한다
 const MENU_LOCKING_STATUSES: CampaignStatus[] = [
   'ACTIVE',
@@ -155,7 +156,7 @@ const findMenuIdsInUse = () =>
     ),
   );
 
-// 진행 중·중단·시작 대기 캠페인의 "특정 메뉴 할인"이 쓰는 메뉴 ID. 대표 메뉴 수정에서 삭제를 막는 데 쓴다
+// 진행 중·중단·시작 대기 캠페인의 "특정 메뉴 할인"이 쓰는 메뉴 ID. 대표 메뉴 수정에서 수정과 삭제를 막는 데 쓴다
 export const getMenuIdsInUse = async (): Promise<ApiResult<string[]>> => {
   await mockDelay();
 
@@ -163,7 +164,7 @@ export const getMenuIdsInUse = async (): Promise<ApiResult<string[]>> => {
 };
 
 // 대표 메뉴 수정 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정"). 선택, 최대 MAX_MENUS개
-// 메뉴명·가격·사진 규칙은 입점 등록과 같다. 캠페인이 쓰는 메뉴를 빼는 요청은 받지 않는다.
+// 메뉴명·가격·사진 규칙은 입점 등록과 같다. 캠페인이 쓰는 메뉴를 고치거나 빼는 요청은 받지 않는다.
 // 기존 메뉴는 ID를 그대로 두어 캠페인의 할인 대상이 유지되고, 새로 추가한 메뉴만 새 ID를 받는다.
 // 사진은 매장 사진과 같이 새로 고른 파일만 올린다
 export const updateStoreMenus = async (
@@ -197,7 +198,21 @@ export const updateStoreMenus = async (
 
   const keptIds = new Set(requestedIds);
 
-  if ([...findMenuIdsInUse()].some((id) => !keptIds.has(id))) {
+  // 쓰이는 메뉴는 빠지지 않고, 이름·가격·사진도 지금 값 그대로 와야 한다. 새로 고른 사진은 파일로 오므로 바뀐 것으로 본다
+  const isInUseMenuChanged = [...findMenuIdsInUse()].some((id) => {
+    const current = mockStore.menus.find((menu) => menu.id === id);
+    const requested = menus.find((menu) => menu.id === id);
+
+    return (
+      !requested ||
+      (current !== undefined &&
+        (requested.name.trim() !== current.name ||
+          requested.price !== current.price ||
+          requested.image !== current.imageUrl))
+    );
+  });
+
+  if (isInUseMenuChanged) {
     return { ok: false, message: MENU_IN_USE_MESSAGE };
   }
 
