@@ -69,6 +69,7 @@ const formatDuration = (minutes: number) => {
   return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
 };
 
+// 할인 금액이 메뉴 가격을 넘으면 메뉴 가격까지만 할인하므로 0원 아래로 내려가지 않는다
 const getDiscountedPrice = (
   price: number,
   { discountType, discountValue }: CouponStepValues,
@@ -79,7 +80,7 @@ const getDiscountedPrice = (
 
   return discountType === 'PERCENT'
     ? Math.round((price * (100 - discountValue)) / 100)
-    : price - discountValue;
+    : Math.max(0, price - discountValue);
 };
 
 interface FieldGroupProps {
@@ -518,16 +519,13 @@ export const CouponStep = () => {
             }
           />
           {selectedMenu && discountedPrice !== null && (
-            <p
-              className={`-mt-1 text-caption-mobile ${
-                discountedPrice <= 0
-                  ? 'text-status-danger-fg'
-                  : 'text-text-secondary'
-              }`}
-            >
-              {discountedPrice <= 0
-                ? '할인 금액이 메뉴 가격과 같거나 커요. 금액을 다시 확인해 주세요.'
-                : `${selectedMenu.name} ${formatNumber(selectedMenu.price)}원 → ${formatNumber(discountedPrice)}원`}
+            <p className="-mt-1 text-caption-mobile break-keep text-text-secondary">
+              {`${selectedMenu.name} ${formatNumber(selectedMenu.price)}원 → ${formatNumber(discountedPrice)}원`}
+              {/* 메뉴 가격보다 큰 할인 금액도 저장할 수 있어, 오류 대신 실제로 할인되는 만큼을 알린다 */}
+              {!isPercent &&
+                coupon.discountValue !== null &&
+                coupon.discountValue > selectedMenu.price &&
+                ' (메뉴 가격까지만 할인돼요)'}
             </p>
           )}
         </FieldGroup>
