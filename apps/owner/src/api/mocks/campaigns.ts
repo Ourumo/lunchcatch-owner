@@ -1,24 +1,6 @@
-import type {
-  AgeGroup,
-  Campaign,
-  ExposureRadius,
-  TargetGender,
-} from '@owner/api/campaign';
+import type { Campaign } from '@owner/api/campaign';
 
 import { mockStore } from './store';
-
-// 하루 예산 추천에 쓰는 반경별 최근 7일 점심 접속 사용자 수와 성별, 연령대 비율
-export const mockAudienceRules: {
-  usersByRadius: Record<ExposureRadius, number>;
-  competingByRadius: Record<ExposureRadius, number>;
-  genderRatio: Record<TargetGender, number>;
-  ageRatio: Record<AgeGroup, number>;
-} = {
-  usersByRadius: { 500: 320, 1000: 1100, 2000: 3400, 3000: 6800 },
-  competingByRadius: { 500: 2, 1000: 5, 2000: 11, 3000: 18 },
-  genderRatio: { ALL: 1, MALE: 0.55, FEMALE: 0.45 },
-  ageRatio: { TWENTIES: 0.32, THIRTIES: 0.38, FORTIES: 0.2, FIFTIES_PLUS: 0.1 },
-};
 
 const toDateValue = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(

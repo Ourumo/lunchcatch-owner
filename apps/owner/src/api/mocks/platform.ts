@@ -4,5 +4,4 @@ import type { PlatformSettings } from '@owner/api/platform';
 export const mockPlatformSettings: PlatformSettings = {
   impressionUnitPrice: 10,
   minDailyBudget: 5000,
-  bootstrapDailyBudget: 10000,
 };

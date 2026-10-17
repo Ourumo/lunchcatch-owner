@@ -1,6 +1,5 @@
 import {
   MOCK_ENDED_NEXT_PAGE_FAILS_ONCE,
-  mockAudienceRules,
   mockCampaigns,
 } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
@@ -160,21 +159,6 @@ export const endsCurrentCampaignEarly = (
   startDate: string,
   currentCampaign: Pick<Campaign, 'budget'>,
 ) => Boolean(startDate) && startDate <= currentCampaign.budget.endDate;
-
-// 하루 예산 추천과 예상 노출 범위 계산에 필요한 값. 인원은 전날 00:00 집계 값이다.
-// 노출 단가와 최소 하루 예산은 플랫폼 설정값(getPlatformSettings)에서 읽는다
-export interface BudgetRecommendation {
-  // 노출 대상에 맞는 인원 x 노출 횟수 상한 2회 x 노출 단가
-  recommendedDailyBudget: number;
-  // 반경 안에 최근 7일 데이터가 없어 부트스트랩 하루 예산을 추천했는지
-  isBootstrap: boolean;
-  // 반경 안에서 최근 7일 점심에 접속한 사용자 중 노출 대상 조건(성별, 연령대)에 맞는 인원
-  audienceCount: number;
-  competingCampaignCount: number;
-}
-
-// (사용자, 캠페인) 조합당 하루 노출 횟수 상한
-export const DAILY_EXPOSURE_CAP = 2;
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
@@ -635,45 +619,4 @@ export const cancelScheduledCampaign = async (
   campaign.status = 'DRAFT';
 
   return { ok: true, data: structuredClone(campaign) };
-};
-
-// 저장된 노출 대상(3단계)을 기준으로 계산한다. 노출 대상을 바꿨다면 먼저 저장한 뒤 다시 불러온다
-export const getBudgetRecommendation = async (
-  id: string,
-): Promise<ApiResult<BudgetRecommendation>> => {
-  await mockDelay();
-
-  const campaign = findCampaign(id);
-
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
-  const { radius, gender, ageGroups } = campaign.target;
-  const { bootstrapDailyBudget, impressionUnitPrice } = mockPlatformSettings;
-  const ageRatio =
-    ageGroups.length === 0
-      ? 1
-      : ageGroups.reduce(
-          (sum, ageGroup) => sum + mockAudienceRules.ageRatio[ageGroup],
-          0,
-        );
-  const audienceCount = Math.round(
-    mockAudienceRules.usersByRadius[radius] *
-      mockAudienceRules.genderRatio[gender] *
-      ageRatio,
-  );
-  const isBootstrap = audienceCount === 0;
-
-  return {
-    ok: true,
-    data: {
-      recommendedDailyBudget: isBootstrap
-        ? bootstrapDailyBudget
-        : audienceCount * DAILY_EXPOSURE_CAP * impressionUnitPrice,
-      isBootstrap,
-      audienceCount,
-      competingCampaignCount: mockAudienceRules.competingByRadius[radius],
-    },
-  };
 };
