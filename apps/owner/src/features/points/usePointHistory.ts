@@ -207,13 +207,14 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
     }
 
     const generation = historyGenerationRef.current;
+    const cursor = historyState.nextCursor;
 
     isLoadingMoreRef.current = true;
     setHistoryState({ ...historyState, loadMore: 'loading' });
 
     getPointHistoryPage({
       campaignId,
-      cursor: historyState.nextCursor,
+      cursor,
       period,
     }).then((result) => {
       if (generation !== historyGenerationRef.current) {
@@ -226,7 +227,8 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
           return prev;
         }
 
-        if (!result.ok) {
+        // 요청한 커서가 그대로 돌아오면 같은 구간을 계속 부르게 되므로 실패로 보고 멈춘다
+        if (!result.ok || result.data.nextCursor === cursor) {
           return { ...prev, loadMore: 'error' };
         }
 
