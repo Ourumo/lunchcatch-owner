@@ -193,7 +193,7 @@ export const MultiSelectField = ({
           id={`${id}-options`}
           role="dialog"
           aria-labelledby={id}
-          className={`absolute left-0 z-10 max-h-64 min-w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1 shadow-sm ${menuPlacement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+          className={`ui-scrollbar absolute left-0 z-10 max-h-64 min-w-full overflow-auto overscroll-contain rounded-md border border-border-subtle bg-bg-surface p-1 shadow-sm ${menuPlacement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
         >
           {showSelectAll && (
             <div className="mb-1 border-b border-border-subtle pb-1">
