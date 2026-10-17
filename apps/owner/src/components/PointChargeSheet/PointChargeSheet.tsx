@@ -132,6 +132,12 @@ export const PointChargeSheet = ({
           </Button>
         </div>
       )}
+      {/* 서버 정책에 충전 금액이 하나도 없으면 고를 수 없는 이유를 알린다 */}
+      {policy.status === 'success' && amount === undefined && (
+        <p className="py-6 text-center type-body-sm text-text-secondary">
+          지금은 충전할 수 있는 금액이 없어요
+        </p>
+      )}
       {policy.status === 'success' && amount !== undefined && (
         <>
           <fieldset>
