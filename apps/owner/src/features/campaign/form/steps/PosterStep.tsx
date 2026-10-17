@@ -295,7 +295,7 @@ export const PosterStep = () => {
               onChange={(event) =>
                 updateSlots({ discountText: event.target.value })
               }
-              placeholder="예) 전 메뉴 20% 할인"
+              placeholder="예) 전 메뉴 2,000원 할인"
               trailing={`${slots.discountText.length}/${POSTER_TEXT_MAX_LENGTH.discountText}`}
               value={slots.discountText}
             />

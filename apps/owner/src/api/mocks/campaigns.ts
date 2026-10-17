@@ -103,7 +103,8 @@ const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
     performance: null,
   },
   DRAFT: {
-    // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다
+    // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다.
+    // 지금은 막힌 전체 메뉴 퍼센트 할인으로 두어, 예전에 저장된 DRAFT가 1단계에서 막히는지도 확인한다
     id: 'campaign-draft',
     status: 'DRAFT',
     pausedReason: null,
@@ -137,7 +138,7 @@ const archivedCoupons: {
   discountType: 'PERCENT' | 'AMOUNT';
   discountValue: number;
 }[] = [
-  { menu: null, discountType: 'PERCENT', discountValue: 10 },
+  { menu: null, discountType: 'AMOUNT', discountValue: 1500 },
   { menu: cheeseKatsu, discountType: 'PERCENT', discountValue: 20 },
   { menu: null, discountType: 'AMOUNT', discountValue: 1000 },
   { menu: rosuKatsu, discountType: 'AMOUNT', discountValue: 2000 },
@@ -229,8 +230,8 @@ export const mockCampaigns: Campaign[] = [
     coupon: {
       discountTarget: 'ALL',
       menuId: null,
-      discountType: 'PERCENT',
-      discountValue: 20,
+      discountType: 'AMOUNT',
+      discountValue: 2000,
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
@@ -240,7 +241,7 @@ export const mockCampaigns: Campaign[] = [
       templateId: 'template-orange-modern',
       slots: {
         eventName: '오늘 점심 한정 특별 혜택!',
-        discountText: '전 메뉴 20% 할인',
+        discountText: '전 메뉴 2,000원 할인',
         period: '11:30 ~ 15:00',
         storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
@@ -281,8 +282,8 @@ export const mockCampaigns: Campaign[] = [
     coupon: {
       discountTarget: 'ALL',
       menuId: null,
-      discountType: 'PERCENT',
-      discountValue: 30,
+      discountType: 'AMOUNT',
+      discountValue: 3000,
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
@@ -292,7 +293,7 @@ export const mockCampaigns: Campaign[] = [
       templateId: 'template-orange-modern',
       slots: {
         eventName: '오픈 기념 점심 할인',
-        discountText: '전 메뉴 30% 할인',
+        discountText: '전 메뉴 3,000원 할인',
         period: '11:30 ~ 15:00',
         storeName: mockStore.name,
         imageUrl: rosuKatsu.imageUrl,
