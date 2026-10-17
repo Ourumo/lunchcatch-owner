@@ -26,8 +26,8 @@ const activeCampaign: Campaign = {
   coupon: {
     discountTarget: 'ALL',
     menuId: null,
-    discountType: 'PERCENT',
-    discountValue: 20,
+    discountType: 'AMOUNT',
+    discountValue: 2000,
     issueLimit: 50,
     usableFrom: '11:30',
     usableUntil: '15:00',
@@ -73,7 +73,7 @@ const meta = {
   component: CurrentCampaignCard,
   args: {
     campaign: activeCampaign,
-    title: '전 메뉴 20% 할인',
+    title: '전 메뉴 2,000원 할인',
   },
   decorators: [
     (Story) => (

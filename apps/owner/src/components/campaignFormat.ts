@@ -24,7 +24,7 @@ export const formatDiscount = ({
     : `${formatNumber(discountValue)}원`;
 };
 
-// 캠페인 이름은 따로 입력받지 않으므로 쿠폰 조건으로 제목을 만든다 (예: 전 메뉴 20% 할인)
+// 캠페인 이름은 따로 입력받지 않으므로 쿠폰 조건으로 제목을 만든다 (예: 전 메뉴 2,000원 할인)
 export const getCampaignTitle = (
   coupon: CouponStepValues,
   menus: StoreMenu[],

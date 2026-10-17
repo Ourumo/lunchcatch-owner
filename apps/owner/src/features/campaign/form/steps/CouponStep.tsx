@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
-import { Input, SegmentedControl } from '@repo/ui';
+import { Input } from '@repo/ui';
 import { Info, Minus, Plus } from 'lucide-react';
 
 import {
@@ -25,14 +25,34 @@ const ISSUE_LIMIT_MAX = 10 ** ISSUE_LIMIT_MAX_DIGITS - 1;
 // 수량 빠른 조정 버튼에 0(초기화) 다음으로 이 순서대로 보여준다
 const ISSUE_LIMIT_QUICK_STEPS = [-10, -5, 5, 10, 30];
 
-const discountTargetItems: { value: DiscountTarget; label: string }[] = [
-  { value: 'ALL', label: '전체 메뉴' },
-  { value: 'MENU', label: '특정 메뉴' },
-];
+interface DiscountMethod {
+  target: DiscountTarget;
+  type: DiscountType;
+  label: string;
+  // 쿠폰 1장의 사용 범위
+  description: string;
+}
 
-const discountTypeItems: { value: DiscountType; label: string }[] = [
-  { value: 'PERCENT', label: '퍼센트(%) 할인' },
-  { value: 'AMOUNT', label: '금액(원) 할인' },
+// 할인 대상과 할인 유형을 묶은 할인 방식. 전체 메뉴 퍼센트 할인은 쓸 수 없어 선택지에 없다
+const discountMethods: DiscountMethod[] = [
+  {
+    target: 'ALL',
+    type: 'AMOUNT',
+    label: '전체 메뉴 금액 할인',
+    description: '주문 1건에서 정한 금액을 할인해요',
+  },
+  {
+    target: 'MENU',
+    type: 'AMOUNT',
+    label: '특정 메뉴 금액 할인',
+    description: '고른 메뉴 1개에서 정한 금액을 할인해요',
+  },
+  {
+    target: 'MENU',
+    type: 'PERCENT',
+    label: '특정 메뉴 퍼센트 할인',
+    description: '고른 메뉴 1개를 정한 비율만큼 할인해요',
+  },
 ];
 
 // 숫자만 남겨 정수로 바꾼다. 비우면 null(미입력)
@@ -49,6 +69,7 @@ const formatDuration = (minutes: number) => {
   return rest ? `${hours}시간 ${rest}분` : `${hours}시간`;
 };
 
+// 할인 금액이 메뉴 가격을 넘으면 메뉴 가격까지만 할인하므로 0원 아래로 내려가지 않는다
 const getDiscountedPrice = (
   price: number,
   { discountType, discountValue }: CouponStepValues,
@@ -59,7 +80,7 @@ const getDiscountedPrice = (
 
   return discountType === 'PERCENT'
     ? Math.round((price * (100 - discountValue)) / 100)
-    : price - discountValue;
+    : Math.max(0, price - discountValue);
 };
 
 interface FieldGroupProps {
@@ -80,6 +101,40 @@ const FieldGroup = ({ children, description, legend }: FieldGroupProps) => (
       </p>
     )}
   </fieldset>
+);
+
+interface RadioCardProps {
+  checked: boolean;
+  name: string;
+  value: string;
+  onChange: () => void;
+  children: ReactNode;
+}
+
+// 테두리가 있는 카드형 라디오. 할인 방식과 할인할 메뉴를 고를 때 쓴다
+const RadioCard = ({
+  checked,
+  children,
+  name,
+  onChange,
+  value,
+}: RadioCardProps) => (
+  <label className="cursor-pointer">
+    <input
+      checked={checked}
+      className="peer sr-only"
+      name={name}
+      onChange={onChange}
+      type="radio"
+      value={value}
+    />
+    <span className="flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-surface px-3.5 py-3 transition-colors peer-checked:border-action-primary peer-checked:bg-surface-brand peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary peer-checked:[&>.radio]:border-action-primary peer-checked:[&>.radio>span]:opacity-100">
+      <span className="radio flex size-5 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-bg-surface">
+        <span className="size-2.5 rounded-full bg-action-primary opacity-0" />
+      </span>
+      {children}
+    </span>
+  </label>
 );
 
 interface MenuOptionsProps {
@@ -111,27 +166,20 @@ const MenuOptions = ({ menus, onSelect, selectedMenuId }: MenuOptionsProps) => {
   return (
     <div className="flex flex-col gap-2">
       {menus.map((menu) => (
-        <label className="cursor-pointer" key={menu.id}>
-          <input
-            checked={selectedMenuId === menu.id}
-            className="peer sr-only"
-            name={name}
-            onChange={() => onSelect(menu.id)}
-            type="radio"
-            value={menu.id}
-          />
-          <span className="flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-surface px-3.5 py-3 transition-colors peer-checked:border-action-primary peer-checked:bg-surface-brand peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary peer-checked:[&>.radio]:border-action-primary peer-checked:[&>.radio>span]:opacity-100">
-            <span className="radio flex size-5 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-bg-surface">
-              <span className="size-2.5 rounded-full bg-action-primary opacity-0" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-body-sm-mobile font-medium text-text-primary">
-              {menu.name}
-            </span>
-            <span className="shrink-0 text-body-sm-mobile text-text-secondary">
-              {formatNumber(menu.price)}원
-            </span>
+        <RadioCard
+          checked={selectedMenuId === menu.id}
+          key={menu.id}
+          name={name}
+          onChange={() => onSelect(menu.id)}
+          value={menu.id}
+        >
+          <span className="min-w-0 flex-1 truncate text-body-sm-mobile font-medium text-text-primary">
+            {menu.name}
           </span>
-        </label>
+          <span className="shrink-0 text-body-sm-mobile text-text-secondary">
+            {formatNumber(menu.price)}원
+          </span>
+        </RadioCard>
       ))}
     </div>
   );
@@ -349,10 +397,11 @@ const UsableTimeField = ({ from, onChange, until }: UsableTimeFieldProps) => {
   );
 };
 
-// 등록 1단계: 할인 대상, 할인 유형과 값, 하루 선착순 수량, 사용 가능 시간
+// 등록 1단계: 할인 방식(할인 대상과 유형), 할인 값, 하루 선착순 수량, 사용 가능 시간
 export const CouponStep = () => {
   const { updateStepValues, values } = useCampaignForm();
   const { coupon } = values;
+  const discountMethodName = useId();
   const [menus, setMenus] = useState<StoreMenu[] | null>(null);
 
   useEffect(() => {
@@ -381,6 +430,11 @@ export const CouponStep = () => {
     selectedMenu && isValidDiscountValue(coupon)
       ? getDiscountedPrice(selectedMenu.price, coupon)
       : null;
+  // 예전에 저장된 DRAFT의 전체 메뉴 퍼센트 할인은 선택지에 없어 고른 할인 방식이 없다
+  const selectedMethod = discountMethods.find(
+    ({ target, type }) =>
+      target === coupon.discountTarget && type === coupon.discountType,
+  );
   const isPercent = coupon.discountType === 'PERCENT';
   const discountError =
     coupon.discountValue !== null && !isValidDiscountValue(coupon)
@@ -391,80 +445,91 @@ export const CouponStep = () => {
 
   return (
     <div className="flex flex-col gap-8 px-page">
-      <FieldGroup legend="할인 대상">
-        <SegmentedControl
-          ariaLabel="할인 대상"
-          items={discountTargetItems}
-          onValueChange={(discountTarget) =>
-            // 전체 메뉴로 바꾸면 골라 둔 메뉴는 쓰지 않으므로 비운다
-            update({
-              discountTarget,
-              menuId: discountTarget === 'ALL' ? null : coupon.menuId,
-            })
-          }
-          value={coupon.discountTarget}
-        />
-        {coupon.discountTarget === 'MENU' && (
+      <FieldGroup legend="할인 방식">
+        {discountMethods.map((method) => (
+          <RadioCard
+            checked={method === selectedMethod}
+            key={`${method.target}-${method.type}`}
+            name={discountMethodName}
+            onChange={() =>
+              // 전체 메뉴면 골라 둔 메뉴는 쓰지 않고, 할인 유형이 바뀌면 단위가 달라 입력한 값의 뜻이 바뀌므로 비운다
+              update({
+                discountTarget: method.target,
+                menuId: method.target === 'ALL' ? null : coupon.menuId,
+                discountType: method.type,
+                discountValue:
+                  method.type === coupon.discountType
+                    ? coupon.discountValue
+                    : null,
+              })
+            }
+            value={`${method.target}-${method.type}`}
+          >
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-body-sm-mobile font-medium text-text-primary">
+                {method.label}
+              </span>
+              <span className="text-caption-mobile break-keep text-text-secondary">
+                {method.description}
+              </span>
+            </span>
+          </RadioCard>
+        ))}
+        {!selectedMethod && (
+          <p className="text-caption-mobile break-keep text-status-danger-fg">
+            전체 메뉴에는 퍼센트 할인을 쓸 수 없어요. 할인 방식을 다시 골라
+            주세요.
+          </p>
+        )}
+      </FieldGroup>
+
+      {selectedMethod?.target === 'MENU' && (
+        <FieldGroup legend="할인할 메뉴">
           <MenuOptions
             menus={menus}
             onSelect={(menuId) => update({ menuId })}
             selectedMenuId={coupon.menuId}
           />
-        )}
-      </FieldGroup>
+        </FieldGroup>
+      )}
 
-      <FieldGroup legend="할인">
-        <SegmentedControl
-          ariaLabel="할인 유형"
-          items={discountTypeItems}
-          onValueChange={(discountType) =>
-            // 단위가 달라 입력한 값을 그대로 쓰면 뜻이 바뀌므로 비운다
-            update({
-              discountType,
-              discountValue:
-                discountType === coupon.discountType
-                  ? coupon.discountValue
-                  : null,
-            })
-          }
-          value={coupon.discountType}
-        />
-        <Input
-          aria-label={isPercent ? '할인율' : '할인 금액'}
-          errorMessage={discountError}
-          inputMode="numeric"
-          onChange={(event) =>
-            update({
-              discountValue: toNumberOrNull(
-                event.target.value,
-                isPercent ? 3 : AMOUNT_MAX_DIGITS,
-              ),
-            })
-          }
-          placeholder={isPercent ? '예) 20' : '예) 2,000'}
-          trailing={isPercent ? '%' : '원'}
-          value={
-            coupon.discountValue === null
-              ? ''
-              : isPercent
-                ? String(coupon.discountValue)
-                : formatNumber(coupon.discountValue)
-          }
-        />
-        {selectedMenu && discountedPrice !== null && (
-          <p
-            className={`-mt-1 text-caption-mobile ${
-              discountedPrice <= 0
-                ? 'text-status-danger-fg'
-                : 'text-text-secondary'
-            }`}
-          >
-            {discountedPrice <= 0
-              ? '할인 금액이 메뉴 가격과 같거나 커요. 금액을 다시 확인해 주세요.'
-              : `${selectedMenu.name} ${formatNumber(selectedMenu.price)}원 → ${formatNumber(discountedPrice)}원`}
-          </p>
-        )}
-      </FieldGroup>
+      {/* 할인 방식을 고르기 전에는 할인 값의 단위가 정해지지 않아 입력을 숨긴다 */}
+      {selectedMethod && (
+        <FieldGroup legend={isPercent ? '할인율' : '할인 금액'}>
+          <Input
+            aria-label={isPercent ? '할인율' : '할인 금액'}
+            errorMessage={discountError}
+            inputMode="numeric"
+            onChange={(event) =>
+              update({
+                discountValue: toNumberOrNull(
+                  event.target.value,
+                  isPercent ? 3 : AMOUNT_MAX_DIGITS,
+                ),
+              })
+            }
+            placeholder={isPercent ? '예) 20' : '예) 2,000'}
+            trailing={isPercent ? '%' : '원'}
+            value={
+              coupon.discountValue === null
+                ? ''
+                : isPercent
+                  ? String(coupon.discountValue)
+                  : formatNumber(coupon.discountValue)
+            }
+          />
+          {selectedMenu && discountedPrice !== null && (
+            <p className="-mt-1 text-caption-mobile break-keep text-text-secondary">
+              {`${selectedMenu.name} ${formatNumber(selectedMenu.price)}원 → ${formatNumber(discountedPrice)}원`}
+              {/* 메뉴 가격보다 큰 할인 금액도 저장할 수 있어, 오류 대신 실제로 할인되는 만큼을 알린다 */}
+              {!isPercent &&
+                coupon.discountValue !== null &&
+                coupon.discountValue > selectedMenu.price &&
+                ' (메뉴 가격까지만 할인돼요)'}
+            </p>
+          )}
+        </FieldGroup>
+      )}
 
       <FieldGroup
         description="매일 선착순으로 이 수량만큼 발급되고, 다음 날 다시 채워져요."
