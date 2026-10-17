@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getCampaigns } from '@owner/api/campaign';
 import {
   chargePoints,
   getPointBalance,
-  getPointHistory,
+  getPointHistoryPage,
+  getTodaySpentPoints,
   type PointBalance,
   type PointHistoryEntry,
   type PointHistoryFilter,
@@ -20,10 +21,21 @@ type BalanceState =
   | { status: 'error' }
   | { status: 'success'; balance: PointBalance };
 
+// 이어서 불러오기 상태. 처음 불러오기와 따로 두어 실패해도 이미 불러온 내역은 그대로 둔다
+export type LoadMoreStatus = 'idle' | 'loading' | 'error';
+
 type HistoryState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'success'; entries: PointHistoryEntry[] };
+  | {
+      status: 'success';
+      entries: PointHistoryEntry[];
+      // 다음 구간을 받을 커서. 마지막까지 받았으면 null
+      nextCursor: string | null;
+      // 오늘 캠페인별 소진 포인트. 받지 못했으면 null
+      todaySpent: Record<string, number> | null;
+      loadMore: LoadMoreStatus;
+    };
 
 interface CampaignFilterOption {
   id: string;
@@ -59,6 +71,10 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
   // 값이 바뀌면 다시 불러온다
   const [balanceRequestId, setBalanceRequestId] = useState(0);
   const [historyRequestId, setHistoryRequestId] = useState(0);
+  // 처음 불러오기를 할 때마다 바뀐다. 이어서 불러온 응답이 그 사이 바뀐 조건의 목록에 붙지 않게 한다
+  const historyGenerationRef = useRef(0);
+  // 이어서 불러오는 요청이 겹치지 않게 막는다. 상태는 다음 렌더링에 바뀌므로 그 사이에 온 요청도 막도록 ref로 둔다
+  const isLoadingMoreRef = useRef(false);
 
   useEffect(() => {
     let ignore = false;
@@ -81,17 +97,32 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
 
   const { campaignId, period } = filter;
 
+  // 내역 첫 구간과 오늘 소진 집계를 함께 받는다. 소진 집계는 받지 못해도 내역은 보여준다
   useEffect(() => {
     let ignore = false;
 
-    getPointHistory({ campaignId, period }).then((result) => {
-      if (!ignore) {
-        setHistoryState(
-          result.ok
-            ? { status: 'success', entries: result.data }
-            : { status: 'error' },
-        );
+    historyGenerationRef.current += 1;
+    isLoadingMoreRef.current = false;
+
+    Promise.all([
+      getPointHistoryPage({ campaignId, period }),
+      getTodaySpentPoints(campaignId),
+    ]).then(([pageResult, spentResult]) => {
+      if (ignore) {
+        return;
       }
+
+      setHistoryState(
+        pageResult.ok
+          ? {
+              status: 'success',
+              entries: pageResult.data.entries,
+              nextCursor: pageResult.data.nextCursor,
+              todaySpent: spentResult.ok ? spentResult.data : null,
+              loadMore: 'idle',
+            }
+          : { status: 'error' },
+      );
     });
 
     return () => {
@@ -165,7 +196,59 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
     setHistoryRequestId((id) => id + 1);
   };
 
-  // 충전하면 잔액은 결제 응답으로 바로 바꾸고, 내역은 지금 목록을 둔 채 다시 불러와 충전 건을 넣는다
+  // 다음 구간을 이어 붙인다. 같은 날 예약과 예약 해제가 두 구간에 걸치면 화면이 이어 붙인 목록으로 다시 묶는다
+  const loadMoreHistory = () => {
+    if (
+      historyState.status !== 'success' ||
+      !historyState.nextCursor ||
+      isLoadingMoreRef.current
+    ) {
+      return;
+    }
+
+    const generation = historyGenerationRef.current;
+    const cursor = historyState.nextCursor;
+
+    isLoadingMoreRef.current = true;
+    setHistoryState({ ...historyState, loadMore: 'loading' });
+
+    getPointHistoryPage({
+      campaignId,
+      cursor,
+      period,
+    }).then((result) => {
+      if (generation !== historyGenerationRef.current) {
+        return;
+      }
+
+      isLoadingMoreRef.current = false;
+      setHistoryState((prev) => {
+        if (prev.status !== 'success') {
+          return prev;
+        }
+
+        // 요청한 커서가 그대로 돌아오면 같은 구간을 계속 부르게 되므로 실패로 보고 멈춘다
+        if (!result.ok || result.data.nextCursor === cursor) {
+          return { ...prev, loadMore: 'error' };
+        }
+
+        // 커서로 받아 겹치지 않지만, 혹시 같은 내역이 다시 와도 두 번 보이지 않게 거른다
+        const loadedIds = new Set(prev.entries.map(({ id }) => id));
+
+        return {
+          ...prev,
+          entries: [
+            ...prev.entries,
+            ...result.data.entries.filter(({ id }) => !loadedIds.has(id)),
+          ],
+          nextCursor: result.data.nextCursor,
+          loadMore: 'idle',
+        };
+      });
+    });
+  };
+
+  // 충전하면 잔액은 결제 응답으로 바로 바꾸고, 내역은 지금 목록을 둔 채 처음부터 다시 불러와 충전 건을 넣는다
   const charge = async (amount: number) => {
     const result = await chargePoints(amount);
 
@@ -185,6 +268,7 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
     charge,
     filter,
     historyState,
+    loadMoreHistory,
     retryBalance,
     retryHistory,
   };

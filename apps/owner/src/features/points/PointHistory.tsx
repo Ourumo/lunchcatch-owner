@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Button, SegmentedControl, SelectField } from '@repo/ui';
 
 import {
-  MIN_CHARGE_AMOUNT,
   type PointHistoryFilter,
   type PointHistoryPeriod,
 } from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
+import { LoadMoreTrigger } from '@owner/components/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/components/TopBar/TopBar';
+import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 
 import {
   formatHistoryDate,
@@ -20,7 +21,7 @@ import {
   pointHistoryPeriodItems,
   pointHistoryTypeLabels,
 } from './pointHistoryFormat';
-import { usePointHistory } from './usePointHistory';
+import { type LoadMoreStatus, usePointHistory } from './usePointHistory';
 
 // 처음에는 최근 30일 전체 내역을 보여준다
 const DEFAULT_FILTER: PointHistoryFilter = { period: '30D', campaignId: null };
@@ -103,20 +104,59 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
   );
 };
 
+interface HistoryFooterProps {
+  hasMore: boolean;
+  loadMore: LoadMoreStatus;
+  onLoadMore: () => void;
+}
+
+// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
+const HistoryFooter = ({
+  hasMore,
+  loadMore,
+  onLoadMore,
+}: HistoryFooterProps) => {
+  if (loadMore === 'loading') {
+    return (
+      <div className="flex justify-center py-4" role="status">
+        <span
+          aria-hidden="true"
+          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
+        />
+        <span className="sr-only">포인트 내역을 더 불러오는 중</span>
+      </div>
+    );
+  }
+
+  if (loadMore === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <p className="text-body-sm-mobile text-text-secondary" role="alert">
+          불러오지 못했어요
+        </p>
+        <Button onClick={onLoadMore} variant="secondary">
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
+};
+
 interface HistoryRowProps {
   item: PointHistoryItem;
   campaignTitles: Record<string, string>;
 }
 
-// 내역 한 줄. 왼쪽에 유형과 설명, 오른쪽에 금액과 그 시점 잔액을 둔다.
-// 설명은 캠페인 이름(조정은 사유를 앞에), 캠페인이 없는 충전·환불은 시각이다
+// 내역 한 줄. 왼쪽에 유형과 설명, 오른쪽에 금액을 둔다.
+// 설명은 캠페인 이름이고, 캠페인이 없는 충전·환불은 시각이다
 const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
   const campaignTitle = item.campaignId
     ? (campaignTitles[item.campaignId] ?? '캠페인')
     : null;
-  const description =
-    [item.memo, campaignTitle].filter(Boolean).join(' · ') ||
-    formatHistoryTime(item.occurredAt);
+  const description = campaignTitle ?? formatHistoryTime(item.occurredAt);
+  const servingSummary = item.serving && formatServingSummary(item.serving);
 
   return (
     <li className="flex flex-col gap-0.5 px-4 py-3">
@@ -128,13 +168,12 @@ const HistoryRow = ({ campaignTitles, item }: HistoryRowProps) => {
           {formatSignedPoints(item.amount)}
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-3 text-body-sm-mobile text-text-secondary">
-        <span className="min-w-0 truncate">{description}</span>
-        <span className="shrink-0">잔액 {formatPoints(item.balanceAfter)}</span>
-      </div>
-      {item.serving && (
+      <p className="truncate text-body-sm-mobile text-text-secondary">
+        {description}
+      </p>
+      {servingSummary && (
         <p className="text-caption-mobile break-keep text-text-tertiary">
-          {formatServingSummary(item.serving)}
+          {servingSummary}
         </p>
       )}
     </li>
@@ -183,6 +222,7 @@ interface PointHistoryProps {
 // 포인트 내역 (docs/requirements-owner.md "잔액 및 내역 조회").
 // 소진은 캠페인별·일별 합계 한 줄로 보여주고, 그날의 예약과 예약 해제는 그 줄 아래 보조 줄로 보여준다
 export const PointHistory = ({ onBack }: PointHistoryProps) => {
+  const chargePolicy = useChargePolicy();
   const {
     balanceState,
     campaignOptions,
@@ -191,6 +231,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
     charge,
     filter,
     historyState,
+    loadMoreHistory,
     retryBalance,
     retryHistory,
   } = usePointHistory(DEFAULT_FILTER);
@@ -211,7 +252,10 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
       );
     }
 
-    const days = groupPointHistory(historyState.entries);
+    const days = groupPointHistory(
+      historyState.entries,
+      historyState.todaySpent,
+    );
 
     if (days.length === 0) {
       return (
@@ -244,6 +288,11 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
             </ul>
           </section>
         ))}
+        <HistoryFooter
+          hasMore={historyState.nextCursor !== null}
+          loadMore={historyState.loadMore}
+          onLoadMore={loadMoreHistory}
+        />
       </div>
     );
   };
@@ -302,7 +351,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
               ? balanceState.balance.balance
               : undefined
           }
-          minChargeAmount={MIN_CHARGE_AMOUNT}
+          policy={chargePolicy}
           onCharge={charge}
           onClose={() => setIsChargeOpen(false)}
         />

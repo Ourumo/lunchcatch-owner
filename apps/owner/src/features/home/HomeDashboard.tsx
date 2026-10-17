@@ -3,10 +3,11 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { ChevronRight, CircleAlert, QrCode, Wallet } from 'lucide-react';
 
-import { chargePoints, MIN_CHARGE_AMOUNT } from '@owner/api/points';
+import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
+import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
@@ -108,6 +109,7 @@ const HomeError = ({ onRetry }: { onRetry: () => void }) => (
 export const HomeDashboard = () => {
   const { retry, state, updateBalance } = useHome();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
+  const chargePolicy = useChargePolicy();
 
   const handleCharge = async (amount: number) => {
     const result = await chargePoints(amount);
@@ -151,7 +153,7 @@ export const HomeDashboard = () => {
         {isChargeOpen && (
           <PointChargeSheet
             balance={state.balance}
-            minChargeAmount={MIN_CHARGE_AMOUNT}
+            policy={chargePolicy}
             onCharge={handleCharge}
             onClose={() => setIsChargeOpen(false)}
           />

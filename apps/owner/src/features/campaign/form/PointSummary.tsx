@@ -2,13 +2,10 @@ import { type ReactNode, useState } from 'react';
 import { Button } from '@repo/ui';
 import { CircleCheck } from 'lucide-react';
 
-import {
-  chargePoints,
-  MIN_CHARGE_AMOUNT,
-  type PointBalance,
-} from '@owner/api/points';
+import { chargePoints, type PointBalance } from '@owner/api/points';
 import { formatPoints } from '@owner/components/campaignFormat';
 import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
+import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
@@ -36,6 +33,7 @@ export const PointSummary = ({
   requiredPoints,
 }: PointSummaryProps) => {
   const [isChargeOpen, setIsChargeOpen] = useState(false);
+  const chargePolicy = useChargePolicy();
   const shortage = balance ? requiredPoints - balance.balance : 0;
 
   const handleCharge = async (amount: number) => {
@@ -106,7 +104,7 @@ export const PointSummary = ({
       {balance && isChargeOpen && (
         <PointChargeSheet
           balance={balance.balance}
-          minChargeAmount={MIN_CHARGE_AMOUNT}
+          policy={chargePolicy}
           onCharge={handleCharge}
           onClose={() => setIsChargeOpen(false)}
           shortage={shortage}
