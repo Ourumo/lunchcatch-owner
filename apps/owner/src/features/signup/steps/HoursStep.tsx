@@ -1,7 +1,7 @@
 import { Lightbulb } from 'lucide-react';
 
 import { getTimeRangeError, weekdays } from '@owner/api/signupFlow';
-import { BusinessHoursFields } from '@owner/components/BusinessHoursFields/BusinessHoursFields';
+import { BusinessHoursFields } from '@owner/ui/BusinessHoursFields/BusinessHoursFields';
 
 import { useSignupFlow } from '../useSignupFlow';
 

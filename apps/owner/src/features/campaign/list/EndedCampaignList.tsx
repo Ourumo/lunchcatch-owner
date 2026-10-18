@@ -2,10 +2,10 @@ import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router';
 import { Button } from '@repo/ui';
 
-import { getCampaignTitle } from '@owner/components/campaignFormat';
-import { LoadMoreTrigger } from '@owner/components/LoadMoreTrigger/LoadMoreTrigger';
-import { TopBar } from '@owner/components/TopBar/TopBar';
 import { useGoBack } from '@owner/hooks/useGoBack';
+import { getCampaignTitle } from '@owner/ui/campaignFormat';
+import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
 import { ENDED_CAMPAIGNS_PATH } from './endedCampaigns';

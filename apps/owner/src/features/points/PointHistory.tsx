@@ -5,11 +5,11 @@ import {
   type PointHistoryFilter,
   type PointHistoryPeriod,
 } from '@owner/api/points';
-import { formatPoints } from '@owner/components/campaignFormat';
-import { LoadMoreTrigger } from '@owner/components/LoadMoreTrigger/LoadMoreTrigger';
-import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
-import { TopBar } from '@owner/components/TopBar/TopBar';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { formatPoints } from '@owner/ui/campaignFormat';
+import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
   formatHistoryDate,

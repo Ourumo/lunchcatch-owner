@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 
 import { createCampaignDraft, UPCOMING_LIMIT_ERROR } from '@owner/api/campaign';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { campaignSteps, getCampaignEditPath } from './campaignSteps';
 

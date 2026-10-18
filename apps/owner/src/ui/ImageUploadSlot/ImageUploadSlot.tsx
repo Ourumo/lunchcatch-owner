@@ -1,7 +1,7 @@
 import { type ChangeEvent, useId, useState } from 'react';
 import { Camera, X } from 'lucide-react';
 
-import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
+import { FilePreviewImage } from '@owner/ui/FilePreviewImage/FilePreviewImage';
 
 export type ImageUploadSlotSize = 'sm' | 'lg';
 

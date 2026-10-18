@@ -5,7 +5,7 @@ import { BottomSheet, Button, ChoiceChip } from '@repo/ui';
 export type PointChargeResult = { ok: true } | { ok: false; message?: string };
 
 // 충전 정책. 최소 충전 금액(원)은 안내 문구와 부족분 선택지 금액에, 금액 선택지는 충전 금액 칩에 쓴다.
-// 정책 값은 api의 값을 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
+// 정책 값은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export type ChargePolicy =
   | { status: 'loading' }
   | { status: 'error'; onRetry: () => void }

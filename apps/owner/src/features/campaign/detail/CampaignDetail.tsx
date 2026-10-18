@@ -11,6 +11,7 @@ import {
 } from '@owner/api/campaign';
 import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
+import { useGoBack } from '@owner/hooks/useGoBack';
 import {
   formatCreatedDate,
   formatDiscount,
@@ -21,10 +22,9 @@ import {
   getCampaignTitle,
   getPeriodDays,
   pausedNotices,
-} from '@owner/components/campaignFormat';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
-import { TopBar } from '@owner/components/TopBar/TopBar';
-import { useGoBack } from '@owner/hooks/useGoBack';
+} from '@owner/ui/campaignFormat';
+import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
 import { PosterPreview } from '../PosterPreview';

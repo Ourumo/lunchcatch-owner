@@ -11,7 +11,7 @@ import {
   getPlatformSettings,
   type PlatformSettings,
 } from '@owner/api/platform';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
   CampaignFormContext,

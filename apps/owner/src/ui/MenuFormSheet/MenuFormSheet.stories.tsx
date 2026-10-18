@@ -7,7 +7,7 @@ import {
   type MenuFormSheetProps,
 } from './MenuFormSheet';
 
-// components는 api의 값을 가져오지 않으므로 api/signupFlow의 menuInputRules를 줄여 옮긴 규칙을 둔다
+// ui는 api의 값을 가져오지 않으므로 api/signupFlow의 menuInputRules를 줄여 옮긴 규칙을 둔다
 const rules: MenuFormRules = {
   nameMaxLength: 20,
   priceMax: 1_000_000,

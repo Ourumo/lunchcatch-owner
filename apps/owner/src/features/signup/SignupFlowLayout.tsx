@@ -5,9 +5,9 @@ import { Toast } from '@repo/ui';
 import { logout } from '@owner/api/auth';
 import { submitSignupFlow } from '@owner/api/signupFlow';
 import { useAuth } from '@owner/auth/useAuth';
-import { StepActionBar } from '@owner/components/StepActionBar/StepActionBar';
-import { StepIndicator } from '@owner/components/StepIndicator/StepIndicator';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
+import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
   getSignupStepPath,

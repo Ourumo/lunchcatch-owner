@@ -1,4 +1,4 @@
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 export interface ComingSoonProps {
   title: string;

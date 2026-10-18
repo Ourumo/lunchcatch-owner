@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { BottomSheet, Button, Input } from '@repo/ui';
 
 import type { MenuField } from '@owner/api/signupFlow';
-import { ImageUploadSlot } from '@owner/components/ImageUploadSlot/ImageUploadSlot';
-import { formatPriceDigits, toPriceDigits } from '@owner/components/menuPrice';
+import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
+import { formatPriceDigits, toPriceDigits } from '@owner/ui/menuPrice';
 
 // 시트에서 입력을 마친 메뉴. 가격은 쉼표 없는 숫자 문자열
 export interface MenuFormValues<TImage extends File | string> {
@@ -19,7 +19,7 @@ export interface MenuFormDraft<TImage extends File | string = File | string> {
   price: string;
 }
 
-// 메뉴 입력 규칙. api의 값과 검사 함수를 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
+// 메뉴 입력 규칙. api의 값과 검사 함수를 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export interface MenuFormRules {
   nameMaxLength: number;
   priceMax: number;

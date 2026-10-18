@@ -28,7 +28,7 @@ import {
   formatPoints,
   formatShortDate,
   getPeriodDays,
-} from '@owner/components/campaignFormat';
+} from '@owner/ui/campaignFormat';
 
 import {
   formatAgeGroups,

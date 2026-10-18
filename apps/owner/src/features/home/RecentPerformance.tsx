@@ -2,10 +2,7 @@ import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 
 import type { ServingDayPerformance } from '@owner/api/report';
-import {
-  formatNumber,
-  formatShortDate,
-} from '@owner/components/campaignFormat';
+import { formatNumber, formatShortDate } from '@owner/ui/campaignFormat';
 
 const ANALYTICS_PATH = '/store/analytics';
 // 가장 많이 쓴 날의 막대 높이(px). 나머지는 이 높이에 비례한다

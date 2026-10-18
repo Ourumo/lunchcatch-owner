@@ -7,7 +7,7 @@ import {
   targetGenderOptions,
 } from '@owner/api/campaign';
 
-// 캠페인 기능에서만 쓰는 노출 대상 표시 문구. 여러 화면이 함께 쓰는 문구는 components/campaignFormat에 있다
+// 캠페인 기능에서만 쓰는 노출 대상 표시 문구. 여러 화면이 함께 쓰는 문구는 ui/campaignFormat에 있다
 
 export const formatRadius = (radius: ExposureRadius) =>
   exposureRadiusOptions.find((option) => option.value === radius)?.label ?? '';
