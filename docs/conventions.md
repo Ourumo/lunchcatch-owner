@@ -38,17 +38,16 @@ feat: 카카오 로그인 화면 구현
 - API: 이번 스프린트는 mock 데이터 사용
 - 타입: interface 우선 (type은 유니온/인터섹션에만)
 - 파일명: 컴포넌트는 PascalCase, 유틸/훅은 camelCase
-- import 경로 (앱 코드):
-  - 같은 폴더나 하위 폴더는 상대 경로(`./`)로 가져옵니다.
-  - 상위 폴더로 올라가야 하면 `../` 대신 앱 경로 별칭(`@user/`, `@owner/`, `@admin/`)으로 가져옵니다.
-  - `../` import는 ESLint에서 에러로 처리됩니다. `packages`는 별칭이 없으므로 이 규칙을 적용하지 않습니다.
+- import 경로 (앱 코드): `src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/signup`)
+  - 같은 모듈 안은 상대 경로(`./`, `../`)로 가져옵니다.
+  - 모듈 밖(다른 기능, 다른 레이어)은 앱 경로 별칭(`@user/`, `@owner/`, `@admin/`)으로 가져옵니다.
+  - 어기면 ESLint에서 에러로 처리됩니다. `packages`는 별칭이 없으므로 이 규칙을 적용하지 않습니다. 자세한 기준은 `docs/folder-structure.md` "Path alias"를 봅니다.
 
 ```tsx
-// apps/owner/src/features/signup/steps/TermsStep.tsx
-import { ImageUploader } from '@owner/components/ImageUploader';
-import { useSignupForm } from '@owner/features/signup/useSignupForm';
+// apps/owner/src/features/signup/steps/TermsStep.tsx (모듈: features/signup)
+import { ownerTerms } from '@owner/api/signupFlow';
 
-import { TermsItem } from './TermsItem';
+import { useSignupFlow } from '../useSignupFlow';
 ```
 
 ## 린트/포맷

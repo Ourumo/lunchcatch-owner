@@ -11,8 +11,9 @@ import {
 } from '@owner/api/poster';
 import { getMyStore, type MyStore } from '@owner/api/store';
 import { getCampaignTitle } from '@owner/components/campaignFormat';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
-import { PosterPreview } from '@owner/features/campaign/PosterPreview';
+
+import { PosterPreview } from '../../PosterPreview';
+import { useCampaignForm } from '../useCampaignForm';
 
 const DEFAULT_EVENT_NAME = '오늘 점심 한정 특별 혜택!';
 const THUMBNAIL_WIDTH = 96;

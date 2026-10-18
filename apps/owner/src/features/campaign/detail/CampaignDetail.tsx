@@ -24,14 +24,10 @@ import {
 } from '@owner/components/campaignFormat';
 import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
 import { TopBar } from '@owner/components/TopBar/TopBar';
-import {
-  formatAgeGroups,
-  formatGender,
-  formatRadius,
-} from '@owner/features/campaign/campaignFormat';
-import { PosterPreview } from '@owner/features/campaign/PosterPreview';
 import { useGoBack } from '@owner/hooks/useGoBack';
 
+import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
+import { PosterPreview } from '../PosterPreview';
 import { DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
 

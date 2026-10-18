@@ -11,6 +11,11 @@ import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
+import moduleImportPath from './rules/module-import-path.js';
+
+// 경로 별칭(@<앱>/)을 쓰는 앱. 앱을 추가하면 여기에도 추가한다
+const aliasApps = ['admin', 'owner', 'user'];
+
 export default defineConfig([
   globalIgnores(['dist', 'storybook-static']),
   {
@@ -26,6 +31,7 @@ export default defineConfig([
     },
     plugins: {
       'simple-import-sort': simpleImportSort,
+      repo: { rules: { 'module-import-path': moduleImportPath } },
     },
     rules: {
       'simple-import-sort/imports': [
@@ -37,13 +43,14 @@ export default defineConfig([
             // react, 외부 패키지
             ['^react', '^@?\\w'],
             // 앱별 경로 별칭
-            ['^@(admin|owner|user)/'],
+            [`^@(${aliasApps.join('|')})/`],
             // 상대경로
             ['^\\.'],
           ],
         },
       ],
       'simple-import-sort/exports': 'error',
+      'repo/module-import-path': ['error', { apps: aliasApps }],
     },
   }, // Prettier와 충돌하는 스타일 규칙을 끈다. 반드시 마지막에 둘 것
   eslintConfigPrettier,

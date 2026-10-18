@@ -7,7 +7,8 @@ import {
   type TermsItem,
   type TermsStepValues,
 } from '@owner/api/signupFlow';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 const termsGroups = [
   { legend: '필수', items: ownerTerms.filter((item) => item.required) },

@@ -29,20 +29,21 @@ import {
   formatShortDate,
   getPeriodDays,
 } from '@owner/components/campaignFormat';
+
 import {
   formatAgeGroups,
   formatGender,
   formatRadius,
-} from '@owner/features/campaign/campaignFormat';
-import { DetailRow } from '@owner/features/campaign/detail/DetailSection';
+} from '../../campaignFormat';
+import { DetailRow } from '../../detail/DetailSection';
+import { PosterPreview } from '../../PosterPreview';
 import {
   type CampaignStep,
   campaignSteps,
   getCampaignEditPath,
-} from '@owner/features/campaign/form/campaignSteps';
-import { PointSummary } from '@owner/features/campaign/form/PointSummary';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
-import { PosterPreview } from '@owner/features/campaign/PosterPreview';
+} from '../campaignSteps';
+import { PointSummary } from '../PointSummary';
+import { useCampaignForm } from '../useCampaignForm';
 
 const POSTER_PREVIEW_WIDTH = 200;
 

@@ -6,7 +6,8 @@ import {
   isValidPhone,
   storeCategories,
 } from '@owner/api/signupFlow';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 const PHONE_MAX_LENGTH = 11;
 const BUSINESS_NUMBER_LENGTH = 10;
