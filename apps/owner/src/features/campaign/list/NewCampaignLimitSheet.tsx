@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { BottomSheet, Button } from '@repo/ui';
 
 import { type Campaign, deleteCampaignDraft } from '@owner/api/campaign';
-import { formatShortDate } from '@owner/components/campaignFormat';
+import { formatShortDate } from '@owner/ui/campaignFormat';
 
 const NEW_CAMPAIGN_PATH = '/campaigns/new';
 

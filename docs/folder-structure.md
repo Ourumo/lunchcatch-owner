@@ -42,7 +42,7 @@ apps/<앱>/src/
 ├── app/          # 앱 진입점, 라우터, 전역 Provider
 ├── pages/        # 주소 하나에 대응하는 화면
 ├── features/     # 기능 단위 UI, 상태, 로직 묶음
-├── components/   # 이 앱 안에서 여러 기능이 함께 쓰는 컴포넌트
+├── ui/           # 이 앱 안에서 여러 기능이 함께 쓰는 컴포넌트
 ├── layout/       # 여러 페이지를 감싸는 틀
 ├── api/          # 서버 요청 함수와 mock 데이터
 ├── auth/         # 로그인 상태와 접근 제어
@@ -55,7 +55,7 @@ apps/<앱>/src/
 | `app` | 앱 전체에 한 번만 설정하는 것 | `App.tsx`, `router.tsx`, `providers.tsx` |
 | `pages` | 라우터에 연결되는 화면. 직접 로직을 갖지 않고 `layout`과 `features`를 조합 | `LoginPage.tsx`, `SignupPage.tsx` |
 | `features` | 특정 기능에 필요한 UI, 상태, 로직 | `features/signup/steps/BusinessHoursStep.tsx` |
-| `components` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트 | 점주 헤더, 이미지 업로더, DataTable |
+| `ui` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트 | 점주 헤더, 이미지 업로더, DataTable |
 | `layout` | 페이지마다 반복되는 바깥 구조 | 사이드바 레이아웃, 하단 탭바 레이아웃 |
 | `api` | 서버 요청 함수와 mock 데이터 | `store.ts`, `mocks/` |
 | `auth` | 로그인 상태 제공과 비로그인 접근 차단 | `AuthProvider.tsx`, `RequireAuth.tsx` |
@@ -63,17 +63,17 @@ apps/<앱>/src/
 ## 의존 방향
 
 ```
-app → pages → features → components
+app → pages → features → ui
                   │
                   └──→ api, auth
 
 apps/* ──→ @repo/ui, @repo/utils
 ```
 
-- 화살표 방향으로만 import합니다. `components`에서 `features`를 import하지 않습니다.
-- 예외로 `components`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
-- `components`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
-- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 그 코드를 `components`나 `@repo/ui`로 옮깁니다.
+- 화살표 방향으로만 import합니다. `ui`에서 `features`를 import하지 않습니다.
+- 예외로 `ui`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
+- `ui`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
+- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 그 코드를 `ui`나 `@repo/ui`로 옮깁니다.
 - 앱끼리는 서로 import하지 않습니다.
 - `packages`는 `apps`를 import하지 않습니다.
 
@@ -89,7 +89,7 @@ apps/* ──→ @repo/ui, @repo/utils
 
 ### 별칭과 상대 경로
 
-`src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/billing`, `components/DataTable`)
+`src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/billing`, `ui/DataTable`)
 
 | 가져오는 대상 | 경로 |
 | --- | --- |
@@ -97,9 +97,9 @@ apps/* ──→ @repo/ui, @repo/utils
 | 모듈 밖의 파일 (다른 기능, 다른 레이어) | 앱 별칭(`@admin/`) |
 
 ```tsx
-// apps/admin/src/features/billing/components/RefundDetails.tsx (모듈: features/billing)
+// apps/admin/src/features/billing/ui/RefundDetails.tsx (모듈: features/billing)
 import { type AdminRefund, processRefund } from '@admin/api/refunds';
-import { AdminModal } from '@admin/components/AdminModal/AdminModal';
+import { AdminModal } from '@admin/ui/AdminModal/AdminModal';
 
 import { useBillingMutation } from '../useBillingMutation';
 import { DetailItem } from './BillingDetails';
@@ -121,7 +121,7 @@ import { DetailItem } from './BillingDetails';
 | 사용 범위 | 위치 |
 | --- | --- |
 | 두 개 이상의 앱에서 같은 형태와 동작으로 사용 | `packages/ui/src/components` |
-| 한 앱 안에서 여러 기능이 사용 | `apps/<앱>/src/components` |
+| 한 앱 안에서 여러 기능이 사용 | `apps/<앱>/src/ui` |
 | 한 기능에서만 사용 | `apps/<앱>/src/features/<기능>` |
 
 ## 공통 패키지 사용
@@ -152,6 +152,6 @@ import { Button, initializeTheme } from '@repo/ui';
 스토리 파일(`*.stories.tsx`)은 컴포넌트 옆에 두고, `apps/storybook`이 아래 경로에서 모아 보여줍니다.
 
 - `packages/ui/src/**`
-- `apps/*/src/components/**`
+- `apps/*/src/ui/**`
 
 `apps/storybook`에는 설정만 있고 스토리는 없습니다. 스토리 작성 범위는 [docs/conventions.md](/docs/conventions.md#storybook)를 참고합니다.

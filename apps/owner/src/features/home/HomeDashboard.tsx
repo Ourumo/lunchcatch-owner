@@ -5,9 +5,9 @@ import { ChevronRight, CircleAlert, QrCode, Wallet } from 'lucide-react';
 
 import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
-import { formatPoints } from '@owner/components/campaignFormat';
-import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { formatPoints } from '@owner/ui/campaignFormat';
+import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';

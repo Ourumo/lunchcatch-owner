@@ -5,7 +5,7 @@ import {
   weekdays,
 } from '@owner/api/signupFlow';
 import { updateBusinessHours } from '@owner/api/store';
-import { BusinessHoursFields } from '@owner/components/BusinessHoursFields/BusinessHoursFields';
+import { BusinessHoursFields } from '@owner/ui/BusinessHoursFields/BusinessHoursFields';
 
 import { StoreEditLayout } from './StoreEditLayout';
 import { useStoreEdit } from './useStoreEdit';

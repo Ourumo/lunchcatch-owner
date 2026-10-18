@@ -9,9 +9,9 @@ import {
   isUpcomingCampaign,
 } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
-import { getCampaignTitle } from '@owner/components/campaignFormat';
-import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/CurrentCampaignCard';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { getCampaignTitle } from '@owner/ui/campaignFormat';
+import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
 import {

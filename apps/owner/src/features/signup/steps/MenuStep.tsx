@@ -1,5 +1,5 @@
 import { MAX_MENUS, menuInputRules } from '@owner/api/signupFlow';
-import { MenuListFields } from '@owner/components/MenuListFields/MenuListFields';
+import { MenuListFields } from '@owner/ui/MenuListFields/MenuListFields';
 
 import { useSignupFlow } from '../useSignupFlow';
 

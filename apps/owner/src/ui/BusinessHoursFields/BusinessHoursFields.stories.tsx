@@ -7,7 +7,7 @@ import {
   type WeekdayOption,
 } from './BusinessHoursFields';
 
-// components는 api의 값을 가져오지 않으므로 api/signupFlow의 weekdays와 같은 목록을 둔다
+// ui는 api의 값을 가져오지 않으므로 api/signupFlow의 weekdays와 같은 목록을 둔다
 const weekdays: WeekdayOption[] = [
   { value: 'MON', label: '월' },
   { value: 'TUE', label: '화' },

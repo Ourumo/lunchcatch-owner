@@ -2,8 +2,8 @@ import { type ReactNode, useEffect, useEffectEvent, useState } from 'react';
 
 import { getMe, type LoginResponse } from '@owner/api/auth';
 import { onSessionExpired } from '@owner/api/client';
-import { AuthCheckScreen } from '@owner/components/AuthCheckScreen/AuthCheckScreen';
 import { useCountdown } from '@owner/hooks/useCountdown';
+import { AuthCheckScreen } from '@owner/ui/AuthCheckScreen/AuthCheckScreen';
 
 import { AuthContext } from './authContext';
 

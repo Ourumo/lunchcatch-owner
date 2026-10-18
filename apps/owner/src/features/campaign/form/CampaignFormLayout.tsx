@@ -7,9 +7,9 @@ import {
   requestCampaignActivation,
   saveCampaignStep,
 } from '@owner/api/campaign';
-import { StepActionBar } from '@owner/components/StepActionBar/StepActionBar';
-import { StepIndicator } from '@owner/components/StepIndicator/StepIndicator';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
+import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
   campaignSteps,

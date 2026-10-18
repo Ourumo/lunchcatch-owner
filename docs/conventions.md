@@ -117,6 +117,6 @@ pnpm add lucide-react@catalog: --filter owner
 
 ## Storybook
 
-- 스토리는 `packages/ui`와 각 앱의 `components`에 있는 컴포넌트에만 작성합니다. `pages`, `features`에는 작성하지 않습니다.
+- 스토리는 `packages/ui`와 각 앱의 `ui`에 있는 컴포넌트에만 작성합니다. `pages`, `features`에는 작성하지 않습니다.
 - 스토리 파일은 컴포넌트 파일 옆에 `<컴포넌트명>.stories.tsx`로 둡니다.
 - 스토리 제목은 공통 컴포넌트는 `Shared/...`, 앱 컴포넌트는 `Admin/...`처럼 위치에 맞게 시작합니다.

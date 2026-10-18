@@ -248,7 +248,7 @@ export const getMenuErrors = ({
   };
 };
 
-// 대표 메뉴 입력 화면(components/MenuListFields)에 넘기는 규칙. 입점 등록과 가게 관리가 같은 값을 쓴다
+// 대표 메뉴 입력 화면(ui/MenuListFields)에 넘기는 규칙. 입점 등록과 가게 관리가 같은 값을 쓴다
 export const menuInputRules = {
   nameMaxLength: MENU_NAME_MAX_LENGTH,
   priceMax: MENU_PRICE_MAX,

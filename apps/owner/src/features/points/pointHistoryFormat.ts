@@ -3,7 +3,7 @@ import type {
   PointHistoryPeriod,
   PointHistoryType,
 } from '@owner/api/points';
-import { formatPoints } from '@owner/components/campaignFormat';
+import { formatPoints } from '@owner/ui/campaignFormat';
 
 // 관리자 앱(billing)의 원장 유형 이름과 맞춘다
 export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {

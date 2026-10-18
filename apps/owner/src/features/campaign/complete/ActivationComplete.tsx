@@ -4,13 +4,13 @@ import { CalendarCheck } from 'lucide-react';
 
 import { type Campaign, getCampaign } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
+import type { GoBackState } from '@owner/hooks/useGoBack';
 import {
   formatPeriod,
   formatShortDate,
   getCampaignTitle,
   getDaysFromToday,
-} from '@owner/components/campaignFormat';
-import type { GoBackState } from '@owner/hooks/useGoBack';
+} from '@owner/ui/campaignFormat';
 
 export interface ActivationCompleteProps {
   campaignId: string;

@@ -1,5 +1,5 @@
-import { ComingSoon } from '@owner/components/ComingSoon/ComingSoon';
 import { useGoBack } from '@owner/hooks/useGoBack';
+import { ComingSoon } from '@owner/ui/ComingSoon/ComingSoon';
 
 interface ComingSoonPageProps {
   title: string;

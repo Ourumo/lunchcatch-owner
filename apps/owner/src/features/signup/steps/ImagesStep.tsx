@@ -1,5 +1,5 @@
 import { MAX_INTERIOR_IMAGES } from '@owner/api/signupFlow';
-import { StoreImagesFields } from '@owner/components/StoreImagesFields/StoreImagesFields';
+import { StoreImagesFields } from '@owner/ui/StoreImagesFields/StoreImagesFields';
 
 import { useSignupFlow } from '../useSignupFlow';
 

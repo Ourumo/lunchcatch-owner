@@ -9,7 +9,7 @@ import {
 import {
   MenuListFields,
   type MenuListItem,
-} from '@owner/components/MenuListFields/MenuListFields';
+} from '@owner/ui/MenuListFields/MenuListFields';
 
 import { StoreEditLayout } from './StoreEditLayout';
 import { useStoreEdit } from './useStoreEdit';

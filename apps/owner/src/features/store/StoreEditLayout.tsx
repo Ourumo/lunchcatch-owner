@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { BottomSheet, Button } from '@repo/ui';
 
-import { StepActionBar } from '@owner/components/StepActionBar/StepActionBar';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { StoreEditStatus } from './StoreEditStatus';
 import type { StoreEdit } from './useStoreEdit';

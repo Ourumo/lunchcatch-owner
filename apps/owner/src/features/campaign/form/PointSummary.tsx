@@ -3,9 +3,9 @@ import { Button } from '@repo/ui';
 import { CircleCheck } from 'lucide-react';
 
 import { chargePoints, type PointBalance } from '@owner/api/points';
-import { formatPoints } from '@owner/components/campaignFormat';
-import { PointChargeSheet } from '@owner/components/PointChargeSheet/PointChargeSheet';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { formatPoints } from '@owner/ui/campaignFormat';
+import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;

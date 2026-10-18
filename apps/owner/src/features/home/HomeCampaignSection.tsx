@@ -2,11 +2,8 @@ import { Link } from 'react-router';
 
 import type { Campaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
-import {
-  formatShortDate,
-  getCampaignTitle,
-} from '@owner/components/campaignFormat';
-import { CurrentCampaignCard } from '@owner/components/CurrentCampaignCard/CurrentCampaignCard';
+import { formatShortDate, getCampaignTitle } from '@owner/ui/campaignFormat';
+import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
 
 import { getCurrentCampaign, getNextCampaign } from './homeCampaigns';
 

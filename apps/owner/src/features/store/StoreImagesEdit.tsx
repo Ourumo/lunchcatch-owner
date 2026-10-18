@@ -1,6 +1,6 @@
 import { MAX_INTERIOR_IMAGES } from '@owner/api/signupFlow';
 import { type StoreImagesValues, updateStoreImages } from '@owner/api/store';
-import { StoreImagesFields } from '@owner/components/StoreImagesFields/StoreImagesFields';
+import { StoreImagesFields } from '@owner/ui/StoreImagesFields/StoreImagesFields';
 
 import { StoreEditLayout } from './StoreEditLayout';
 import { useStoreEdit } from './useStoreEdit';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { ImageUploadSlot } from '@owner/components/ImageUploadSlot/ImageUploadSlot';
+import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
 
 // 입점 등록은 새로 고른 파일만, 가게 관리는 파일과 이미 올라간 사진 주소를 함께 쓴다
 type StoreImage = File | string;
@@ -41,7 +41,7 @@ export interface StoreImagesFieldsProps<TImage extends StoreImage> {
 
 // 대표 이미지와 매장 이미지 입력. 입점 등록과 가게 관리가 함께 쓴다.
 // 이미 올라간 사진(주소)과 새로 고른 사진(File)이 섞여도 순서대로 보여준다.
-// 최대 장수는 api의 값을 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
+// 최대 장수는 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const StoreImagesFields = <TImage extends StoreImage>({
   interiorImages,
   logoImage,

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Lock, Plus, SquarePen, Trash2 } from 'lucide-react';
 
-import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
+import { FilePreviewImage } from '@owner/ui/FilePreviewImage/FilePreviewImage';
 import {
   type MenuFormRules,
   MenuFormSheet,
   type MenuFormValues,
-} from '@owner/components/MenuFormSheet/MenuFormSheet';
-import { formatPriceDigits } from '@owner/components/menuPrice';
+} from '@owner/ui/MenuFormSheet/MenuFormSheet';
+import { formatPriceDigits } from '@owner/ui/menuPrice';
 
 // 목록의 메뉴 한 개. 가게 관리는 고칠 때 메뉴 ID를 유지해야 해서 id를 함께 둔다
 export interface MenuListItem<
@@ -47,7 +47,7 @@ const MenuImage = ({ image }: { image: File | string }) => {
 };
 
 // 대표 메뉴 목록과 추가·수정·삭제. 입점 등록과 가게 관리가 함께 쓴다.
-// 개수 제한과 입력 규칙은 api의 값을 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
+// 개수 제한과 입력 규칙은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const MenuListFields = <TImage extends File | string>({
   canEdit,
   getLockNotice,

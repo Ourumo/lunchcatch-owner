@@ -11,10 +11,7 @@ import {
   type PointHistoryFilter,
 } from '@owner/api/points';
 import { getMyStore } from '@owner/api/store';
-import {
-  formatPeriod,
-  getCampaignTitle,
-} from '@owner/components/campaignFormat';
+import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
 
 type BalanceState =
   | { status: 'loading' }

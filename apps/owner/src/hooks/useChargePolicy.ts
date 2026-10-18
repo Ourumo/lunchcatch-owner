@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { getPointPolicy } from '@owner/api/points';
-import type { ChargePolicy } from '@owner/components/PointChargeSheet/PointChargeSheet';
+import type { ChargePolicy } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 
 type PolicyState =
   | { status: 'loading' }

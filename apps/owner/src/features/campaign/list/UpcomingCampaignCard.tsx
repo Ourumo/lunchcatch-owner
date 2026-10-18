@@ -13,8 +13,8 @@ import {
   formatPeriod,
   formatShortDate,
   getDaysFromToday,
-} from '@owner/components/campaignFormat';
-import { CampaignStatusBadge } from '@owner/components/CampaignStatusBadge/CampaignStatusBadge';
+} from '@owner/ui/campaignFormat';
+import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 
 import {
   type CampaignActionResult,

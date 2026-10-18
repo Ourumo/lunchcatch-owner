@@ -19,7 +19,7 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/packages/ui/src/**",
-        "$TURBO_ROOT$/apps/*/src/components/**"
+        "$TURBO_ROOT$/apps/*/src/ui/**"
       ],
       "outputs": ["storybook-static/**"]
     },
@@ -27,7 +27,7 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/packages/ui/src/**",
-        "$TURBO_ROOT$/apps/*/src/components/**"
+        "$TURBO_ROOT$/apps/*/src/ui/**"
       ]
     }
   }

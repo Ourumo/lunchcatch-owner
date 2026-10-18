@@ -1,7 +1,7 @@
 import { useId } from 'react';
 
 import type { HoursStepValues, Weekday } from '@owner/api/signupFlow';
-import { TimePicker } from '@owner/components/TimePicker/TimePicker';
+import { TimePicker } from '@owner/ui/TimePicker/TimePicker';
 
 export interface WeekdayOption {
   value: Weekday;
@@ -21,7 +21,7 @@ export interface BusinessHoursFieldsProps {
 }
 
 // 영업 요일과 모든 영업일에 같이 쓰는 시작·종료 시간 입력. 입점 등록과 가게 관리가 함께 쓴다.
-// 요일 목록과 오류 문구는 api의 값을 쓰는 쪽에서 넘긴다 (components는 api의 값을 가져오지 않는다)
+// 요일 목록과 오류 문구는 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const BusinessHoursFields = ({
   daysError,
   daysHint,

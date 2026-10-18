@@ -18,8 +18,8 @@ import {
   formatPoints,
   formatShortDate,
   getPeriodDays,
-} from '@owner/components/campaignFormat';
-import { DateRangePicker } from '@owner/components/DateRangePicker/DateRangePicker';
+} from '@owner/ui/campaignFormat';
+import { DateRangePicker } from '@owner/ui/DateRangePicker/DateRangePicker';
 
 import { PointSummary } from '../PointSummary';
 import { useCampaignForm } from '../useCampaignForm';
