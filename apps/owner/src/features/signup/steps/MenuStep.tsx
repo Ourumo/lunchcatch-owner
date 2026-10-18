@@ -1,6 +1,7 @@
 import { MAX_MENUS, menuInputRules } from '@owner/api/signupFlow';
 import { MenuListFields } from '@owner/components/MenuListFields/MenuListFields';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 // 대표 메뉴 목록과 추가·수정·삭제. 선택 단계라 메뉴 없이도 등록 신청을 완료할 수 있다
 export const MenuStep = () => {

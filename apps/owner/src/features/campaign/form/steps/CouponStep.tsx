@@ -17,7 +17,8 @@ import {
 } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 import { formatNumber } from '@owner/components/campaignFormat';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
+
+import { useCampaignForm } from '../useCampaignForm';
 
 const AMOUNT_MAX_DIGITS = 7;
 const ISSUE_LIMIT_MAX_DIGITS = 4;

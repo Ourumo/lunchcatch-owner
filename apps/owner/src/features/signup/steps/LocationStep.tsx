@@ -3,7 +3,8 @@ import { Input } from '@repo/ui';
 import { MapPin, RotateCcw, Search } from 'lucide-react';
 
 import { searchStorePlaces, type StorePlace } from '@owner/api/signupFlow';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 type SearchState =
   | { status: 'idle' }

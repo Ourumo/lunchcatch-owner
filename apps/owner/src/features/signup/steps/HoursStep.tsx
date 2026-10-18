@@ -2,7 +2,8 @@ import { Lightbulb } from 'lucide-react';
 
 import { getTimeRangeError, weekdays } from '@owner/api/signupFlow';
 import { BusinessHoursFields } from '@owner/components/BusinessHoursFields/BusinessHoursFields';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 // 점심 시간대 추천 안내. 지역별 피크 타임 데이터가 없어 시안 문구를 그대로 쓰는 더미
 const LunchPeakTimeTip = () => (

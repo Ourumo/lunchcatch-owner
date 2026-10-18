@@ -1,6 +1,7 @@
 import { MAX_INTERIOR_IMAGES } from '@owner/api/signupFlow';
 import { StoreImagesFields } from '@owner/components/StoreImagesFields/StoreImagesFields';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 // 대표 이미지(필수 1장)와 매장 이미지(선택, 최대 3장) 등록
 export const ImagesStep = () => {

@@ -20,8 +20,9 @@ import {
   getPeriodDays,
 } from '@owner/components/campaignFormat';
 import { DateRangePicker } from '@owner/components/DateRangePicker/DateRangePicker';
-import { PointSummary } from '@owner/features/campaign/form/PointSummary';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
+
+import { PointSummary } from '../PointSummary';
+import { useCampaignForm } from '../useCampaignForm';
 
 const BUDGET_MAX_DIGITS = 8;
 // 신규 캠페인 우선 노출 기간과 같다 (docs/requirements-common.md "피드 구성")
