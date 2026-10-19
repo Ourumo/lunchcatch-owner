@@ -39,3 +39,9 @@ export const Monthly: Story = {
     placeholder: '월 범위 선택',
   },
 };
+
+export const SameDayRange: Story = {
+  args: {
+    defaultValue: { startDate: '2026-10-19', endDate: '2026-10-19' },
+  },
+};
