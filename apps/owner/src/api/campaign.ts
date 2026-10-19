@@ -424,7 +424,11 @@ export const getEndedCampaignPage = async ({
   };
 };
 
-export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
+// 등록 흐름(등록 화면, 활성화 완료 화면)이 쓰는 조회. 등록 시작과 저장이 아직 mock이라
+// mock이 만든 캠페인을 찾을 수 있도록 mock으로 조회한다. 등록 API 연동(#181)에서 getCampaign으로 합친다
+export const getRegistrationCampaign = async (
+  id: string,
+): Promise<ApiResult<Campaign>> => {
   await mockDelay();
 
   const campaign = findCampaign(id);
@@ -435,6 +439,8 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
 
   return { ok: true, data: structuredClone(campaign) };
 };
+
+export const getCampaign = getRegistrationCampaign;
 
 // 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
 // 준비 중 캠페인이 이미 MAX_UPCOMING_CAMPAIGNS건이면 만들지 않는다
