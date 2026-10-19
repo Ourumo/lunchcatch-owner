@@ -27,8 +27,8 @@ export interface MenuFormRules {
 }
 
 export interface MenuFormSheetProps<TImage extends File | string> {
-  // 수정할 메뉴. 없으면 새 메뉴를 추가한다
-  initialMenu?: MenuFormValues<TImage>;
+  // 수정할 메뉴. 없으면 새 메뉴를 추가한다. 사진이 없는 메뉴면 사진을 다시 고르게 한다
+  initialMenu?: MenuFormDraft<TImage>;
   rules: MenuFormRules;
   onClose: () => void;
   // 사진을 다시 고르지 않았으면 원래 사진(파일 또는 이미 올라간 주소)을 그대로 넘긴다

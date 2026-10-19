@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
-import { ChartNoAxesColumn, ChevronRight } from 'lucide-react';
+import { ChartNoAxesColumn, ChevronRight, Store } from 'lucide-react';
 
 import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
@@ -34,11 +34,21 @@ const rowClassName =
 // 기본 정보 수정은 명세에 없어 보기만 한다
 const StoreProfile = ({ store }: { store: MyStore }) => (
   <div className="flex items-center gap-4">
-    <img
-      alt=""
-      className="size-14 shrink-0 rounded-xl bg-surface-subtle object-cover"
-      src={store.logoImageUrl}
-    />
+    {store.logoImageUrl ? (
+      <img
+        alt=""
+        className="size-14 shrink-0 rounded-xl bg-surface-subtle object-cover"
+        src={store.logoImageUrl}
+      />
+    ) : (
+      // 대표 이미지를 아직 올리지 않았으면 빈 자리를 보여준다
+      <span
+        aria-hidden="true"
+        className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-text-disabled"
+      >
+        <Store className="size-6" />
+      </span>
+    )}
     <div className="min-w-0">
       <p className="truncate text-h3-mobile font-bold text-text-primary">
         {store.name}

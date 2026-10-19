@@ -19,15 +19,16 @@ export interface StoreMenu {
   id: string;
   name: string;
   price: number;
-  imageUrl: string;
+  // 메뉴는 사진 없이 먼저 등록되므로 사진이 없을 수 있다
+  imageUrl: string | null;
 }
 
 export interface MyStore {
   id: string;
   name: string;
   roadAddress: string;
-  // 가게 대표 이미지(로고)
-  logoImageUrl: string;
+  // 가게 대표 이미지(로고). 올리기 전이면 null
+  logoImageUrl: string | null;
   // 매장 이미지. 0~3장 (입점 등록 MAX_INTERIOR_IMAGES)
   interiorImageUrls: string[];
   // 영업일마다 같은 시간을 쓴다. 입점 등록의 영업시간 입력값과 같은 형태
@@ -40,8 +41,8 @@ export interface MyStore {
 export type StoreImage = File | string;
 
 export interface StoreImagesValues {
-  // 가게 대표 이미지(로고). 필수
-  logoImage: StoreImage;
+  // 가게 대표 이미지(로고). 필수지만 서버에 아직 없으면 null로 시작한다
+  logoImage: StoreImage | null;
   // 매장 이미지. 선택, 최대 MAX_INTERIOR_IMAGES장
   interiorImages: StoreImage[];
 }
@@ -51,7 +52,8 @@ export interface StoreMenuValues {
   id: string | null;
   name: string;
   price: number;
-  image: StoreImage;
+  // 서버에서 불러온 메뉴는 사진이 없을 수 있다. 저장할 때 사진이 없으면 거절한다
+  image: StoreImage | null;
 }
 
 const INVALID_BUSINESS_HOURS_MESSAGE = '영업 요일과 시간을 다시 확인해 주세요.';
@@ -227,7 +229,8 @@ export const updateStoreMenus = async (
     id: id ?? createMockMenuId(),
     name: name.trim(),
     price,
-    imageUrl: uploadMockImage(image),
+    // 사진이 없는 메뉴는 위 검사(hasInvalidMenu)에서 거절되지만, 타입으로는 남아 있어 그대로 넘긴다
+    imageUrl: image && uploadMockImage(image),
   }));
 
   return { ok: true, data: structuredClone(mockStore.menus) };
