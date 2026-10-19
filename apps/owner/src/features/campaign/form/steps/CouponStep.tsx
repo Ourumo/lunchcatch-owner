@@ -27,10 +27,8 @@ const ISSUE_LIMIT_MAX = 10 ** ISSUE_LIMIT_MAX_DIGITS - 1;
 // 수량 빠른 조정 버튼에 0(초기화) 다음으로 이 순서대로 보여준다
 const ISSUE_LIMIT_QUICK_STEPS = [-10, -5, 5, 10, 30];
 
-const discountTargetItems: { value: DiscountTarget; label: string }[] = [
-  { value: 'ALL', label: '전체 메뉴' },
-  { value: 'MENU', label: '특정 메뉴' },
-];
+// 대표 메뉴 조회 상태. 조회 중은 null, 실패는 'error'. 대표 메뉴는 선택 항목이라 성공해도 0개일 수 있다
+type MenusState = StoreMenu[] | 'error' | null;
 
 // 쿠폰 1장의 사용 범위. 전체 메뉴는 금액 할인만 쓸 수 있어 퍼센트 문구가 없다
 const getUsageDescription = ({
@@ -129,7 +127,7 @@ const RadioCard = ({
 );
 
 interface MenuOptionsProps {
-  menus: StoreMenu[] | null;
+  menus: MenusState;
   selectedMenuId: string | null;
   onSelect: (menuId: string) => void;
 }
@@ -146,7 +144,7 @@ const MenuOptions = ({ menus, onSelect, selectedMenuId }: MenuOptionsProps) => {
     );
   }
 
-  if (menus.length === 0) {
+  if (menus === 'error') {
     return (
       <p className="text-caption-mobile text-status-danger-fg">
         대표 메뉴를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
@@ -392,14 +390,14 @@ const UsableTimeField = ({ from, onChange, until }: UsableTimeFieldProps) => {
 export const CouponStep = () => {
   const { updateStepValues, values } = useCampaignForm();
   const { coupon } = values;
-  const [menus, setMenus] = useState<StoreMenu[] | null>(null);
+  const [menus, setMenus] = useState<MenusState>(null);
 
   useEffect(() => {
     let ignore = false;
 
     getMyStore().then((result) => {
       if (!ignore) {
-        setMenus(result.ok ? result.data.menus : []);
+        setMenus(result.ok ? result.data.menus : 'error');
       }
     });
 
@@ -412,9 +410,10 @@ export const CouponStep = () => {
   const update = (patch: Partial<CouponStepValues>) =>
     updateStepValues('coupon', patch);
 
+  const hasNoMenus = Array.isArray(menus) && menus.length === 0;
   const selectedMenu =
-    coupon.discountTarget === 'MENU'
-      ? menus?.find((menu) => menu.id === coupon.menuId)
+    coupon.discountTarget === 'MENU' && Array.isArray(menus)
+      ? menus.find((menu) => menu.id === coupon.menuId)
       : undefined;
   const discountedPrice =
     selectedMenu && isValidDiscountValue(coupon)
@@ -433,9 +432,13 @@ export const CouponStep = () => {
   return (
     <div className="flex flex-col gap-8 px-page">
       <FieldGroup legend="할인 대상">
-        <SegmentedControl
+        <SegmentedControl<DiscountTarget>
           ariaLabel="할인 대상"
-          items={discountTargetItems}
+          items={[
+            { value: 'ALL', label: '전체 메뉴' },
+            // 고를 메뉴가 없으면 특정 메뉴 할인을 만들 수 없다
+            { value: 'MENU', label: '특정 메뉴', disabled: hasNoMenus },
+          ]}
           onValueChange={(discountTarget) =>
             // 전체 메뉴면 골라 둔 메뉴는 쓰지 않는다. 퍼센트 할인이었다면 금액 할인으로 바꾸고, 단위가 달라지므로 할인 값을 비운다
             update({
@@ -447,7 +450,20 @@ export const CouponStep = () => {
           }
           value={coupon.discountTarget}
         />
-        {coupon.discountTarget === 'MENU' && (
+        {/* 메뉴를 모두 지워 특정 메뉴 DRAFT에 고를 메뉴가 없으면 완료 검사에서 막히므로 전체 메뉴로 바꾸게 한다 */}
+        {hasNoMenus && (
+          <p
+            className={`-mt-1 text-caption-mobile break-keep ${
+              coupon.discountTarget === 'MENU'
+                ? 'text-status-danger-fg'
+                : 'text-text-secondary'
+            }`}
+          >
+            등록된 대표 메뉴가 없어 특정 메뉴 할인을 쓸 수 없어요.
+            {coupon.discountTarget === 'MENU' && ' 전체 메뉴로 바꿔 주세요.'}
+          </p>
+        )}
+        {coupon.discountTarget === 'MENU' && !hasNoMenus && (
           <MenuOptions
             menus={menus}
             onSelect={(menuId) => update({ menuId })}
