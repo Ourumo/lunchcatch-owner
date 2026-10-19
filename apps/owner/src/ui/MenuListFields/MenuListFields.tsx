@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, Plus, SquarePen, Trash2 } from 'lucide-react';
+import { ImageOff, Lock, Plus, SquarePen, Trash2 } from 'lucide-react';
 
 import { FilePreviewImage } from '@owner/ui/FilePreviewImage/FilePreviewImage';
 import {
@@ -9,15 +9,18 @@ import {
 } from '@owner/ui/MenuFormSheet/MenuFormSheet';
 import { formatPriceDigits } from '@owner/ui/menuPrice';
 
-// 목록의 메뉴 한 개. 가게 관리는 고칠 때 메뉴 ID를 유지해야 해서 id를 함께 둔다
-export interface MenuListItem<
-  TImage extends File | string,
-> extends MenuFormValues<TImage> {
+// 목록의 메뉴 한 개. 가게 관리는 고칠 때 메뉴 ID를 유지해야 해서 id를 함께 둔다.
+// 가게 관리에서 불러온 메뉴는 사진이 없을 수 있어, 쓰는 쪽이 TImage에 null을 넣는다
+export interface MenuListItem<TImage extends File | string | null> extends Omit<
+  MenuFormValues<NonNullable<TImage>>,
+  'image'
+> {
+  image: TImage;
   // 이미 등록한 메뉴의 ID. 새로 추가한 메뉴와 입점 등록 메뉴에는 없다
   id?: string | null;
 }
 
-export interface MenuListFieldsProps<TImage extends File | string> {
+export interface MenuListFieldsProps<TImage extends File | string | null> {
   menus: MenuListItem<TImage>[];
   // 고친 메뉴는 id를 그대로 두고, 새로 추가한 메뉴는 id 없이 넘긴다
   onChange: (menus: MenuListItem<TImage | File>[]) => void;
@@ -35,9 +38,20 @@ type SheetState = { mode: 'add' } | { mode: 'edit'; index: number } | null;
 const iconButtonClassName =
   'flex size-10 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface-subtle hover:text-text-primary focus-visible:outline-2 focus-visible:outline-action-primary';
 
-// 이미 올라간 사진은 주소로, 새로 고른 사진은 파일로 보여준다
-const MenuImage = ({ image }: { image: File | string }) => {
+// 이미 올라간 사진은 주소로, 새로 고른 사진은 파일로 보여준다. 사진이 없으면 빈 자리를 보여준다
+const MenuImage = ({ image }: { image: File | string | null }) => {
   const className = 'size-18 shrink-0 rounded-lg object-cover';
+
+  if (!image) {
+    return (
+      <span
+        aria-hidden="true"
+        className="flex size-18 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-text-disabled"
+      >
+        <ImageOff className="size-6" />
+      </span>
+    );
+  }
 
   return typeof image === 'string' ? (
     <img alt="" className={className} src={image} />
@@ -48,7 +62,7 @@ const MenuImage = ({ image }: { image: File | string }) => {
 
 // 대표 메뉴 목록과 추가·수정·삭제. 입점 등록과 가게 관리가 함께 쓴다.
 // 개수 제한과 입력 규칙은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
-export const MenuListFields = <TImage extends File | string>({
+export const MenuListFields = <TImage extends File | string | null>({
   canEdit,
   getLockNotice,
   maxMenus,
@@ -58,7 +72,7 @@ export const MenuListFields = <TImage extends File | string>({
 }: MenuListFieldsProps<TImage>) => {
   const [sheet, setSheet] = useState<SheetState>(null);
 
-  const handleSave = (menu: MenuFormValues<TImage | File>) => {
+  const handleSave = (menu: MenuFormValues<NonNullable<TImage> | File>) => {
     if (sheet?.mode === 'edit') {
       onChange(
         menus.map((current, index) =>
@@ -149,7 +163,7 @@ export const MenuListFields = <TImage extends File | string>({
       )}
 
       {sheet && (
-        <MenuFormSheet<TImage>
+        <MenuFormSheet<NonNullable<TImage>>
           initialMenu={sheet.mode === 'edit' ? menus[sheet.index] : undefined}
           onClose={() => setSheet(null)}
           onSave={handleSave}

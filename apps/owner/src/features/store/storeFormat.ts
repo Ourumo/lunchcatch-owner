@@ -49,9 +49,15 @@ export const formatBusinessHours = ({
     ? `${formatOpenDays(openDays)} ${openTime}~${closeTime}`
     : NOT_REGISTERED;
 
-// 대표 이미지 1장과 매장 이미지를 합친 수
-export const formatStoreImageCount = ({ interiorImageUrls }: MyStore) =>
-  `${1 + interiorImageUrls.length}장`;
+// 대표 이미지와 매장 이미지 중 올린 사진의 수
+export const formatStoreImageCount = ({
+  interiorImageUrls,
+  logoImageUrl,
+}: MyStore) => {
+  const count = (logoImageUrl ? 1 : 0) + interiorImageUrls.length;
+
+  return count > 0 ? `${count}장` : NOT_REGISTERED;
+};
 
 // 대표 메뉴는 선택이라 없을 수 있다
 export const formatMenuCount = ({ menus }: MyStore) =>

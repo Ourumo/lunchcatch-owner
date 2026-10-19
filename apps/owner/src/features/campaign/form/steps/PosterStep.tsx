@@ -98,10 +98,13 @@ interface ImageOptionsProps {
 // 입점 때 등록한 대표 메뉴 이미지와 가게 대표 이미지 중에서 고른다. 고르지 않으면 이미지 없이 만든다
 const ImageOptions = ({ onSelect, selectedUrl, store }: ImageOptionsProps) => {
   const name = useId();
+  // 사진이 없는 메뉴와 아직 올리지 않은 대표 이미지는 고를 수 없어 뺀다
   const options = [
     ...store.menus.map((menu) => ({ label: menu.name, url: menu.imageUrl })),
     { label: '가게 대표 이미지', url: store.logoImageUrl },
-  ];
+  ].filter(
+    (option): option is { label: string; url: string } => option.url !== null,
+  );
   const optionClassName =
     'relative block size-16 overflow-hidden rounded-lg border-2 border-border-subtle transition-colors peer-checked:border-action-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary';
 

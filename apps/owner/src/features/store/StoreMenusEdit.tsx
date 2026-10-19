@@ -15,7 +15,7 @@ import { StoreEditLayout } from './StoreEditLayout';
 import { useStoreEdit } from './useStoreEdit';
 
 // 수정 화면의 메뉴. 입점 등록과 같은 입력 화면을 쓰므로 가격은 쉼표 없는 숫자 문자열로 다루고 저장할 때 숫자로 바꾼다
-type StoreMenuItem = MenuListItem<StoreImage>;
+type StoreMenuItem = MenuListItem<StoreImage | null>;
 
 const IN_USE_NOTICE =
   '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요';
@@ -92,7 +92,7 @@ export const StoreMenusEdit = () => {
     <StoreEditLayout edit={edit} title="대표 메뉴">
       {edit.values && (
         <div className="px-page pt-6 pb-8">
-          <MenuListFields<StoreImage>
+          <MenuListFields<StoreImage | null>
             // 쓰이는 메뉴 ID를 불러오기 전이거나 불러오지 못하면 잘못 고치거나 지우지 않도록 수정과 삭제 버튼을 모두 숨긴다
             canEdit={(menu) => menuIdsInUse !== null && !isInUse(menu)}
             // 고치면 할인 중인 캠페인의 메뉴가 바뀌고, 지우면 그 캠페인이 없는 메뉴를 가리키게 되어 둘 다 막는다

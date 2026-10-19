@@ -1,4 +1,5 @@
 import type { CampaignStatus } from './campaign';
+import { request } from './client';
 import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockStore } from './mocks/store';
@@ -8,26 +9,28 @@ import {
   isHoursStepComplete,
   MAX_INTERIOR_IMAGES,
   MAX_MENUS,
+  type Weekday,
   weekdays,
 } from './signupFlow';
 import type { ApiResult } from './types';
 
 // 로그인한 점주의 가게 정보. 점주 계정 1개에 가게 1개만 등록된다
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 조회는 서버 API를 쓰고, 수정은 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export interface StoreMenu {
   id: string;
   name: string;
   price: number;
-  imageUrl: string;
+  // 메뉴는 사진 없이 먼저 등록되므로 사진이 없을 수 있다
+  imageUrl: string | null;
 }
 
 export interface MyStore {
   id: string;
   name: string;
   roadAddress: string;
-  // 가게 대표 이미지(로고)
-  logoImageUrl: string;
+  // 가게 대표 이미지(로고). 올리기 전이면 null
+  logoImageUrl: string | null;
   // 매장 이미지. 0~3장 (입점 등록 MAX_INTERIOR_IMAGES)
   interiorImageUrls: string[];
   // 영업일마다 같은 시간을 쓴다. 입점 등록의 영업시간 입력값과 같은 형태
@@ -40,8 +43,8 @@ export interface MyStore {
 export type StoreImage = File | string;
 
 export interface StoreImagesValues {
-  // 가게 대표 이미지(로고). 필수
-  logoImage: StoreImage;
+  // 가게 대표 이미지(로고). 필수지만 서버에 아직 없으면 null로 시작한다
+  logoImage: StoreImage | null;
   // 매장 이미지. 선택, 최대 MAX_INTERIOR_IMAGES장
   interiorImages: StoreImage[];
 }
@@ -51,7 +54,8 @@ export interface StoreMenuValues {
   id: string | null;
   name: string;
   price: number;
-  image: StoreImage;
+  // 서버에서 불러온 메뉴는 사진이 없을 수 있다. 저장할 때 사진이 없으면 거절한다
+  image: StoreImage | null;
 }
 
 const INVALID_BUSINESS_HOURS_MESSAGE = '영업 요일과 시간을 다시 확인해 주세요.';
@@ -80,10 +84,105 @@ const createMockMenuId = () => {
   return id;
 };
 
-export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
-  await mockDelay();
+interface StoreImageResponse {
+  objectKey: string;
+  url: string;
+  sortOrder: number;
+}
 
-  return { ok: true, data: structuredClone(mockStore) };
+interface StoreResponse {
+  // 가게를 아직 만들지 않았으면 null
+  storeId: number | null;
+  name: string | null;
+  roadAddress: string | null;
+  businessHours: {
+    dayOfWeek: string;
+    // 시각은 HH:mm:ss로 올 수 있다
+    openTime: string | null;
+    closeTime: string | null;
+    isClosed: boolean | null;
+  }[];
+  logoImage: StoreImageResponse | null;
+  interiorImages: StoreImageResponse[];
+  menus: {
+    menuId: number;
+    name: string;
+    price: number;
+    sortOrder: number;
+    image: StoreImageResponse | null;
+  }[];
+}
+
+const serverWeekdays: Record<string, Weekday> = {
+  MONDAY: 'MON',
+  TUESDAY: 'TUE',
+  WEDNESDAY: 'WED',
+  THURSDAY: 'THU',
+  FRIDAY: 'FRI',
+  SATURDAY: 'SAT',
+  SUNDAY: 'SUN',
+};
+
+const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
+  a.sortOrder - b.sortOrder;
+
+const toTime = (time: string | null) => time?.slice(0, 5) ?? '';
+
+// 서버는 요일마다 시간을 따로 두지만, 화면은 영업일마다 같은 시간을 쓴다(입점 등록 영업시간 입력값).
+// 휴무가 아니고 시간이 있는 요일을 영업 요일로 보고, 시간은 첫 영업 요일 값을 쓴다
+const toBusinessHours = (
+  hours: StoreResponse['businessHours'],
+): HoursStepValues => {
+  const openHours = weekdays.flatMap(({ value }) => {
+    const day = hours.find(
+      (hour) =>
+        serverWeekdays[hour.dayOfWeek] === value &&
+        !hour.isClosed &&
+        hour.openTime &&
+        hour.closeTime,
+    );
+
+    return day ? [{ ...day, weekday: value }] : [];
+  });
+
+  return {
+    openDays: openHours.map(({ weekday }) => weekday),
+    openTime: toTime(openHours[0]?.openTime ?? null),
+    closeTime: toTime(openHours[0]?.closeTime ?? null),
+  };
+};
+
+export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
+  try {
+    const data = await request<StoreResponse>('/v1/owner/store');
+
+    // 이 함수를 쓰는 화면은 ACTIVE 점주용이라, 가게가 아직 없으면 조회하지 못한 것으로 본다
+    if (data.storeId === null) {
+      return { ok: false };
+    }
+
+    return {
+      ok: true,
+      data: {
+        id: String(data.storeId),
+        name: data.name ?? '',
+        roadAddress: data.roadAddress ?? '',
+        logoImageUrl: data.logoImage?.url ?? null,
+        interiorImageUrls: [...data.interiorImages]
+          .sort(bySortOrder)
+          .map(({ url }) => url),
+        businessHours: toBusinessHours(data.businessHours),
+        menus: [...data.menus].sort(bySortOrder).map((menu) => ({
+          id: String(menu.menuId),
+          name: menu.name,
+          price: menu.price,
+          imageUrl: menu.image?.url ?? null,
+        })),
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
 };
 
 // 영업시간 수정 (docs/requirements-owner.md "영업시간 등록/수정").
@@ -227,7 +326,8 @@ export const updateStoreMenus = async (
     id: id ?? createMockMenuId(),
     name: name.trim(),
     price,
-    imageUrl: uploadMockImage(image),
+    // 사진이 없는 메뉴는 위 검사(hasInvalidMenu)에서 거절되지만, 타입으로는 남아 있어 그대로 넘긴다
+    imageUrl: image && uploadMockImage(image),
   }));
 
   return { ok: true, data: structuredClone(mockStore.menus) };
