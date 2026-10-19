@@ -219,8 +219,8 @@ export const isValidDiscountValue = ({
 export const isValidIssueLimit = (issueLimit: number | null) =>
   issueLimit !== null && Number.isInteger(issueLimit) && issueLimit >= 1;
 
-// 쿠폰 조건 필수 항목별 입력 완료 여부 (할인 방식, 할인 값, 발급 수량, 사용 가능 시간).
-// 할인 대상과 할인 유형의 조합은 점주가 할인 방식 하나로 고르므로 할인 방식 항목에 합친다
+// 쿠폰 조건 필수 항목별 입력 완료 여부 (할인 대상, 할인 값, 발급 수량, 사용 가능 시간).
+// 할인 대상과 할인 유형의 조합 검사는 할인 대상 항목에 합친다
 export const getCouponRequiredChecks = (coupon: CouponStepValues) => [
   isAllowedDiscount(coupon) &&
     (coupon.discountTarget === 'ALL' || coupon.menuId !== null),
@@ -295,7 +295,7 @@ const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 
 const UPCOMING_LIMIT_MESSAGE =
   '다음 캠페인은 1개만 준비할 수 있습니다. 작성 중이거나 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
 
-// 새 캠페인의 기본값. 할인 방식은 전체 메뉴 금액 할인, 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
+// 새 캠페인의 기본값. 할인은 전체 메뉴 금액 할인, 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
   coupon: {
     discountTarget: 'ALL',
