@@ -306,6 +306,15 @@ export function DateRangePicker({
                   dateValue === selectedRange.endDate;
                 const isRangeStart = dateValue === selectedRange.startDate;
                 const isRangeEnd = dateValue === selectedRange.endDate;
+                // 같은 날이 시작·종료면 양쪽 연결 배경을 동시에 붙이지 않는다.
+                const rangeEdgeClassName =
+                  isRangeStart && isRangeEnd
+                    ? ''
+                    : isRangeStart && selectedRange.endDate
+                      ? 'after:absolute after:inset-y-0 after:left-1/2 after:right-0 after:bg-surface-brand'
+                      : isRangeEnd
+                        ? 'after:absolute after:inset-y-0 after:left-0 after:right-1/2 after:bg-surface-brand'
+                        : '';
                 const isInRange =
                   Boolean(selectedRange.startDate && selectedRange.endDate) &&
                   dateValue > selectedRange.startDate &&
@@ -317,12 +326,7 @@ export function DateRangePicker({
                     className={[
                       'relative flex h-8 items-center justify-center',
                       isInRange ? 'bg-surface-brand' : '',
-                      isRangeStart && selectedRange.endDate
-                        ? 'after:absolute after:inset-y-0 after:left-1/2 after:right-0 after:bg-surface-brand'
-                        : '',
-                      isRangeEnd
-                        ? 'after:absolute after:inset-y-0 after:left-0 after:right-1/2 after:bg-surface-brand'
-                        : '',
+                      rangeEdgeClassName,
                     ].join(' ')}
                     key={dateValue}
                   >
