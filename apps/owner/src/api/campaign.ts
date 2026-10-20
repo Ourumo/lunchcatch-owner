@@ -312,6 +312,27 @@ export const createInitialCampaignValues = (): CampaignValues => ({
 const findCampaign = (id: string) =>
   mockCampaigns.find((campaign) => campaign.id === id);
 
+// 서버 캠페인 ID는 숫자다. 등록 시작이 아직 mock이라 mock이 만든 DRAFT(campaign-…)와 섞여 있다
+const isServerCampaignId = (id: string) => /^\d+$/.test(id);
+
+type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
+
+// 포스터 생성과 활성화 요청은 API가 없어, 서버 캠페인의 포스터와 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
+// 새로고침하면 사라진다. 포스터·활성화 API를 연동하면 지운다
+const mockServerCampaignExtras = new Map<string, ServerCampaignExtras>();
+
+const updateServerCampaignExtras = (
+  id: string,
+  patch: Partial<ServerCampaignExtras>,
+) => {
+  mockServerCampaignExtras.set(id, {
+    poster: null,
+    reviewFailReasons: [],
+    ...mockServerCampaignExtras.get(id),
+    ...patch,
+  });
+};
+
 // 점주 본인 가게의 캠페인만 내려온다. 등록 시각 최신순
 interface CampaignListItemResponse {
   campaignId: number;
@@ -334,12 +355,14 @@ interface CampaignListResponse {
 // 서버 목록 한 번에 받는 최대 개수
 const CAMPAIGN_LIST_PAGE_SIZE = 100;
 
-const fetchCampaignDetail = async (id: string) =>
-  toCampaign(
+const fetchCampaignDetail = async (id: string): Promise<Campaign> => ({
+  ...toCampaign(
     await request<CampaignDetailResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}`,
     ),
-  );
+  ),
+  ...structuredClone(mockServerCampaignExtras.get(id)),
+});
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
 // 이 값을 보여주는 진행 중·다음 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
@@ -444,22 +467,6 @@ export const getEndedCampaignPage = async ({
   }
 };
 
-// 등록 흐름(등록 화면, 활성화 완료 화면)이 쓰는 조회. 등록 시작과 저장이 아직 mock이라
-// mock이 만든 캠페인을 찾을 수 있도록 mock으로 조회한다. 등록 API 연동(#181)에서 getCampaign으로 합친다
-export const getRegistrationCampaign = async (
-  id: string,
-): Promise<ApiResult<Campaign>> => {
-  await mockDelay();
-
-  const campaign = findCampaign(id);
-
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
-  return { ok: true, data: structuredClone(campaign) };
-};
-
 interface CampaignDetailResponse {
   campaignId: number;
   status: CampaignStatus;
@@ -498,7 +505,8 @@ const toAgeGroups = (ageGroups: string[]): AgeGroup[] => {
   return groups.length === Object.keys(serverAgeGroups).length ? [] : groups;
 };
 
-// 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다
+// 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다.
+// 포스터와 자동 검수 실패 사유는 mock으로 등록한 값이 있으면 fetchCampaignDetail에서 채운다
 const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   id: String(data.campaignId),
   status: data.status,
@@ -528,14 +536,28 @@ const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   },
 });
 
+// 없는 캠페인과 다른 점주의 캠페인을 서버가 같은 코드로 거절한다
+const toCampaignFailure = (error: unknown) =>
+  error instanceof ApiError && error.code === 'CAMPAIGN-005'
+    ? { ok: false as const, message: NOT_FOUND_MESSAGE }
+    : { ok: false as const };
+
 export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
+  // 등록 시작이 아직 mock이라, mock이 만든 DRAFT는 mock에서 찾는다
+  if (!isServerCampaignId(id)) {
+    await mockDelay();
+
+    const campaign = findCampaign(id);
+
+    return campaign
+      ? { ok: true, data: structuredClone(campaign) }
+      : { ok: false, message: NOT_FOUND_MESSAGE };
+  }
+
   try {
     return { ok: true, data: await fetchCampaignDetail(id) };
   } catch (error) {
-    // 없는 캠페인과 다른 점주의 캠페인을 서버가 같은 코드로 거절한다
-    return error instanceof ApiError && error.code === 'CAMPAIGN-005'
-      ? { ok: false, message: NOT_FOUND_MESSAGE }
-      : { ok: false };
+    return toCampaignFailure(error);
   }
 };
 
@@ -575,8 +597,31 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
   id: string,
   stepKey: TStepKey,
   values: CampaignValues[TStepKey],
-): Promise<ApiResult<Campaign>> => {
+): Promise<ApiResult<null>> => {
   await mockDelay();
+
+  // 서버 캠페인은 포스터만 mock으로 저장한다. 등록 화면이 DRAFT인지 확인한 뒤에 부른다
+  if (isServerCampaignId(id)) {
+    if (stepKey !== 'poster') {
+      return { ok: false };
+    }
+
+    const poster = values as CampaignPoster | null;
+
+    if (!isPosterComplete(poster)) {
+      return { ok: false, message: INVALID_POSTER_MESSAGE };
+    }
+
+    updateServerCampaignExtras(id, {
+      poster: {
+        ...structuredClone(poster as CampaignPoster),
+        posterId:
+          mockServerCampaignExtras.get(id)?.poster?.posterId ?? `poster-${id}`,
+      },
+    });
+
+    return { ok: true, data: null };
+  }
 
   const campaign = findCampaign(id);
 
@@ -622,12 +667,12 @@ export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
       posterId: campaign.poster?.posterId ?? `poster-${campaign.id}`,
     };
 
-    return { ok: true, data: structuredClone(campaign) };
+    return { ok: true, data: null };
   }
 
   Object.assign(campaign, { [stepKey]: structuredClone(values) });
 
-  return { ok: true, data: structuredClone(campaign) };
+  return { ok: true, data: null };
 };
 
 // 활성화 요청 결과. 자동 검수를 통과하면 SCHEDULED가 되고, 통과하지 못하면 DRAFT로 남고 사유를 돌려준다
@@ -642,13 +687,25 @@ const NOT_READY_MESSAGE =
   '아직 채우지 않은 단계가 있어 활성화를 요청할 수 없습니다.';
 
 // 활성화 요청 시 (1) 포스터와 필수 입력값을 확인하고 (2) 포스터를 자동 검수한다.
-// 잔액은 검사하지 않는다. 잔액이 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다
+// 잔액은 검사하지 않는다. 잔액이 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다.
+// 활성화 API가 없어 서버 캠페인은 검수 결과만 돌려주고 상태는 DRAFT로 남는다
 export const requestCampaignActivation = async (
   id: string,
 ): Promise<ApiResult<ActivationResult>> => {
   await mockDelay();
 
-  const campaign = findCampaign(id);
+  const isServerCampaign = isServerCampaignId(id);
+  let campaign: Campaign | undefined;
+
+  if (isServerCampaign) {
+    try {
+      campaign = await fetchCampaignDetail(id);
+    } catch (error) {
+      return toCampaignFailure(error);
+    }
+  } else {
+    campaign = findCampaign(id);
+  }
 
   if (!campaign) {
     return { ok: false, message: NOT_FOUND_MESSAGE };
@@ -675,13 +732,19 @@ export const requestCampaignActivation = async (
     posterText.includes(word),
   ).map((word) => `포스터 문구에 금지 표현 "${word}"가 들어 있어요.`);
 
-  campaign.reviewFailReasons = reasons;
+  if (isServerCampaign) {
+    updateServerCampaignExtras(id, { reviewFailReasons: reasons });
+  } else {
+    campaign.reviewFailReasons = reasons;
+  }
 
   if (reasons.length > 0) {
     return { ok: true, data: { result: 'FAIL', reasons } };
   }
 
-  campaign.status = 'SCHEDULED';
+  if (!isServerCampaign) {
+    campaign.status = 'SCHEDULED';
+  }
 
   return {
     ok: true,

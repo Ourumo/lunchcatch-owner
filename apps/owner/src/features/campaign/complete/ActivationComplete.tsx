@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { CalendarCheck } from 'lucide-react';
 
-import { type Campaign, getRegistrationCampaign } from '@owner/api/campaign';
+import { type Campaign, getCampaign } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 import type { GoBackState } from '@owner/hooks/useGoBack';
 import {
@@ -24,7 +24,7 @@ export const ActivationComplete = ({ campaignId }: ActivationCompleteProps) => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getRegistrationCampaign(campaignId), getMyStore()]).then(
+    Promise.all([getCampaign(campaignId), getMyStore()]).then(
       ([campaignResult, storeResult]) => {
         if (ignore) {
           return;
