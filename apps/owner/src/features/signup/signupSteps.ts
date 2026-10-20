@@ -5,6 +5,7 @@ import {
   isStoreStepComplete,
   isValidTimeRange,
   ownerTerms,
+  saveHoursStep,
   saveLocationStep,
   saveStoreStep,
   saveTermsStep,
@@ -96,6 +97,7 @@ export const signupSteps: SignupStep[] = [
     title: '영업시간 설정',
     canProceed: ({ hours }) => isHoursStepComplete(hours),
     progressHint: getHoursProgressHint,
+    save: ({ hours }, version) => saveHoursStep(hours, version),
   },
   {
     id: 'images',
