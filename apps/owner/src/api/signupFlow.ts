@@ -1,9 +1,10 @@
+import { request } from './client';
 import { mockDelay } from './mocks/delay';
 import { mockStorePlaces } from './mocks/places';
 import { mockOwnerTerms } from './mocks/terms';
 import type { ApiResult } from './types';
 
-// 입점 신청부터 가게 최종 등록까지 회원가입 플로우의 단계별 입력값 (docs/requirements-owner.md)
+// 입점 신청부터 가게 최종 등록까지 회원가입 플로우의 단계별 입력값과 단계 저장 (docs/requirements-owner.md)
 
 export type TermsId = 'service' | 'paidService' | 'privacy' | 'location';
 
@@ -35,6 +36,26 @@ export const ownerTerms: TermsItem[] = mockOwnerTerms;
 
 export const hasAgreedRequiredTerms = (terms: TermsStepValues) =>
   ownerTerms.every((item) => !item.required || terms[item.id]);
+
+// 단계 저장 응답에 공통으로 오는 입점 진행 버전. 다음 단계를 저장할 때 그대로 보낸다
+interface OnboardingSaveResponse {
+  version: number;
+}
+
+// 약관 동의 저장. 약관은 모두 필수라 화면에서 모두 동의해야 부를 수 있고,
+// 서버가 동의 시점과 약관 버전을 남기므로 본문은 비워 보낸다. 성공하면 입점 진행 버전을 돌려준다
+export const saveTermsStep = async (): Promise<ApiResult<number>> => {
+  try {
+    const data = await request<OnboardingSaveResponse>(
+      '/v1/owner/terms-agreements',
+      { method: 'PUT', body: {} },
+    );
+
+    return { ok: true, data: data.version };
+  } catch {
+    return { ok: false };
+  }
+};
 
 // 카카오맵 장소 검색에서 선택한 가게 위치 정보
 export interface StorePlace {

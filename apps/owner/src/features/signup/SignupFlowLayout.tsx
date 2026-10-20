@@ -20,7 +20,7 @@ import { useSignupFlow } from './useSignupFlow';
 export const SignupFlowLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { values } = useSignupFlow();
+  const { setVersion, values, version } = useSignupFlow();
   const { clearOwner } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<{ title: string; description: string }>();
@@ -68,13 +68,31 @@ export const SignupFlowLayout = () => {
       return;
     }
 
+    setIsSubmitting(true);
+    setError(undefined);
+
+    if (currentStep.save) {
+      const saveResult = await currentStep.save(values, version);
+
+      // 입력값은 그대로 두어 고치거나 다시 누를 수 있게 한다
+      if (!saveResult.ok) {
+        setIsSubmitting(false);
+        setError({
+          title: '저장에 실패했습니다',
+          description: saveResult.message ?? '잠시 후 다시 시도해 주세요.',
+        });
+        return;
+      }
+
+      setVersion(saveResult.data);
+    }
+
     if (nextStep) {
+      setIsSubmitting(false);
       navigate(getSignupStepPath(nextStep));
       return;
     }
 
-    setIsSubmitting(true);
-    setError(undefined);
     const result = await submitSignupFlow(values);
     setIsSubmitting(false);
 

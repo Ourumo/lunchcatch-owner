@@ -25,6 +25,8 @@ const createInitialValues = (): SignupFlowValues => ({
 // 회원가입 플로우의 모든 단계 입력값을 한곳에 모아, 단계를 오가도 값이 유지되게 한다
 export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
   const [values, setValues] = useState(createInitialValues);
+  // 서버는 진행 상태가 없으면 0을 버전으로 준다
+  const [version, setVersion] = useState(0);
 
   const updateStepValues: SignupFlowContextValue['updateStepValues'] = (
     stepId,
@@ -37,7 +39,9 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SignupFlowContext value={{ updateStepValues, values }}>
+    <SignupFlowContext
+      value={{ setVersion, updateStepValues, values, version }}
+    >
       {children}
     </SignupFlowContext>
   );
