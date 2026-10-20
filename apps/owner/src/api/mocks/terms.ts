@@ -1,6 +1,6 @@
 import type { TermsItem } from '@owner/api/signupFlow';
 
-// 점주 입점 신청에 필요한 약관 목록. 필수 약관을 먼저, 선택 약관을 뒤에 둔다
+// 점주 입점 신청에 필요한 약관 목록. 선택 약관 없이 모두 필수다
 // 내용은 docs/requirements-owner.md를 바탕으로 정리한 초안이며, 실제 약관 문구는 법무 검토 후 확정한다
 export const mockOwnerTerms: TermsItem[] = [
   {
@@ -140,7 +140,7 @@ export const mockOwnerTerms: TermsItem[] = [
   {
     id: 'location',
     title: '위치기반서비스 이용약관',
-    required: false,
+    required: true,
     version: '1.0',
     sections: [
       {
@@ -164,39 +164,9 @@ export const mockOwnerTerms: TermsItem[] = [
         ],
       },
       {
-        heading: '동의 거부와 철회',
+        heading: '동의 거부',
         items: [
-          '동의하지 않아도 가입과 서비스 이용이 가능하며, 이 경우 위치 확인 없이 사용 처리합니다.',
-          '동의는 언제든지 설정에서 철회할 수 있습니다.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'marketing',
-    title: '광고성 정보 수신',
-    required: false,
-    version: '1.0',
-    sections: [
-      {
-        heading: '받는 정보',
-        items: [
-          '포인트 충전 이벤트, 프로모션, 새로운 기능 안내 등 광고성 정보',
-          '캠페인 상태, 예산 소진, 입점 진행 같은 서비스 운영 알림은 동의와 관계없이 보내 드립니다.',
-        ],
-      },
-      {
-        heading: '받는 방법',
-        items: [
-          '이메일, 문자 메시지, 앱 푸시 알림',
-          '오후 9시부터 오전 8시 사이에는 광고성 정보를 보내지 않습니다.',
-        ],
-      },
-      {
-        heading: '동의 거부와 철회',
-        items: [
-          '동의하지 않아도 서비스 이용에 제한이 없습니다.',
-          '설정에서 언제든지 수신을 거부할 수 있으며, 동의한 경우 2년마다 수신 동의 여부를 다시 확인합니다.',
+          '동의를 거부할 수 있으나, 위치 확인은 쿠폰 사용 처리에 꼭 필요하므로 거부하면 가입할 수 없습니다.',
         ],
       },
     ],

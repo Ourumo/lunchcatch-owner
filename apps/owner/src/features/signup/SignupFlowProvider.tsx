@@ -13,7 +13,6 @@ const createInitialValues = (): SignupFlowValues => ({
     paidService: false,
     privacy: false,
     location: false,
-    marketing: false,
   },
   store: { name: '', category: null, ownerName: '', phone: '' },
   location: { place: null },

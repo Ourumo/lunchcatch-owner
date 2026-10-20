@@ -5,8 +5,7 @@ import type { ApiResult } from './types';
 
 // 입점 신청부터 가게 최종 등록까지 회원가입 플로우의 단계별 입력값 (docs/requirements-owner.md)
 
-export type TermsId =
-  'service' | 'paidService' | 'privacy' | 'location' | 'marketing';
+export type TermsId = 'service' | 'paidService' | 'privacy' | 'location';
 
 export interface TermsSection {
   heading: string;
@@ -29,7 +28,6 @@ export interface TermsStepValues {
   paidService: boolean;
   privacy: boolean;
   location: boolean;
-  marketing: boolean;
 }
 
 // API 연동 전까지 mock 약관 목록을 쓴다. 연동하면 서버에서 버전과 함께 받아온다
