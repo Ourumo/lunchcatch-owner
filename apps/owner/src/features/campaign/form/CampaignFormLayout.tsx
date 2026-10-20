@@ -8,8 +8,8 @@ import {
   type CampaignValues,
   requestCampaignActivation,
   saveBudgetStep,
-  saveCampaignStep,
   saveCouponStep,
+  savePosterStep,
   saveTargetStep,
 } from '@owner/api/campaign';
 import type { ApiResult } from '@owner/api/types';
@@ -121,7 +121,8 @@ export const CampaignFormLayout = () => {
       );
     }
 
-    const result = await saveCampaignStep(campaignId, stepKey, values[stepKey]);
+    // 남은 단계는 2단계 포스터다
+    const result = await savePosterStep(campaignId, values.poster);
 
     return result.ok ? { ok: true, data: campaignId } : result;
   };

@@ -318,9 +318,6 @@ export const createInitialCampaignValues = (): CampaignValues => ({
 const findCampaign = (id: string) =>
   mockCampaigns.find((campaign) => campaign.id === id);
 
-// 서버 캠페인 ID는 숫자다. 다른 화면이 아직 쓰는 mock 캠페인(campaign-…)과 구분한다
-const isServerCampaignId = (id: string) => /^\d+$/.test(id);
-
 type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
 
 // 포스터 생성과 활성화 요청은 API가 없어, 서버 캠페인의 포스터와 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
@@ -726,85 +723,27 @@ export const saveBudgetStep = async (
   }
 };
 
-// 등록 단계 하나의 입력값을 DRAFT에 저장한다. 포스터는 연동할 때 포스터 생성/수정 API로 바꾼다
-export const saveCampaignStep = async <TStepKey extends CampaignStepKey>(
+// 등록 2단계 포스터 저장. 포스터 생성 API를 연동하기 전까지 캠페인 ID별로 메모리에 둔다.
+// 등록 화면이 DRAFT인지 확인한 뒤에 부른다
+export const savePosterStep = async (
   id: string,
-  stepKey: TStepKey,
-  values: CampaignValues[TStepKey],
+  poster: CampaignPoster | null,
 ): Promise<ApiResult<null>> => {
   await mockDelay();
 
-  // 서버 캠페인은 포스터만 mock으로 저장한다. 등록 화면이 DRAFT인지 확인한 뒤에 부른다
-  if (isServerCampaignId(id)) {
-    if (stepKey !== 'poster') {
-      return { ok: false };
-    }
-
-    const poster = values as CampaignPoster | null;
-
-    if (!isPosterComplete(poster)) {
-      return { ok: false, message: INVALID_POSTER_MESSAGE };
-    }
-
-    updateServerCampaignExtras(id, {
-      poster: {
-        ...structuredClone(poster as CampaignPoster),
-        posterId:
-          mockServerCampaignExtras.get(id)?.poster?.posterId ?? `poster-${id}`,
-      },
-    });
-
-    return { ok: true, data: null };
+  // 템플릿과 할인 내용, 기간, 가게명이 없으면 포스터를 만들지 않는다
+  if (!isPosterComplete(poster)) {
+    return { ok: false, message: INVALID_POSTER_MESSAGE };
   }
 
-  const campaign = findCampaign(id);
-
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
-  if (campaign.status !== 'DRAFT') {
-    return { ok: false, message: NOT_EDITABLE_MESSAGE };
-  }
-
-  // 서버도 전체 메뉴 퍼센트 할인, 할인율 100% 초과, 발급 수량 0 이하, 허용 범위 밖이거나 1시간 미만인 사용 시간은 저장하지 않는다
-  if (
-    stepKey === 'coupon' &&
-    !isCouponStepComplete(values as CouponStepValues)
-  ) {
-    return { ok: false, message: INVALID_COUPON_MESSAGE };
-  }
-
-  if (stepKey === 'target' && !isValidTarget(values as TargetStepValues)) {
-    return { ok: false, message: INVALID_TARGET_MESSAGE };
-  }
-
-  // 서버도 최소 하루 예산 미만, 내일 이전 시작일, 시작일보다 이른 종료일은 저장하지 않는다
-  if (
-    stepKey === 'budget' &&
-    !isBudgetStepComplete(values as BudgetStepValues, mockPlatformSettings)
-  ) {
-    return { ok: false, message: INVALID_BUDGET_MESSAGE };
-  }
-
-  if (stepKey === 'poster') {
-    const poster = values as CampaignPoster | null;
-
-    // 템플릿과 할인 내용, 기간, 가게명이 없으면 포스터를 만들지 않는다
-    if (!isPosterComplete(poster)) {
-      return { ok: false, message: INVALID_POSTER_MESSAGE };
-    }
-
-    // 캠페인당 포스터는 1건이라, 이미 있으면 같은 포스터를 수정한 것으로 본다
-    campaign.poster = {
+  // 캠페인당 포스터는 1건이라, 이미 있으면 같은 포스터를 수정한 것으로 본다
+  updateServerCampaignExtras(id, {
+    poster: {
       ...structuredClone(poster as CampaignPoster),
-      posterId: campaign.poster?.posterId ?? `poster-${campaign.id}`,
-    };
-
-    return { ok: true, data: null };
-  }
-
-  Object.assign(campaign, { [stepKey]: structuredClone(values) });
+      posterId:
+        mockServerCampaignExtras.get(id)?.poster?.posterId ?? `poster-${id}`,
+    },
+  });
 
   return { ok: true, data: null };
 };
@@ -828,21 +767,12 @@ export const requestCampaignActivation = async (
 ): Promise<ApiResult<ActivationResult>> => {
   await mockDelay();
 
-  const isServerCampaign = isServerCampaignId(id);
-  let campaign: Campaign | undefined;
+  let campaign: Campaign;
 
-  if (isServerCampaign) {
-    try {
-      campaign = await fetchCampaignDetail(id);
-    } catch (error) {
-      return toCampaignFailure(error);
-    }
-  } else {
-    campaign = findCampaign(id);
-  }
-
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
+  try {
+    campaign = await fetchCampaignDetail(id);
+  } catch (error) {
+    return toCampaignFailure(error);
   }
 
   if (campaign.status !== 'DRAFT') {
@@ -866,18 +796,10 @@ export const requestCampaignActivation = async (
     posterText.includes(word),
   ).map((word) => `포스터 문구에 금지 표현 "${word}"가 들어 있어요.`);
 
-  if (isServerCampaign) {
-    updateServerCampaignExtras(id, { reviewFailReasons: reasons });
-  } else {
-    campaign.reviewFailReasons = reasons;
-  }
+  updateServerCampaignExtras(id, { reviewFailReasons: reasons });
 
   if (reasons.length > 0) {
     return { ok: true, data: { result: 'FAIL', reasons } };
-  }
-
-  if (!isServerCampaign) {
-    campaign.status = 'SCHEDULED';
   }
 
   return {
