@@ -5,6 +5,7 @@ import {
   isStoreStepComplete,
   isValidTimeRange,
   ownerTerms,
+  saveLocationStep,
   saveStoreStep,
   saveTermsStep,
   type SignupFlowValues,
@@ -87,6 +88,7 @@ export const signupSteps: SignupStep[] = [
     canProceed: ({ location }) => location.place !== null,
     progressHint: ({ location }) =>
       location.place ? '가게 위치를 선택했어요' : '가게 위치를 선택해주세요',
+    save: ({ location }, version) => saveLocationStep(location, version),
   },
   {
     id: 'hours',

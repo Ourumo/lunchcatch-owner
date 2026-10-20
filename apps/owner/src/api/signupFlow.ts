@@ -130,6 +130,37 @@ export interface LocationStepValues {
   place: StorePlace | null;
 }
 
+// 매장 위치 저장. 장소를 고르지 않으면 "다음"이 막혀 있어 부르지 않는다.
+// 검색 결과의 상호명, 지번 주소, 전화번호는 화면에 보여주기만 하고 보내지 않는다
+export const saveLocationStep = async (
+  { place }: LocationStepValues,
+  version: number,
+): Promise<ApiResult<number>> => {
+  if (!place) {
+    return { ok: false };
+  }
+
+  try {
+    const data = await request<OnboardingSaveResponse>(
+      '/v1/owner/store/location',
+      {
+        method: 'PUT',
+        body: {
+          version,
+          kakaoPlaceId: place.kakaoPlaceId,
+          roadAddress: place.roadAddress,
+          latitude: place.latitude,
+          longitude: place.longitude,
+        },
+      },
+    );
+
+    return { ok: true, data: data.version };
+  } catch {
+    return { ok: false };
+  }
+};
+
 export interface BusinessStepValues {
   // 하이픈 없는 숫자 10자리
   registrationNumber: string;
