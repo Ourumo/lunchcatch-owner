@@ -1,8 +1,5 @@
 import { ApiError, request } from './client';
-import {
-  MOCK_ENDED_NEXT_PAGE_FAILS_ONCE,
-  mockCampaigns,
-} from './mocks/campaigns';
+import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
@@ -401,48 +398,10 @@ export interface EndedCampaignPage {
 export const ENDED_CAMPAIGN_PAGE_SIZE = 20;
 
 const ENDED_PAGE_FAILED_MESSAGE = '지난 캠페인을 불러오지 못했습니다.';
-const INVALID_CURSOR_MESSAGE = '목록을 처음부터 다시 불러와 주세요.';
-
-// 커서는 그 구간 마지막 캠페인의 종료일과 ID다
-interface EndedCampaignKey {
-  endDate: string;
-  id: string;
-}
-
-// 종료일 최신순, 종료일이 같으면 ID순
-const compareEndedKey = (a: EndedCampaignKey, b: EndedCampaignKey) =>
-  b.endDate.localeCompare(a.endDate) || a.id.localeCompare(b.id);
-
-const toEndedKey = ({ budget, id }: Campaign): EndedCampaignKey => ({
-  endDate: budget.endDate,
-  id,
-});
-
-// 화면은 커서 내용을 보지 않고 그대로 돌려준다
-const encodeCursor = (key: EndedCampaignKey) => btoa(JSON.stringify(key));
-
-const decodeCursor = (cursor: string): EndedCampaignKey | null => {
-  try {
-    const key: unknown = JSON.parse(atob(cursor));
-
-    return typeof key === 'object' &&
-      key !== null &&
-      'endDate' in key &&
-      'id' in key &&
-      typeof key.endDate === 'string' &&
-      typeof key.id === 'string'
-      ? { endDate: key.endDate, id: key.id }
-      : null;
-  } catch {
-    return null;
-  }
-};
-
-// 실패를 확인하는 mock에서 이미 한 번 실패한 커서
-const failedMockCursors = new Set<string>();
 
 // 지난 캠페인 전체 목록을 커서 방식으로 나눠 받는다. 처음엔 커서 없이 부르고, 응답의 nextCursor로 다음 구간을 받는다.
-// 커서가 마지막으로 받은 캠페인의 정렬 위치라서, 보는 중에 캠페인이 새로 종료돼도 다음 구간이 밀려 중복되거나 빠지지 않는다
+// 서버 목록은 상태 필터 없이 최근 생성 순이라 종료된 캠페인만 남긴다. 한 구간에 종료된 캠페인이 없으면
+// 빈 구간을 돌려주지 않도록 다음 구간을 이어서 받는다
 export const getEndedCampaignPage = async ({
   cursor = null,
   limit = ENDED_CAMPAIGN_PAGE_SIZE,
@@ -450,44 +409,33 @@ export const getEndedCampaignPage = async ({
   cursor?: string | null;
   limit?: number;
 } = {}): Promise<ApiResult<EndedCampaignPage>> => {
-  await mockDelay();
+  try {
+    const campaigns: Campaign[] = [];
+    let nextCursor = cursor;
 
-  if (
-    MOCK_ENDED_NEXT_PAGE_FAILS_ONCE &&
-    cursor &&
-    !failedMockCursors.has(cursor)
-  ) {
-    failedMockCursors.add(cursor);
+    do {
+      const params = new URLSearchParams({ pageSize: String(limit) });
+
+      if (nextCursor) {
+        params.set('pageToken', nextCursor);
+      }
+
+      const data = await request<CampaignListResponse>(
+        `/v1/owner/campaigns?${params}`,
+      );
+
+      campaigns.push(
+        ...data.items
+          .filter(({ status }) => status === 'ENDED')
+          .map(toListedCampaign),
+      );
+      nextCursor = data.nextPageToken;
+    } while (campaigns.length === 0 && nextCursor);
+
+    return { ok: true, data: { campaigns, nextCursor } };
+  } catch {
     return { ok: false, message: ENDED_PAGE_FAILED_MESSAGE };
   }
-
-  const after = cursor ? decodeCursor(cursor) : null;
-
-  if (cursor && !after) {
-    return { ok: false, message: INVALID_CURSOR_MESSAGE };
-  }
-
-  const ended = mockCampaigns
-    .filter(({ status }) => status === 'ENDED')
-    .sort((a, b) => compareEndedKey(toEndedKey(a), toEndedKey(b)));
-  const rest = after
-    ? ended.filter(
-        (campaign) => compareEndedKey(toEndedKey(campaign), after) > 0,
-      )
-    : ended;
-  const campaigns = rest.slice(0, Math.max(1, limit));
-  const last = campaigns.at(-1);
-
-  return {
-    ok: true,
-    data: {
-      campaigns: structuredClone(campaigns),
-      nextCursor:
-        last && rest.length > campaigns.length
-          ? encodeCursor(toEndedKey(last))
-          : null,
-    },
-  };
 };
 
 // 등록 흐름(등록 화면, 활성화 완료 화면)이 쓰는 조회. 등록 시작과 저장이 아직 mock이라

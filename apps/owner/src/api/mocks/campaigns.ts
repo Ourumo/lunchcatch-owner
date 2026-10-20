@@ -449,6 +449,3 @@ export const mockCampaigns: Campaign[] = [
     createArchivedCampaign(index),
   ),
 ];
-
-// 이어서 불러오기 실패를 확인하려면 true로 바꾼다. 지난 캠페인 전체 목록의 다음 구간마다 첫 요청이 한 번 실패한다
-export const MOCK_ENDED_NEXT_PAGE_FAILS_ONCE = false;
