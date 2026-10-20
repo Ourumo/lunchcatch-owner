@@ -296,6 +296,8 @@ const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습�
 const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 있습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
+const CAMPAIGN_LIMIT_MESSAGE =
+  '캠페인은 한 번에 하나만 운영할 수 있습니다. 지금 캠페인이 끝난 뒤에 새로 만들어 주세요.';
 
 // 새 캠페인의 기본값. 할인은 전체 메뉴 금액 할인, 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -615,6 +617,11 @@ export const saveCouponStep = async (
 
     if (error.code === 'CAMPAIGN-001') {
       return { ok: false, message: NOT_ACTIVE_OWNER_MESSAGE };
+    }
+
+    // 끝나지 않은 캠페인(시작 대기, 진행 중, 중단)이 있으면 새 캠페인을 만들 수 없다. Swagger에는 아직 없는 코드다
+    if (error.code === 'CAMPAIGN-010') {
+      return { ok: false, message: CAMPAIGN_LIMIT_MESSAGE };
     }
 
     // CAMPAIGN-002(할인율 100 초과), 003(발급 수량 0 이하), 004(사용 가능 시간 오류)는 화면 검사로 미리 막는다.
