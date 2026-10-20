@@ -2,10 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 
-import { createCampaignDraft, UPCOMING_LIMIT_ERROR } from '@owner/api/campaign';
+import {
+  getCampaigns,
+  isUpcomingCampaign,
+  MAX_UPCOMING_CAMPAIGNS,
+} from '@owner/api/campaign';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { campaignSteps, getCampaignEditPath } from './campaignSteps';
+import {
+  campaignSteps,
+  getCampaignEditPath,
+  NEW_CAMPAIGN_ID,
+} from './campaignSteps';
 
 const LIST_PATH = '/campaigns';
 
@@ -16,30 +24,41 @@ interface CreateFailure {
 }
 
 const RETRY_MESSAGE = '잠시 후 다시 시도해 주세요.';
+const UPCOMING_LIMIT_MESSAGE =
+  '다음 캠페인은 1개만 준비할 수 있습니다. 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
 
-// 새 캠페인 등록을 시작하면 DRAFT를 먼저 만들고, 그 캠페인의 첫 단계로 이동한다.
-// 주소로 바로 들어와도 서버가 준비 중 캠페인 제한을 확인하므로 실패 안내를 이 화면에서 보여준다
+// 새 캠페인 등록을 시작하면 준비 중 캠페인을 먼저 확인하고 첫 단계로 이동한다.
+// 서버는 1단계를 저장할 때 그 가게의 DRAFT가 있으면 쿠폰 조건을 덮어쓰므로, 작성 중인 DRAFT가 있으면 그 DRAFT를 이어서 쓴다.
+// 시작 대기 캠페인이 있으면 준비 중 캠페인 제한(MAX_UPCOMING_CAMPAIGNS)을 이 화면에서 안내한다
 export const CreateCampaignDraft = () => {
   const navigate = useNavigate();
   const [failure, setFailure] = useState<CreateFailure>();
-  // 개발 모드(StrictMode)에서 effect가 두 번 실행돼도 DRAFT가 두 건 생기지 않게 한다
+  // 개발 모드(StrictMode)에서 effect가 두 번 실행돼도 한 번만 확인한다
   const isRequestedRef = useRef(false);
 
   const create = () => {
     setFailure(undefined);
-    createCampaignDraft().then((result) => {
+    getCampaigns().then((result) => {
       if (!result.ok) {
-        setFailure({
-          message: result.message,
-          isLimited: result.code === UPCOMING_LIMIT_ERROR,
-        });
+        setFailure({ message: result.message, isLimited: false });
         return;
       }
 
-      // 뒤로 가기로 이 화면에 돌아오면 DRAFT가 또 생기므로 기록을 바꿔치기한다
-      navigate(getCampaignEditPath(result.data.id, campaignSteps[0]), {
-        replace: true,
-      });
+      const draft = result.data.find(({ status }) => status === 'DRAFT');
+
+      if (
+        !draft &&
+        result.data.filter(isUpcomingCampaign).length >= MAX_UPCOMING_CAMPAIGNS
+      ) {
+        setFailure({ message: UPCOMING_LIMIT_MESSAGE, isLimited: true });
+        return;
+      }
+
+      // 뒤로 가기로 이 화면에 돌아와 다시 확인하지 않게 기록을 바꿔치기한다
+      navigate(
+        getCampaignEditPath(draft?.id ?? NEW_CAMPAIGN_ID, campaignSteps[0]),
+        { replace: true },
+      );
     });
   };
 

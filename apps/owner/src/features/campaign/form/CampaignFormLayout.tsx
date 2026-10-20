@@ -6,6 +6,7 @@ import { CircleAlert } from 'lucide-react';
 import {
   requestCampaignActivation,
   saveCampaignStep,
+  saveCouponStep,
 } from '@owner/api/campaign';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
@@ -15,6 +16,7 @@ import {
   campaignSteps,
   getCampaignEditPath,
   isValueStep,
+  NEW_CAMPAIGN_ID,
 } from './campaignSteps';
 import { useCampaignForm } from './useCampaignForm';
 
@@ -41,7 +43,12 @@ export const CampaignFormLayout = () => {
   );
   const currentStep = campaignSteps.at(currentIndex);
 
-  if (currentIndex === -1 || !currentStep) {
+  // 새 캠페인은 1단계를 저장해야 DRAFT가 생겨 다음 단계를 저장할 수 있다
+  if (
+    currentIndex === -1 ||
+    !currentStep ||
+    (campaignId === NEW_CAMPAIGN_ID && currentIndex > 0)
+  ) {
     return (
       <Navigate
         replace
@@ -105,6 +112,26 @@ export const CampaignFormLayout = () => {
 
     if (!nextStep) {
       await requestActivation();
+      return;
+    }
+
+    if (currentStep.id === 'coupon') {
+      setIsSaving(true);
+      const result = await saveCouponStep(values.coupon);
+      setIsSaving(false);
+
+      if (!result.ok) {
+        setActionError({
+          title: '저장하지 못했습니다',
+          message: result.message ?? SAVE_FAILED_MESSAGE,
+        });
+        return;
+      }
+
+      // 처음 저장하면 서버가 만든 DRAFT의 ID로 이어 간다. 뒤로 가기로 ID 없는 1단계에 돌아오지 않게 기록을 바꿔치기한다
+      navigate(getCampaignEditPath(result.data, nextStep), {
+        replace: campaignId === NEW_CAMPAIGN_ID,
+      });
       return;
     }
 

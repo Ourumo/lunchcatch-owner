@@ -4,10 +4,11 @@ import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
 import { type CampaignPoster, isPosterComplete } from './poster';
+import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 목록과 상세 조회는 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록·상세 조회와 쿠폰 조건 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -140,9 +141,6 @@ export interface Campaign extends CampaignValues {
 // 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
 // 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
 export const MAX_UPCOMING_CAMPAIGNS = 1;
-
-// 준비 중 캠페인 제한으로 새 캠페인을 만들지 못했을 때의 실패 구분 값. 다시 시도해도 같은 결과라 화면이 다르게 안내한다
-export const UPCOMING_LIMIT_ERROR = 'UPCOMING_LIMIT';
 
 export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'DRAFT' || status === 'SCHEDULED';
@@ -290,8 +288,8 @@ const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인�
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
 const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
 const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 있습니다.';
-const UPCOMING_LIMIT_MESSAGE =
-  '다음 캠페인은 1개만 준비할 수 있습니다. 작성 중이거나 시작 대기인 캠페인을 정리한 뒤 만들어 주세요.';
+const NOT_ACTIVE_OWNER_MESSAGE =
+  '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
 
 // 새 캠페인의 기본값. 할인은 전체 메뉴 금액 할인, 사용 가능 시간은 허용 범위 전체, 노출 대상은 1km, 전체 성별, 전체 연령대
 export const createInitialCampaignValues = (): CampaignValues => ({
@@ -312,7 +310,7 @@ export const createInitialCampaignValues = (): CampaignValues => ({
 const findCampaign = (id: string) =>
   mockCampaigns.find((campaign) => campaign.id === id);
 
-// 서버 캠페인 ID는 숫자다. 등록 시작이 아직 mock이라 mock이 만든 DRAFT(campaign-…)와 섞여 있다
+// 서버 캠페인 ID는 숫자다. 다른 화면이 아직 쓰는 mock 캠페인(campaign-…)과 구분한다
 const isServerCampaignId = (id: string) => /^\d+$/.test(id);
 
 type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
@@ -543,17 +541,6 @@ const toCampaignFailure = (error: unknown) =>
     : { ok: false as const };
 
 export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
-  // 등록 시작이 아직 mock이라, mock이 만든 DRAFT는 mock에서 찾는다
-  if (!isServerCampaignId(id)) {
-    await mockDelay();
-
-    const campaign = findCampaign(id);
-
-    return campaign
-      ? { ok: true, data: structuredClone(campaign) }
-      : { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
   try {
     return { ok: true, data: await fetchCampaignDetail(id) };
   } catch (error) {
@@ -561,35 +548,62 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   }
 };
 
-// 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
-// 준비 중 캠페인이 이미 MAX_UPCOMING_CAMPAIGNS건이면 만들지 않는다
-export const createCampaignDraft = async (): Promise<ApiResult<Campaign>> => {
-  await mockDelay();
+interface CouponSaveResponse {
+  campaignId: number;
+  status: CampaignStatus;
+}
 
-  if (
-    mockCampaigns.filter(isUpcomingCampaign).length >= MAX_UPCOMING_CAMPAIGNS
-  ) {
-    return {
-      ok: false,
-      code: UPCOMING_LIMIT_ERROR,
-      message: UPCOMING_LIMIT_MESSAGE,
-    };
+// 화면은 HH:mm, 서버는 상세 응답과 같은 HH:mm:ss로 주고받는다
+const toServerTime = (time: string) => `${time}:00`;
+
+// 등록 1단계 쿠폰 조건 저장. 서버는 그 가게에 DRAFT가 없으면 새로 만들고(201), 있으면 쿠폰 조건만 덮어쓴다(200).
+// 그래서 캠페인 ID 없이 보내고, 저장된 DRAFT의 ID를 돌려준다
+export const saveCouponStep = async (
+  coupon: CouponStepValues,
+): Promise<ApiResult<string>> => {
+  const storeResult = await getMyStore();
+
+  if (!storeResult.ok) {
+    return { ok: false };
   }
 
-  const campaign: Campaign = {
-    ...createInitialCampaignValues(),
-    id: `campaign-${Date.now()}`,
-    status: 'DRAFT',
-    pausedReason: null,
-    createdAt: new Date().toISOString(),
-    reviewFailReasons: [],
-    performance: null,
-  };
+  try {
+    const data = await request<CouponSaveResponse>('/v1/owner/campaigns', {
+      method: 'POST',
+      body: {
+        storeId: Number(storeResult.data.id),
+        discountTargetType: coupon.discountTarget,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        ...(coupon.discountTarget === 'MENU' && coupon.menuId !== null
+          ? { targetMenuId: Number(coupon.menuId) }
+          : {}),
+        issueQuantity: coupon.issueLimit,
+        usableStartTime: toServerTime(coupon.usableFrom),
+        usableEndTime: toServerTime(coupon.usableUntil),
+      },
+    });
 
-  // 메모리에만 추가한다. 새로고침하면 초기화된다
-  mockCampaigns.push(campaign);
+    return { ok: true, data: String(data.campaignId) };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
 
-  return { ok: true, data: structuredClone(campaign) };
+    if (error.code === 'CAMPAIGN-001') {
+      return { ok: false, message: NOT_ACTIVE_OWNER_MESSAGE };
+    }
+
+    // CAMPAIGN-002(할인율 100 초과), 003(발급 수량 0 이하), 004(사용 가능 시간 오류)는 화면 검사로 미리 막는다.
+    // 그래도 거절되면 서버 문구로 이유를 보여준다
+    if (error.status === 422 && error.message) {
+      return { ok: false, message: error.message };
+    }
+
+    return error.status === 400
+      ? { ok: false, message: INVALID_COUPON_MESSAGE }
+      : { ok: false };
+  }
 };
 
 // 등록 단계 하나의 입력값을 DRAFT에 저장한다. 포스터는 연동할 때 포스터 생성/수정 API로 바꾼다
