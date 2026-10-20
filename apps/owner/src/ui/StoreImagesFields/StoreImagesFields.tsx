@@ -39,6 +39,8 @@ export interface StoreImagesFieldsProps {
   onLogoRemove?: () => void;
   // 새로 고른 사진은 selected 상태로, 원래 있던 사진은 그대로 순서대로 넘긴다
   onInteriorImagesChange: (images: ImageValue[]) => void;
+  // 넘기면 업로드에 실패한 칸에 다시 시도 버튼을 보여주고, 누르면 그 칸의 사진을 넘긴다
+  onRetry?: (image: ImageValue) => void;
 }
 
 // 대표 이미지와 매장 이미지 입력. 입점 등록과 가게 관리가 함께 쓴다.
@@ -51,6 +53,7 @@ export const StoreImagesFields = ({
   onInteriorImagesChange,
   onLogoRemove,
   onLogoSelect,
+  onRetry,
 }: StoreImagesFieldsProps) => {
   const remainingCount = maxInteriorImages - interiorImages.length;
   // 남은 자리보다 많이 고르면 앞에서부터 남은 자리만큼만 넣고 알린다
@@ -79,6 +82,7 @@ export const StoreImagesFields = ({
           image={logoImage}
           label="대표 이미지"
           onRemove={onLogoRemove}
+          onRetry={onRetry && logoImage ? () => onRetry(logoImage) : undefined}
           onSelect={([file]) => onLogoSelect(selectImage(file))}
           size="lg"
         />
@@ -107,6 +111,7 @@ export const StoreImagesFields = ({
                   ),
                 )
               }
+              onRetry={onRetry && (() => onRetry(image))}
               onSelect={([file]) =>
                 updateInteriorImages(
                   interiorImages.map((current, imageIndex) =>

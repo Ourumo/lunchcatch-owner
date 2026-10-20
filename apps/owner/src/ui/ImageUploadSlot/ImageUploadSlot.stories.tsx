@@ -79,6 +79,41 @@ export const Uploaded: Story = {
   },
 };
 
+// 사진을 고르자마자 S3에 올리는 중. 진행률을 보여준다
+export const Uploading: Story = {
+  args: {
+    image: { status: 'uploading', file: sampleFile, progress: 45 },
+    onRemove: () => {},
+  },
+};
+
+// 올리지 못한 사진. 다시 시도를 누르면 처음부터 다시 올린다
+export const Failed: Story = {
+  args: {
+    image: { status: 'failed', file: sampleFile },
+    onRemove: () => {},
+    onRetry: () => {},
+  },
+};
+
+// 매장 이미지처럼 3칸 그리드 한 칸 크기에서 실패한 사진
+export const SmallFailed: Story = {
+  args: {
+    image: { status: 'failed', file: sampleFile },
+    label: '매장 이미지 1',
+    onRemove: () => {},
+    onRetry: () => {},
+    size: 'sm',
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 114 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 // 매장 이미지처럼 3칸 그리드 한 칸 크기
 export const Small: Story = {
   args: {

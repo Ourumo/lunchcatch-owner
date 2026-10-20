@@ -9,15 +9,18 @@ import {
 } from './StoreImagesFields';
 
 // 네트워크 없이 미리보기를 보여주기 위한 예시 사진
-const createSampleImage = (name: string, color: string): ImageValue => ({
-  status: 'selected',
-  file: new File(
+const createFile = (name: string, color: string) =>
+  new File(
     [
       `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ffd8c4"/><circle cx="200" cy="150" r="80" fill="${color}"/></svg>`,
     ],
     name,
     { type: 'image/svg+xml' },
-  ),
+  );
+
+const createSampleImage = (name: string, color: string): ImageValue => ({
+  status: 'selected',
+  file: createFile(name, color),
 });
 
 // 이미 올라간 사진. 네트워크 없이 보이도록 data URL로 둔다
@@ -96,6 +99,31 @@ export const Uploaded: Story = {
       createUploadedImage('#57534e'),
     ],
     onLogoRemove: undefined,
+  },
+};
+
+// 사진마다 업로드 상태가 다른 상태: 올리는 중, 실패, 올림
+export const UploadStates: Story = {
+  args: {
+    logoImage: {
+      status: 'uploading',
+      file: createFile('logo.svg', '#f56b20'),
+      progress: 70,
+    },
+    interiorImages: [
+      { status: 'failed', file: createFile('interior-1.svg', '#78716c') },
+      {
+        status: 'uploading',
+        file: createFile('interior-2.svg', '#a8a29e'),
+        progress: 20,
+      },
+      {
+        status: 'uploaded',
+        file: createFile('interior-3.svg', '#57534e'),
+        uploadId: 'upload-3',
+      },
+    ],
+    onRetry: () => {},
   },
 };
 

@@ -1,5 +1,5 @@
 import { type ChangeEvent, useId, useState } from 'react';
-import { Camera, X } from 'lucide-react';
+import { Camera, RotateCw, X } from 'lucide-react';
 
 import type { ImageValue } from '@owner/api/imageUpload';
 import { FilePreviewImage } from '@owner/ui/FilePreviewImage/FilePreviewImage';
@@ -15,6 +15,8 @@ export interface ImageUploadSlotProps {
   onSelect: (files: File[]) => void;
   // 없으면 삭제 버튼을 보여주지 않는다
   onRemove?: () => void;
+  // 넘기면 업로드에 실패한 사진에 다시 시도 버튼을 보여준다
+  onRetry?: () => void;
   // lg: 화면 폭을 채우는 16:9 (대표 이미지), sm: 3칸 그리드 한 칸 크기의 정사각형 (매장 이미지, 메뉴 사진).
   // 폭은 감싸는 요소를 따른다
   size?: ImageUploadSlotSize;
@@ -66,12 +68,14 @@ const getFileError = (file: File) => {
   return undefined;
 };
 
-// 점주 화면용 사진 등록 칸. 빈 칸을 누르면 사진을 고르고, 사진이 있으면 미리보기를 보여주며 누르면 교체한다
+// 점주 화면용 사진 등록 칸. 빈 칸을 누르면 사진을 고르고, 사진이 있으면 미리보기를 보여주며 누르면 교체한다.
+// 올리는 중이면 진행률을, 올리지 못했으면 실패 안내와 다시 시도 버튼을 미리보기 위에 겹쳐 보여준다
 export const ImageUploadSlot = ({
   label,
   image,
   onSelect,
   onRemove,
+  onRetry,
   size = 'lg',
   disabled = false,
   errorMessage,
@@ -81,6 +85,7 @@ export const ImageUploadSlot = ({
   const [fileError, setFileError] = useState<string>();
   const visibleError = errorMessage ?? fileError;
   const sizeClassName = sizeClassNames[size];
+  const isFailed = image?.status === 'failed';
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -109,7 +114,7 @@ export const ImageUploadSlot = ({
             image
               ? 'border border-border-subtle bg-bg-surface'
               : 'border border-dashed border-brand-200 bg-surface-brand',
-            visibleError ? 'border-status-danger-border' : '',
+            visibleError || isFailed ? 'border-status-danger-border' : '',
             sizeClassName.box,
           ]
             .filter(Boolean)
@@ -147,6 +152,52 @@ export const ImageUploadSlot = ({
             </span>
           )}
         </label>
+        {/* 겹친 안내를 눌러도 아래 칸이 눌려 사진을 바꿀 수 있도록 다시 시도 버튼만 누를 수 있게 둔다 */}
+        {image?.status === 'uploading' && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-bg-inverse/50 px-3">
+            <span
+              aria-hidden="true"
+              className="text-caption-mobile font-semibold text-text-on-inverse"
+            >
+              {Math.round(image.progress)}%
+            </span>
+            <div
+              aria-label={`${label} 업로드 중`}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={Math.round(image.progress)}
+              className="h-1 w-full max-w-24 overflow-hidden rounded-full bg-bg-surface/40"
+              role="progressbar"
+            >
+              <div
+                className="h-full rounded-full bg-bg-surface transition-[width]"
+                style={{ width: `${image.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {isFailed && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-bg-inverse/60 px-2 text-center">
+            <span
+              className="text-caption-mobile font-semibold break-keep text-text-on-inverse"
+              role="alert"
+            >
+              업로드 실패
+            </span>
+            {onRetry && (
+              <button
+                aria-label={`${label} 다시 올리기`}
+                className="pointer-events-auto flex h-8 items-center gap-1 rounded-full bg-bg-surface px-3 text-caption-mobile font-semibold text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed"
+                disabled={disabled}
+                onClick={onRetry}
+                type="button"
+              >
+                <RotateCw aria-hidden="true" className="size-3.5" />
+                다시 시도
+              </button>
+            )}
+          </div>
+        )}
         {image && onRemove && (
           <button
             aria-label={`${label} 삭제`}
