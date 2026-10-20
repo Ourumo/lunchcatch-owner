@@ -2,9 +2,9 @@ import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 
 import type { ServingDayPerformance } from '@owner/api/report';
+import { STORE_ANALYTICS_PATH } from '@owner/features/store/storePaths';
 import { formatNumber, formatShortDate } from '@owner/ui/campaignFormat';
 
-const ANALYTICS_PATH = '/store/analytics';
 // 가장 많이 쓴 날의 막대 높이(px). 나머지는 이 높이에 비례한다
 const MAX_BAR_HEIGHT = 96;
 
@@ -91,7 +91,7 @@ export const RecentPerformance = ({ days }: RecentPerformanceProps) => (
       </h2>
       <Link
         className="-mr-2 flex h-11 items-center gap-0.5 rounded-full px-2 text-body-sm-mobile text-text-secondary focus-visible:outline-2 focus-visible:outline-action-primary"
-        to={ANALYTICS_PATH}
+        to={STORE_ANALYTICS_PATH}
       >
         분석
         <ChevronRight aria-hidden="true" className="size-4" />

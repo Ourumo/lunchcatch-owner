@@ -16,6 +16,7 @@ import {
 } from '@owner/features/signup/signupSteps';
 import {
   POINT_HISTORY_PATH,
+  STORE_ANALYTICS_COMPARE_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
   STORE_IMAGES_PATH,
@@ -49,6 +50,7 @@ import SignupMenuPage from '@owner/pages/SignupMenuPage';
 import SignupPage from '@owner/pages/SignupPage';
 import SignupStorePage from '@owner/pages/SignupStorePage';
 import SignupTermsPage from '@owner/pages/SignupTermsPage';
+import StoreAnalyticsPage from '@owner/pages/StoreAnalyticsPage';
 import StoreHoursPage from '@owner/pages/StoreHoursPage';
 import StoreImagesPage from '@owner/pages/StoreImagesPage';
 import StoreManagementPage from '@owner/pages/StoreManagementPage';
@@ -138,12 +140,18 @@ export const router = createBrowserRouter([
           { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
           { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
+          { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
           { path: '/qr-scan', element: <QrScanPage /> },
-          // 가게 관리에서 연결했지만 아직 만들지 않은 화면
+          // 분석에서 연결했지만 아직 만들지 않은 화면
           {
-            path: STORE_ANALYTICS_PATH,
-            element: <ComingSoonPage fallbackPath={STORE_PATH} title="분석" />,
+            path: STORE_ANALYTICS_COMPARE_PATH,
+            element: (
+              <ComingSoonPage
+                fallbackPath={STORE_ANALYTICS_PATH}
+                title="캠페인 비교"
+              />
+            ),
           },
           {
             path: '/campaigns/:id/edit',

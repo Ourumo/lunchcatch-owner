@@ -3,3 +3,16 @@
 
 /* 앱 폴더 밖에 있는 공통 패키지의 Tailwind 클래스도 빌드에 포함한다 */
 @source '../../../packages/ui/src';
+
+/* 가게 분석 일별 추이의 찜·발급·사용 선 색. 색각 이상에서도 구분되는지 검증한 조합이고, 어두운 화면에서는 같은 색상의 어두운 단계를 쓴다 */
+:root {
+  --analytics-wish: #2a78d6;
+  --analytics-issued: #1baf7a;
+  --analytics-redeem: var(--primitive-brand-500);
+}
+
+:root[data-theme='dark'] {
+  --analytics-wish: #3987e5;
+  --analytics-issued: #199e70;
+  --analytics-redeem: var(--primitive-brand-600);
+}
