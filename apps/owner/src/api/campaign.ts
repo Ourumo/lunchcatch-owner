@@ -1,7 +1,5 @@
-import {
-  MOCK_ENDED_NEXT_PAGE_FAILS_ONCE,
-  mockCampaigns,
-} from './mocks/campaigns';
+import { ApiError, request } from './client';
+import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
@@ -9,7 +7,7 @@ import { type CampaignPoster, isPosterComplete } from './poster';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록과 상세 조회는 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -315,14 +313,79 @@ const findCampaign = (id: string) =>
   mockCampaigns.find((campaign) => campaign.id === id);
 
 // 점주 본인 가게의 캠페인만 내려온다. 등록 시각 최신순
-export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
-  await mockDelay();
+interface CampaignListItemResponse {
+  campaignId: number;
+  status: CampaignStatus;
+  discountTargetType: DiscountTarget;
+  discountType: DiscountType;
+  discountValue: number;
+  dailyBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+}
 
-  const campaigns = [...mockCampaigns].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
+interface CampaignListResponse {
+  items: CampaignListItemResponse[];
+  // 마지막 페이지면 null
+  nextPageToken: string | null;
+}
+
+// 서버 목록 한 번에 받는 최대 개수
+const CAMPAIGN_LIST_PAGE_SIZE = 100;
+
+const fetchCampaignDetail = async (id: string) =>
+  toCampaign(
+    await request<CampaignDetailResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+    ),
   );
 
-  return { ok: true, data: structuredClone(campaigns) };
+// 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
+// 이 값을 보여주는 진행 중·다음 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
+  id: String(item.campaignId),
+  status: item.status,
+  pausedReason: null,
+  createdAt: item.createdAt,
+  reviewFailReasons: [],
+  performance: null,
+  poster: null,
+  coupon: {
+    discountTarget: item.discountTargetType,
+    menuId: null,
+    discountType: item.discountType,
+    discountValue: item.discountValue,
+    issueLimit: null,
+    usableFrom: '',
+    usableUntil: '',
+  },
+  target: createInitialCampaignValues().target,
+  budget: {
+    dailyBudget: item.dailyBudget,
+    startDate: item.startDate ?? '',
+    endDate: item.endDate ?? '',
+  },
+});
+
+// 최근 생성 순. 가게당 진행 중·다음 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
+export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
+  try {
+    const { items } = await request<CampaignListResponse>(
+      `/v1/owner/campaigns?pageSize=${CAMPAIGN_LIST_PAGE_SIZE}`,
+    );
+    const campaigns = await Promise.all(
+      items.map((item) =>
+        item.status === 'ENDED'
+          ? toListedCampaign(item)
+          : fetchCampaignDetail(String(item.campaignId)),
+      ),
+    );
+
+    return { ok: true, data: campaigns };
+  } catch {
+    return { ok: false };
+  }
 };
 
 // 지난 캠페인 전체 목록을 나눠 받는 한 구간
@@ -335,48 +398,10 @@ export interface EndedCampaignPage {
 export const ENDED_CAMPAIGN_PAGE_SIZE = 20;
 
 const ENDED_PAGE_FAILED_MESSAGE = '지난 캠페인을 불러오지 못했습니다.';
-const INVALID_CURSOR_MESSAGE = '목록을 처음부터 다시 불러와 주세요.';
-
-// 커서는 그 구간 마지막 캠페인의 종료일과 ID다
-interface EndedCampaignKey {
-  endDate: string;
-  id: string;
-}
-
-// 종료일 최신순, 종료일이 같으면 ID순
-const compareEndedKey = (a: EndedCampaignKey, b: EndedCampaignKey) =>
-  b.endDate.localeCompare(a.endDate) || a.id.localeCompare(b.id);
-
-const toEndedKey = ({ budget, id }: Campaign): EndedCampaignKey => ({
-  endDate: budget.endDate,
-  id,
-});
-
-// 화면은 커서 내용을 보지 않고 그대로 돌려준다
-const encodeCursor = (key: EndedCampaignKey) => btoa(JSON.stringify(key));
-
-const decodeCursor = (cursor: string): EndedCampaignKey | null => {
-  try {
-    const key: unknown = JSON.parse(atob(cursor));
-
-    return typeof key === 'object' &&
-      key !== null &&
-      'endDate' in key &&
-      'id' in key &&
-      typeof key.endDate === 'string' &&
-      typeof key.id === 'string'
-      ? { endDate: key.endDate, id: key.id }
-      : null;
-  } catch {
-    return null;
-  }
-};
-
-// 실패를 확인하는 mock에서 이미 한 번 실패한 커서
-const failedMockCursors = new Set<string>();
 
 // 지난 캠페인 전체 목록을 커서 방식으로 나눠 받는다. 처음엔 커서 없이 부르고, 응답의 nextCursor로 다음 구간을 받는다.
-// 커서가 마지막으로 받은 캠페인의 정렬 위치라서, 보는 중에 캠페인이 새로 종료돼도 다음 구간이 밀려 중복되거나 빠지지 않는다
+// 서버 목록은 상태 필터 없이 최근 생성 순이라 종료된 캠페인만 남긴다. 한 구간에 종료된 캠페인이 없으면
+// 빈 구간을 돌려주지 않도록 다음 구간을 이어서 받는다
 export const getEndedCampaignPage = async ({
   cursor = null,
   limit = ENDED_CAMPAIGN_PAGE_SIZE,
@@ -384,47 +409,46 @@ export const getEndedCampaignPage = async ({
   cursor?: string | null;
   limit?: number;
 } = {}): Promise<ApiResult<EndedCampaignPage>> => {
-  await mockDelay();
+  try {
+    const campaigns: Campaign[] = [];
+    let nextCursor = cursor;
 
-  if (
-    MOCK_ENDED_NEXT_PAGE_FAILS_ONCE &&
-    cursor &&
-    !failedMockCursors.has(cursor)
-  ) {
-    failedMockCursors.add(cursor);
+    do {
+      const params = new URLSearchParams({ pageSize: String(limit) });
+
+      if (nextCursor) {
+        params.set('pageToken', nextCursor);
+      }
+
+      const data = await request<CampaignListResponse>(
+        `/v1/owner/campaigns?${params}`,
+      );
+
+      campaigns.push(
+        ...data.items
+          .filter(({ status }) => status === 'ENDED')
+          .map(toListedCampaign),
+      );
+
+      // 같은 토큰이 다시 오면 끝없이 같은 구간을 받게 되므로 실패로 본다
+      if (data.nextPageToken && data.nextPageToken === nextCursor) {
+        throw new Error('같은 pageToken이 반복됨');
+      }
+
+      nextCursor = data.nextPageToken;
+    } while (campaigns.length === 0 && nextCursor);
+
+    return { ok: true, data: { campaigns, nextCursor } };
+  } catch {
     return { ok: false, message: ENDED_PAGE_FAILED_MESSAGE };
   }
-
-  const after = cursor ? decodeCursor(cursor) : null;
-
-  if (cursor && !after) {
-    return { ok: false, message: INVALID_CURSOR_MESSAGE };
-  }
-
-  const ended = mockCampaigns
-    .filter(({ status }) => status === 'ENDED')
-    .sort((a, b) => compareEndedKey(toEndedKey(a), toEndedKey(b)));
-  const rest = after
-    ? ended.filter(
-        (campaign) => compareEndedKey(toEndedKey(campaign), after) > 0,
-      )
-    : ended;
-  const campaigns = rest.slice(0, Math.max(1, limit));
-  const last = campaigns.at(-1);
-
-  return {
-    ok: true,
-    data: {
-      campaigns: structuredClone(campaigns),
-      nextCursor:
-        last && rest.length > campaigns.length
-          ? encodeCursor(toEndedKey(last))
-          : null,
-    },
-  };
 };
 
-export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
+// 등록 흐름(등록 화면, 활성화 완료 화면)이 쓰는 조회. 등록 시작과 저장이 아직 mock이라
+// mock이 만든 캠페인을 찾을 수 있도록 mock으로 조회한다. 등록 API 연동(#181)에서 getCampaign으로 합친다
+export const getRegistrationCampaign = async (
+  id: string,
+): Promise<ApiResult<Campaign>> => {
   await mockDelay();
 
   const campaign = findCampaign(id);
@@ -434,6 +458,85 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   }
 
   return { ok: true, data: structuredClone(campaign) };
+};
+
+interface CampaignDetailResponse {
+  campaignId: number;
+  status: CampaignStatus;
+  pausedReason: PausedReason | null;
+  discountTargetType: DiscountTarget;
+  discountType: DiscountType;
+  discountValue: number;
+  targetMenuId: number | null;
+  issueQuantity: number;
+  // HH:mm:ss로 온다
+  usableStartTime: string;
+  usableEndTime: string;
+  targetRadius: number;
+  targetGender: TargetGender;
+  targetAgeGroups: string[];
+  // 아직 한 번도 설정하지 않았으면 null
+  dailyBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+}
+
+const serverAgeGroups: Record<string, AgeGroup> = {
+  AGE_20S: 'TWENTIES',
+  AGE_30S: 'THIRTIES',
+  AGE_40S: 'FORTIES',
+  AGE_50_PLUS: 'FIFTIES_PLUS',
+};
+
+// 서버는 전체 연령대를 네 값으로 보내고, 화면은 전체를 빈 배열로 둔다
+const toAgeGroups = (ageGroups: string[]): AgeGroup[] => {
+  const groups = ageGroups.flatMap((group) =>
+    serverAgeGroups[group] ? [serverAgeGroups[group]] : [],
+  );
+
+  return groups.length === Object.keys(serverAgeGroups).length ? [] : groups;
+};
+
+// 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다
+const toCampaign = (data: CampaignDetailResponse): Campaign => ({
+  id: String(data.campaignId),
+  status: data.status,
+  pausedReason: data.pausedReason,
+  createdAt: data.createdAt,
+  reviewFailReasons: [],
+  performance: null,
+  poster: null,
+  coupon: {
+    discountTarget: data.discountTargetType,
+    menuId: data.targetMenuId === null ? null : String(data.targetMenuId),
+    discountType: data.discountType,
+    discountValue: data.discountValue,
+    issueLimit: data.issueQuantity,
+    usableFrom: data.usableStartTime.slice(0, 5),
+    usableUntil: data.usableEndTime.slice(0, 5),
+  },
+  target: {
+    radius: data.targetRadius as ExposureRadius,
+    gender: data.targetGender,
+    ageGroups: toAgeGroups(data.targetAgeGroups),
+  },
+  budget: {
+    dailyBudget: data.dailyBudget,
+    startDate: data.startDate ?? '',
+    endDate: data.endDate ?? '',
+  },
+});
+
+export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
+  try {
+    return { ok: true, data: await fetchCampaignDetail(id) };
+  } catch (error) {
+    // 없는 캠페인과 다른 점주의 캠페인을 서버가 같은 코드로 거절한다
+    return error instanceof ApiError && error.code === 'CAMPAIGN-005'
+      ? { ok: false, message: NOT_FOUND_MESSAGE }
+      : { ok: false };
+  }
 };
 
 // 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
