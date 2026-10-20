@@ -1,5 +1,6 @@
 import type { CampaignStatus } from './campaign';
 import { request } from './client';
+import { type ImageValue, isSameImage, toSavedImage } from './imageUpload';
 import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockStore } from './mocks/store';
@@ -39,14 +40,11 @@ export interface MyStore {
   menus: StoreMenu[];
 }
 
-// 새로 고른 사진은 File, 이미 올라간 사진은 주소
-export type StoreImage = File | string;
-
 export interface StoreImagesValues {
   // 가게 대표 이미지(로고). 필수지만 서버에 아직 없으면 null로 시작한다
-  logoImage: StoreImage | null;
+  logoImage: ImageValue | null;
   // 매장 이미지. 선택, 최대 MAX_INTERIOR_IMAGES장
-  interiorImages: StoreImage[];
+  interiorImages: ImageValue[];
 }
 
 // 대표 메뉴 저장 요청의 메뉴 한 개. 새로 추가한 메뉴는 아직 id가 없다
@@ -55,7 +53,7 @@ export interface StoreMenuValues {
   name: string;
   price: number;
   // 서버에서 불러온 메뉴는 사진이 없을 수 있다. 저장할 때 사진이 없으면 거절한다
-  image: StoreImage | null;
+  image: ImageValue | null;
 }
 
 const INVALID_BUSINESS_HOURS_MESSAGE = '영업 요일과 시간을 다시 확인해 주세요.';
@@ -213,8 +211,8 @@ export const updateBusinessHours = async (
 };
 
 // mock 업로드. 새로 고른 파일에 브라우저 임시 주소를 만들어 올라간 사진 주소로 쓴다
-const uploadMockImage = (image: StoreImage) =>
-  typeof image === 'string' ? image : URL.createObjectURL(image);
+const uploadMockImage = (image: ImageValue) =>
+  image.status === 'saved' ? image.url : URL.createObjectURL(image.file);
 
 // 매장 사진 수정 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정").
 // 대표 이미지가 없거나 매장 이미지가 MAX_INTERIOR_IMAGES장을 넘으면 받지 않는다. 형식(jpg, png)과 용량(10MB)은 사진 칸에서 거른다.
@@ -307,7 +305,10 @@ export const updateStoreMenus = async (
       (current !== undefined &&
         (requested.name.trim() !== current.name ||
           requested.price !== current.price ||
-          requested.image !== current.imageUrl))
+          !isSameImage(
+            requested.image,
+            current.imageUrl === null ? null : toSavedImage(current.imageUrl),
+          )))
     );
   });
 

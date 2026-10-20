@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import type { ImageValue } from '@owner/api/imageUpload';
+
 import { ImageUploadSlot, type ImageUploadSlotProps } from './ImageUploadSlot';
 
 // 네트워크 없이 미리보기를 보여주기 위한 예시 사진
-const sampleImage = new File(
+const sampleFile = new File(
   [
     '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ffd8c4"/><circle cx="200" cy="150" r="80" fill="#f56b20"/></svg>',
   ],
@@ -12,10 +14,15 @@ const sampleImage = new File(
   { type: 'image/svg+xml' },
 );
 
-// 이미 올라간 사진 주소. 네트워크 없이 보이도록 data URL로 둔다
-const uploadedImageUrl = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#e7e5e4"/><rect x="120" y="90" width="160" height="120" rx="12" fill="#78716c"/></svg>',
-)}`;
+const sampleImage: ImageValue = { status: 'selected', file: sampleFile };
+
+// 이미 올라간 사진. 네트워크 없이 보이도록 data URL로 둔다
+const uploadedImage: ImageValue = {
+  status: 'saved',
+  url: `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#e7e5e4"/><rect x="120" y="90" width="160" height="120" rx="12" fill="#78716c"/></svg>',
+  )}`,
+};
 
 // 고르거나 지우면 칸에 바로 반영되도록 상태를 붙여 보여준다
 const ControlledImageUploadSlot = (props: ImageUploadSlotProps) => {
@@ -26,7 +33,9 @@ const ControlledImageUploadSlot = (props: ImageUploadSlotProps) => {
       {...props}
       image={image}
       onRemove={() => setImage(null)}
-      onSelect={(files) => setImage(files[0] ?? null)}
+      onSelect={([file]) =>
+        setImage(file ? { status: 'selected', file } : null)
+      }
     />
   );
 };
@@ -66,7 +75,7 @@ export const WithImage: Story = {
 // 가게 정보 수정에서 이미 올라간 사진을 주소로 보여준다. 누르면 새로 고른 파일로 바뀐다
 export const Uploaded: Story = {
   args: {
-    image: uploadedImageUrl,
+    image: uploadedImage,
   },
 };
 

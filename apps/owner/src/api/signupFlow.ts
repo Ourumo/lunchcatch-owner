@@ -1,3 +1,4 @@
+import type { ImageValue } from './imageUpload';
 import { mockDelay } from './mocks/delay';
 import { mockStorePlaces } from './mocks/places';
 import { mockOwnerTerms } from './mocks/terms';
@@ -207,7 +208,7 @@ export const MENU_PRICE_MAX = 1_000_000;
 
 // 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격 모두 필수
 export interface MenuItemValues {
-  image: File;
+  image: ImageValue;
   name: string;
   // 쉼표 없는 숫자
   price: string;
@@ -215,22 +216,19 @@ export interface MenuItemValues {
 
 // 바텀시트에서 입력 중인 대표 메뉴. 저장 전이라 비어 있을 수 있다
 export interface MenuDraft {
-  image: File | null;
+  image: ImageValue | null;
   name: string;
   price: string;
 }
 
 export type MenuField = keyof MenuDraft;
 
-// 사진은 있는지만 본다. 가게 관리에서는 이미 올라간 사진 주소도 넘긴다
+// 사진은 있는지만 본다. 가게 관리에서는 이미 올라간 사진도 넘긴다
 export const getMenuErrors = ({
   image,
   name,
   price,
-}: Omit<MenuDraft, 'image'> & { image: File | string | null }): Record<
-  MenuField,
-  string | undefined
-> => {
+}: MenuDraft): Record<MenuField, string | undefined> => {
   const priceValue = Number(price);
 
   return {
@@ -259,9 +257,9 @@ export const MAX_INTERIOR_IMAGES = 3;
 
 export interface ImagesStepValues {
   // 가게 대표 이미지(로고). 필수
-  logoImage: File | null;
+  logoImage: ImageValue | null;
   // 매장 이미지. 선택, 최대 MAX_INTERIOR_IMAGES장
-  interiorImages: File[];
+  interiorImages: ImageValue[];
 }
 
 export interface MenuStepValues {

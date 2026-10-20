@@ -1,3 +1,4 @@
+import { isSameImage, toSavedImage } from '@owner/api/imageUpload';
 import { MAX_INTERIOR_IMAGES } from '@owner/api/signupFlow';
 import { type StoreImagesValues, updateStoreImages } from '@owner/api/store';
 import { StoreImagesFields } from '@owner/ui/StoreImagesFields/StoreImagesFields';
@@ -7,9 +8,11 @@ import { useStoreEdit } from './useStoreEdit';
 
 // 사진 목록을 순서대로 그대로 비교한다. 같은 주소, 같은 파일이면 바뀌지 않은 것으로 본다
 const isSameImages = (a: StoreImagesValues, b: StoreImagesValues) =>
-  a.logoImage === b.logoImage &&
+  isSameImage(a.logoImage, b.logoImage) &&
   a.interiorImages.length === b.interiorImages.length &&
-  a.interiorImages.every((image, index) => image === b.interiorImages[index]);
+  a.interiorImages.every((image, index) =>
+    isSameImage(image, b.interiorImages[index]),
+  );
 
 const isValidImages = ({ interiorImages, logoImage }: StoreImagesValues) =>
   Boolean(logoImage) && interiorImages.length <= MAX_INTERIOR_IMAGES;
@@ -18,8 +21,8 @@ const isValidImages = ({ interiorImages, logoImage }: StoreImagesValues) =>
 export const StoreImagesEdit = () => {
   const edit = useStoreEdit({
     select: (store): StoreImagesValues => ({
-      logoImage: store.logoImageUrl,
-      interiorImages: store.interiorImageUrls,
+      logoImage: store.logoImageUrl ? toSavedImage(store.logoImageUrl) : null,
+      interiorImages: store.interiorImageUrls.map(toSavedImage),
     }),
     isEqual: isSameImages,
     isValid: isValidImages,

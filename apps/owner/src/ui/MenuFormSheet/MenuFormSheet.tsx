@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { BottomSheet, Button, Input } from '@repo/ui';
 
+import type { ImageValue } from '@owner/api/imageUpload';
 import type { MenuField } from '@owner/api/signupFlow';
 import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
 import { formatPriceDigits, toPriceDigits } from '@owner/ui/menuPrice';
 
 // 시트에서 입력을 마친 메뉴. 가격은 쉼표 없는 숫자 문자열
-export interface MenuFormValues<TImage extends File | string> {
-  image: TImage;
+export interface MenuFormValues {
+  image: ImageValue;
   name: string;
   price: string;
 }
 
 // 시트에서 입력 중인 메뉴. 저장 전이라 사진이 비어 있을 수 있다
-export interface MenuFormDraft<TImage extends File | string = File | string> {
-  image: TImage | null;
+export interface MenuFormDraft {
+  image: ImageValue | null;
   name: string;
   price: string;
 }
@@ -26,24 +27,24 @@ export interface MenuFormRules {
   getErrors: (draft: MenuFormDraft) => Record<MenuField, string | undefined>;
 }
 
-export interface MenuFormSheetProps<TImage extends File | string> {
+export interface MenuFormSheetProps {
   // 수정할 메뉴. 없으면 새 메뉴를 추가한다. 사진이 없는 메뉴면 사진을 다시 고르게 한다
-  initialMenu?: MenuFormDraft<TImage>;
+  initialMenu?: MenuFormDraft;
   rules: MenuFormRules;
   onClose: () => void;
-  // 사진을 다시 고르지 않았으면 원래 사진(파일 또는 이미 올라간 주소)을 그대로 넘긴다
-  onSave: (menu: MenuFormValues<TImage | File>) => void;
+  // 사진을 다시 고르지 않았으면 원래 사진을 그대로, 새로 고른 사진은 selected 상태로 넘긴다
+  onSave: (menu: MenuFormValues) => void;
 }
 
 // 대표 메뉴 추가·수정 바텀시트. 입점 등록과 가게 관리가 함께 쓴다.
 // 열 때마다 새로 그려 입력값을 초기화하므로 열려 있을 때만 렌더링한다
-export const MenuFormSheet = <TImage extends File | string>({
+export const MenuFormSheet = ({
   initialMenu,
   onClose,
   onSave,
   rules,
-}: MenuFormSheetProps<TImage>) => {
-  const [draft, setDraft] = useState<MenuFormDraft<TImage | File>>(
+}: MenuFormSheetProps) => {
+  const [draft, setDraft] = useState<MenuFormDraft>(
     initialMenu ?? { image: null, name: '', price: '' },
   );
   // 입력 중에는 오류를 보여주지 않고, 칸을 벗어나거나 확인을 누른 뒤부터 보여준다
@@ -57,7 +58,7 @@ export const MenuFormSheet = <TImage extends File | string>({
     touched[field] ? errors[field] : undefined;
   const priceMaxDigits = String(rules.priceMax).length;
 
-  const updateDraft = (patch: Partial<MenuFormDraft<TImage | File>>) => {
+  const updateDraft = (patch: Partial<MenuFormDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
   };
 
@@ -99,7 +100,9 @@ export const MenuFormSheet = <TImage extends File | string>({
               updateDraft({ image: null });
               touch('image')();
             }}
-            onSelect={([file]) => updateDraft({ image: file })}
+            onSelect={([file]) =>
+              updateDraft({ image: { status: 'selected', file } })
+            }
             size="sm"
           />
         </div>

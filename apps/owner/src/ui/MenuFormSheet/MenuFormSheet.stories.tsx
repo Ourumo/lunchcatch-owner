@@ -26,10 +26,8 @@ const uploadedImageUrl = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#e7e5e4"/><rect x="120" y="90" width="160" height="120" rx="12" fill="#78716c"/></svg>',
 )}`;
 
-type StoryImage = File | string;
-
 // 확인하면 시트가 닫히고 입력한 메뉴를 보여주도록 상태를 붙인다
-const SheetExample = (props: MenuFormSheetProps<StoryImage>) => {
+const SheetExample = (props: MenuFormSheetProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const [saved, setSaved] = useState<string>();
 
@@ -40,7 +38,7 @@ const SheetExample = (props: MenuFormSheetProps<StoryImage>) => {
       </button>
       {saved && <p>{saved}</p>}
       {isOpen && (
-        <MenuFormSheet<StoryImage>
+        <MenuFormSheet
           {...props}
           onClose={() => setIsOpen(false)}
           onSave={({ name, price }) => {
@@ -65,7 +63,7 @@ const meta = {
     layout: 'fullscreen',
   },
   render: (args) => <SheetExample {...args} />,
-} satisfies Meta<typeof MenuFormSheet<StoryImage>>;
+} satisfies Meta<typeof MenuFormSheet>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -77,7 +75,7 @@ export const Add: Story = {};
 export const Edit: Story = {
   args: {
     initialMenu: {
-      image: uploadedImageUrl,
+      image: { status: 'saved', url: uploadedImageUrl },
       name: '수제 치즈 돈까스',
       price: '11000',
     },
