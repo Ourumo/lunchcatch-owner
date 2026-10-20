@@ -1,3 +1,4 @@
+import { ApiError, request } from './client';
 import {
   MOCK_ENDED_NEXT_PAGE_FAILS_ONCE,
   mockCampaigns,
@@ -9,7 +10,7 @@ import { type CampaignPoster, isPosterComplete } from './poster';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 상세 조회는 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -440,7 +441,88 @@ export const getRegistrationCampaign = async (
   return { ok: true, data: structuredClone(campaign) };
 };
 
-export const getCampaign = getRegistrationCampaign;
+interface CampaignDetailResponse {
+  campaignId: number;
+  status: CampaignStatus;
+  pausedReason: PausedReason | null;
+  discountTargetType: DiscountTarget;
+  discountType: DiscountType;
+  discountValue: number;
+  targetMenuId: number | null;
+  issueQuantity: number;
+  // HH:mm:ss로 온다
+  usableStartTime: string;
+  usableEndTime: string;
+  targetRadius: number;
+  targetGender: TargetGender;
+  targetAgeGroups: string[];
+  // 아직 한 번도 설정하지 않았으면 null
+  dailyBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+}
+
+const serverAgeGroups: Record<string, AgeGroup> = {
+  AGE_20S: 'TWENTIES',
+  AGE_30S: 'THIRTIES',
+  AGE_40S: 'FORTIES',
+  AGE_50_PLUS: 'FIFTIES_PLUS',
+};
+
+// 서버는 전체 연령대를 네 값으로 보내고, 화면은 전체를 빈 배열로 둔다
+const toAgeGroups = (ageGroups: string[]): AgeGroup[] => {
+  const groups = ageGroups.flatMap((group) =>
+    serverAgeGroups[group] ? [serverAgeGroups[group]] : [],
+  );
+
+  return groups.length === Object.keys(serverAgeGroups).length ? [] : groups;
+};
+
+// 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다
+const toCampaign = (data: CampaignDetailResponse): Campaign => ({
+  id: String(data.campaignId),
+  status: data.status,
+  pausedReason: data.pausedReason,
+  createdAt: data.createdAt,
+  reviewFailReasons: [],
+  performance: null,
+  poster: null,
+  coupon: {
+    discountTarget: data.discountTargetType,
+    menuId: data.targetMenuId === null ? null : String(data.targetMenuId),
+    discountType: data.discountType,
+    discountValue: data.discountValue,
+    issueLimit: data.issueQuantity,
+    usableFrom: data.usableStartTime.slice(0, 5),
+    usableUntil: data.usableEndTime.slice(0, 5),
+  },
+  target: {
+    radius: data.targetRadius as ExposureRadius,
+    gender: data.targetGender,
+    ageGroups: toAgeGroups(data.targetAgeGroups),
+  },
+  budget: {
+    dailyBudget: data.dailyBudget,
+    startDate: data.startDate ?? '',
+    endDate: data.endDate ?? '',
+  },
+});
+
+export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
+  try {
+    const data = await request<CampaignDetailResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+    );
+
+    return { ok: true, data: toCampaign(data) };
+  } catch (error) {
+    // 없는 캠페인과 다른 점주의 캠페인을 서버가 같은 코드로 거절한다
+    return error instanceof ApiError && error.code === 'CAMPAIGN-005'
+      ? { ok: false, message: NOT_FOUND_MESSAGE }
+      : { ok: false };
+  }
+};
 
 // 등록을 시작하면 DRAFT를 먼저 만들고, 이후 단계는 이 캠페인 ID로 저장한다.
 // 준비 중 캠페인이 이미 MAX_UPCOMING_CAMPAIGNS건이면 만들지 않는다
