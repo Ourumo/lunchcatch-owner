@@ -159,6 +159,35 @@ export const isStoreStepComplete = (
   business: BusinessStepValues,
 ) => getStoreRequiredChecks(store, business).every(Boolean);
 
+// 가게 기본 정보 저장. 처음 저장하면 서버가 가게 초안을 만들고, 다시 저장하면 덮어쓴다.
+// 전화번호와 사업자등록번호는 입력할 때부터 하이픈 없는 숫자만 받으므로 그대로 보낸다
+export const saveStoreStep = async (
+  { category, name, ownerName, phone }: StoreStepValues,
+  { registrationNumber }: BusinessStepValues,
+  version: number,
+): Promise<ApiResult<number>> => {
+  try {
+    const data = await request<OnboardingSaveResponse>(
+      '/v1/owner/store/basic',
+      {
+        method: 'PUT',
+        body: {
+          version,
+          name: name.trim(),
+          categoryCode: category,
+          representativeName: ownerName.trim(),
+          businessRegistrationNumber: registrationNumber,
+          phone,
+        },
+      },
+    );
+
+    return { ok: true, data: data.version };
+  } catch {
+    return { ok: false };
+  }
+};
+
 export type Weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
 // 영업 요일 칩에 이 순서대로 보여준다

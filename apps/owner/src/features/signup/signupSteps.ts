@@ -5,6 +5,7 @@ import {
   isStoreStepComplete,
   isValidTimeRange,
   ownerTerms,
+  saveStoreStep,
   saveTermsStep,
   type SignupFlowValues,
 } from '@owner/api/signupFlow';
@@ -76,6 +77,8 @@ export const signupSteps: SignupStep[] = [
     title: '가게 기본 정보',
     canProceed: ({ store, business }) => isStoreStepComplete(store, business),
     progressHint: getStoreProgressHint,
+    save: ({ store, business }, version) =>
+      saveStoreStep(store, business, version),
   },
   {
     id: 'location',
