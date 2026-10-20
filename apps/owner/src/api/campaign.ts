@@ -429,6 +429,12 @@ export const getEndedCampaignPage = async ({
           .filter(({ status }) => status === 'ENDED')
           .map(toListedCampaign),
       );
+
+      // 같은 토큰이 다시 오면 끝없이 같은 구간을 받게 되므로 실패로 본다
+      if (data.nextPageToken && data.nextPageToken === nextCursor) {
+        throw new Error('같은 pageToken이 반복됨');
+      }
+
       nextCursor = data.nextPageToken;
     } while (campaigns.length === 0 && nextCursor);
 
