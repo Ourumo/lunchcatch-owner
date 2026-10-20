@@ -9,6 +9,8 @@ import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { getComparisonCampaigns } from './analyticsCampaigns';
+import { AnalyticsComparison } from './AnalyticsComparison';
 import { AnalyticsSummary } from './AnalyticsSummary';
 import { AnalyticsTrend } from './AnalyticsTrend';
 import { CampaignSelectSheet } from './CampaignSelectSheet';
@@ -250,6 +252,16 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
           title={getTitle(campaign)}
         />
         {renderReport(campaign)}
+        {/* 비교할 다른 캠페인이 있을 때만 보여준다 */}
+        {getComparisonCampaigns(campaignsState.campaigns).some(
+          ({ id }) => id !== selectedCampaign.id,
+        ) && (
+          <AnalyticsComparison
+            campaigns={campaignsState.campaigns}
+            getTitle={getTitle}
+            selectedId={selectedCampaign.id}
+          />
+        )}
         <AnalyticsNotices />
         {isSelectOpen && (
           <CampaignSelectSheet
