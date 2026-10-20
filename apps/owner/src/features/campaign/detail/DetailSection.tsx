@@ -42,3 +42,18 @@ export const DetailRow = ({ isHighlighted, label, value }: DetailRowProps) => {
     </div>
   );
 };
+
+interface DetailNoteProps {
+  label: string;
+  value: string;
+}
+
+// 여러 줄일 수 있는 긴 값(유의사항 등). 오른쪽 정렬 대신 라벨 아래에 왼쪽 정렬로 보여준다
+export const DetailNote = ({ label, value }: DetailNoteProps) => (
+  <div className="flex flex-col gap-1 text-body-sm-mobile">
+    <dt className="text-text-secondary">{label}</dt>
+    <dd className="font-medium break-keep whitespace-pre-line text-text-primary">
+      {value}
+    </dd>
+  </div>
+);

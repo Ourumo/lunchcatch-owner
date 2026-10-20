@@ -45,6 +45,8 @@ const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
       issueLimit: 30,
       usableFrom: '11:30',
       usableUntil: '14:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-scheduled',
@@ -82,6 +84,8 @@ const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
       issueLimit: 40,
       usableFrom: '12:00',
       usableUntil: '14:30',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-review-failed',
@@ -118,6 +122,8 @@ const mockNextCampaigns: Record<Exclude<MockNextCampaign, 'NONE'>, Campaign> = {
       issueLimit: null,
       usableFrom: '11:30',
       usableUntil: '15:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: null,
     target: { radius: 1000, gender: 'ALL', ageGroups: [] },
@@ -185,6 +191,8 @@ const createArchivedCampaign = (index: number): Campaign => {
       issueLimit: 30 + (index % 3) * 10,
       usableFrom: '11:30',
       usableUntil: '14:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: `poster-archived-${number}`,
@@ -235,6 +243,8 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-active',
@@ -287,6 +297,8 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '15:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-ended-1',
@@ -329,6 +341,8 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 50,
       usableFrom: '11:30',
       usableUntil: '13:30',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-ended-2',
@@ -371,6 +385,8 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 40,
       usableFrom: '11:30',
       usableUntil: '14:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-ended-3',
@@ -417,6 +433,8 @@ export const mockCampaigns: Campaign[] = [
       issueLimit: 30,
       usableFrom: '11:30',
       usableUntil: '15:00',
+      minOrderAmount: null,
+      notice: '',
     },
     poster: {
       posterId: 'poster-ended-4',

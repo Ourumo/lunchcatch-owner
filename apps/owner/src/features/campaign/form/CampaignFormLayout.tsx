@@ -4,9 +4,15 @@ import { Button, Toast } from '@repo/ui';
 import { CircleAlert } from 'lucide-react';
 
 import {
+  type CampaignStepKey,
+  type CampaignValues,
   requestCampaignActivation,
-  saveCampaignStep,
+  saveBudgetStep,
+  saveCouponStep,
+  savePosterStep,
+  saveTargetStep,
 } from '@owner/api/campaign';
+import type { ApiResult } from '@owner/api/types';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -15,6 +21,7 @@ import {
   campaignSteps,
   getCampaignEditPath,
   isValueStep,
+  NEW_CAMPAIGN_ID,
 } from './campaignSteps';
 import { useCampaignForm } from './useCampaignForm';
 
@@ -31,7 +38,8 @@ interface ActionError {
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { campaignId, platformSettings, values } = useCampaignForm();
+  const { campaignId, platformSettings, updateStepValues, values } =
+    useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<ActionError>();
   const [reviewFailReasons, setReviewFailReasons] = useState<string[]>([]);
@@ -41,7 +49,12 @@ export const CampaignFormLayout = () => {
   );
   const currentStep = campaignSteps.at(currentIndex);
 
-  if (currentIndex === -1 || !currentStep) {
+  // 새 캠페인은 1단계를 저장해야 DRAFT가 생겨 다음 단계를 저장할 수 있다
+  if (
+    currentIndex === -1 ||
+    !currentStep ||
+    (campaignId === NEW_CAMPAIGN_ID && currentIndex > 0)
+  ) {
     return (
       <Navigate
         replace
@@ -70,6 +83,48 @@ export const CampaignFormLayout = () => {
         ? getCampaignEditPath(campaignId, previousStep)
         : '/campaigns',
     );
+  };
+
+  // 3·4단계 저장 응답은 서버에 저장된 현재 값이라 그 값으로 입력값을 맞춘다
+  const applySavedValues = <TStepKey extends 'target' | 'budget'>(
+    stepKey: TStepKey,
+    result: ApiResult<CampaignValues[TStepKey]>,
+  ): ApiResult<string> => {
+    if (!result.ok) {
+      return result;
+    }
+
+    updateStepValues(stepKey, result.data);
+
+    return { ok: true, data: campaignId };
+  };
+
+  // 단계 값을 저장하고 이어 갈 캠페인 ID를 돌려준다. 1단계는 서버가 DRAFT의 ID를 정한다
+  const saveCurrentStep = async (
+    stepKey: CampaignStepKey,
+  ): Promise<ApiResult<string>> => {
+    if (stepKey === 'coupon') {
+      return saveCouponStep(values.coupon);
+    }
+
+    if (stepKey === 'target') {
+      return applySavedValues(
+        'target',
+        await saveTargetStep(campaignId, values.target),
+      );
+    }
+
+    if (stepKey === 'budget') {
+      return applySavedValues(
+        'budget',
+        await saveBudgetStep(campaignId, values.budget),
+      );
+    }
+
+    // 남은 단계는 2단계 포스터다
+    const result = await savePosterStep(campaignId, values.poster);
+
+    return result.ok ? { ok: true, data: campaignId } : result;
   };
 
   const requestActivation = async () => {
@@ -108,25 +163,27 @@ export const CampaignFormLayout = () => {
       return;
     }
 
-    if (isValueStep(currentStep.id)) {
-      setIsSaving(true);
-      const result = await saveCampaignStep(
-        campaignId,
-        currentStep.id,
-        values[currentStep.id],
-      );
-      setIsSaving(false);
-
-      if (!result.ok) {
-        setActionError({
-          title: '저장하지 못했습니다',
-          message: result.message ?? SAVE_FAILED_MESSAGE,
-        });
-        return;
-      }
+    if (!isValueStep(currentStep.id)) {
+      navigate(getCampaignEditPath(campaignId, nextStep));
+      return;
     }
 
-    navigate(getCampaignEditPath(campaignId, nextStep));
+    setIsSaving(true);
+    const result = await saveCurrentStep(currentStep.id);
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setActionError({
+        title: '저장하지 못했습니다',
+        message: result.message ?? SAVE_FAILED_MESSAGE,
+      });
+      return;
+    }
+
+    // 1단계를 처음 저장하면 서버가 만든 DRAFT의 ID로 이어 간다. 뒤로 가기로 ID 없는 1단계에 돌아오지 않게 기록을 바꿔치기한다
+    navigate(getCampaignEditPath(result.data, nextStep), {
+      replace: campaignId === NEW_CAMPAIGN_ID,
+    });
   };
 
   return (

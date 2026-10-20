@@ -94,3 +94,6 @@ export const isValueStep = (
 
 export const getCampaignEditPath = (campaignId: string, step: CampaignStep) =>
   `/campaigns/${campaignId}/edit/${step.path}`;
+
+// 아직 서버에 DRAFT가 없는 새 캠페인의 주소 자리 값. 1단계를 처음 저장하면 서버가 DRAFT를 만들고 ID를 준다
+export const NEW_CAMPAIGN_ID = 'new';

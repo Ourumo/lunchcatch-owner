@@ -3,22 +3,37 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 
 import {
+  type Campaign,
   type CampaignStatus,
   type CampaignValues,
-  getRegistrationCampaign,
+  createInitialCampaignValues,
+  getCampaign,
 } from '@owner/api/campaign';
 import {
   getPlatformSettings,
   type PlatformSettings,
 } from '@owner/api/platform';
+import type { ApiResult } from '@owner/api/types';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
   CampaignFormContext,
   type CampaignFormContextValue,
 } from './campaignFormContext';
+import { NEW_CAMPAIGN_ID } from './campaignSteps';
 
 const LIST_PATH = '/campaigns';
+
+// 새 캠페인은 1단계를 처음 저장할 때 서버가 DRAFT를 만들므로, 그 전까지는 기본값으로 쓴다
+const loadCampaign = (
+  campaignId: string,
+): Promise<ApiResult<Pick<Campaign, keyof CampaignValues | 'status'>>> =>
+  campaignId === NEW_CAMPAIGN_ID
+    ? Promise.resolve({
+        ok: true,
+        data: { ...createInitialCampaignValues(), status: 'DRAFT' },
+      })
+    : getCampaign(campaignId);
 
 type LoadState =
   | { status: 'loading' }
@@ -49,33 +64,32 @@ export const CampaignFormProvider = ({
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([
-      getRegistrationCampaign(campaignId),
-      getPlatformSettings(),
-    ]).then(([campaignResult, settingsResult]) => {
-      if (ignore) {
-        return;
-      }
+    Promise.all([loadCampaign(campaignId), getPlatformSettings()]).then(
+      ([campaignResult, settingsResult]) => {
+        if (ignore) {
+          return;
+        }
 
-      if (!campaignResult.ok) {
-        setLoadState({ status: 'error', message: campaignResult.message });
-        return;
-      }
+        if (!campaignResult.ok) {
+          setLoadState({ status: 'error', message: campaignResult.message });
+          return;
+        }
 
-      // 최소 하루 예산 없이는 4단계 진행 여부를 판단할 수 없으므로 함께 실패로 본다
-      if (!settingsResult.ok) {
-        setLoadState({ status: 'error', message: settingsResult.message });
-        return;
-      }
+        // 최소 하루 예산 없이는 4단계 진행 여부를 판단할 수 없으므로 함께 실패로 본다
+        if (!settingsResult.ok) {
+          setLoadState({ status: 'error', message: settingsResult.message });
+          return;
+        }
 
-      const { budget, coupon, poster, status, target } = campaignResult.data;
-      setValues({ budget, coupon, poster, target });
-      setLoadState({
-        status: 'loaded',
-        campaignStatus: status,
-        platformSettings: settingsResult.data,
-      });
-    });
+        const { budget, coupon, poster, status, target } = campaignResult.data;
+        setValues({ budget, coupon, poster, target });
+        setLoadState({
+          status: 'loaded',
+          campaignStatus: status,
+          platformSettings: settingsResult.data,
+        });
+      },
+    );
 
     // 응답 전에 화면을 벗어나면 결과를 버린다
     return () => {
