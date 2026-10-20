@@ -10,6 +10,7 @@ import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatu
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { AnalyticsSummary } from './AnalyticsSummary';
+import { AnalyticsTrend } from './AnalyticsTrend';
 import { CampaignSelectSheet } from './CampaignSelectSheet';
 import { useStoreAnalytics } from './useStoreAnalytics';
 
@@ -183,9 +184,12 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
         <p className="px-1 text-caption-mobile text-text-secondary">
           {formatReportPeriod(campaign, report)}
         </p>
-        {/* 집계되지 않은 날을 실적 0으로 보지 않으므로 0으로 채운 요약을 보여주지 않는다 */}
+        {/* 집계되지 않은 날을 실적 0으로 보지 않으므로 0으로 채운 요약과 차트를 보여주지 않는다 */}
         {report.length > 0 ? (
-          <AnalyticsSummary report={report} />
+          <>
+            <AnalyticsSummary report={report} />
+            <AnalyticsTrend campaign={campaign} report={report} />
+          </>
         ) : (
           <AnalyticsMessage
             description="수치는 하루 한 번 집계돼 집행 다음 날부터 볼 수 있어요"

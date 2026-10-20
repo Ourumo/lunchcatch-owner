@@ -84,7 +84,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 // 오늘 한국 날짜(YYYY-MM-DD). 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다
-const getKstToday = () =>
+export const getKstToday = () =>
   new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 10);
 
 // YYYY-MM-DD에 일수를 더한다. 시간대 영향을 받지 않게 UTC 자정으로 계산한다

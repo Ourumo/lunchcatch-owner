@@ -44,7 +44,7 @@ export const AnalyticsSummary = ({ report }: AnalyticsSummaryProps) => {
       >
         방문 (쿠폰 사용)
       </h2>
-      <p className="mt-1 text-h1-mobile font-bold text-text-primary">
+      <p className="mt-1 text-display-mobile font-bold text-text-primary">
         {formatNumber(summary.redeemCount)}
         <span className="ml-1 text-body-mobile font-medium">건</span>
       </p>
