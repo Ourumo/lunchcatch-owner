@@ -15,6 +15,7 @@ import {
   type ComparisonItem,
   useCampaignComparison,
 } from './useCampaignComparison';
+import type { CampaignReportLoader } from './useCampaignReportLoader';
 
 const getComparePath = (baseId: string, targetId: string) =>
   `${STORE_ANALYTICS_COMPARE_PATH}?${new URLSearchParams({ base: baseId, target: targetId })}`;
@@ -72,6 +73,7 @@ export interface AnalyticsComparisonProps {
   campaigns: Campaign[];
   selectedId: string;
   getTitle: (campaign: Campaign) => string;
+  loadReport: CampaignReportLoader;
 }
 
 // 캠페인 비교. 진행 중·일시중지 캠페인과 최근에 끝난 캠페인을 보여주고,
@@ -79,9 +81,10 @@ export interface AnalyticsComparisonProps {
 export const AnalyticsComparison = ({
   campaigns,
   getTitle,
+  loadReport,
   selectedId,
 }: AnalyticsComparisonProps) => {
-  const { retry, state } = useCampaignComparison(campaigns);
+  const { retry, state } = useCampaignComparison(campaigns, loadReport);
 
   const renderList = () => {
     if (state.status === 'loading') {

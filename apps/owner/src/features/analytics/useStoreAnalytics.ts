@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { type Campaign, getCampaign, getCampaigns } from '@owner/api/campaign';
-import { type CampaignDayReport, getCampaignReport } from '@owner/api/report';
+import type { CampaignDayReport } from '@owner/api/report';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 
 import {
   findSelectedCampaign,
   getAnalyzableCampaigns,
 } from './analyticsCampaigns';
+import { useCampaignReportLoader } from './useCampaignReportLoader';
 
 type CampaignsState =
   | { status: 'loading' }
@@ -33,6 +34,7 @@ export const useStoreAnalytics = (campaignId: string | null) => {
   // 값이 바뀌면 다시 불러온다
   const [campaignsRequestId, setCampaignsRequestId] = useState(0);
   const [reportRequestId, setReportRequestId] = useState(0);
+  const loadReport = useCampaignReportLoader();
 
   useEffect(() => {
     let ignore = false;
@@ -75,38 +77,33 @@ export const useStoreAnalytics = (campaignId: string | null) => {
     }
 
     let ignore = false;
-    const { budget, id } = selectedCampaign;
+    const { id } = selectedCampaign;
 
     // 종료된 캠페인은 목록에 할인 메뉴가 없어 상세로 다시 받는다
-    Promise.all([
-      getCampaign(id),
-      getCampaignReport({
-        campaignId: id,
-        startDate: budget.startDate,
-        endDate: budget.endDate,
-      }),
-    ]).then(([campaignResult, reportResult]) => {
-      if (ignore) {
-        return;
-      }
+    Promise.all([getCampaign(id), loadReport(selectedCampaign)]).then(
+      ([campaignResult, reportResult]) => {
+        if (ignore) {
+          return;
+        }
 
-      if (!campaignResult.ok || !reportResult.ok) {
-        setReportState({ campaignId: id, status: 'error' });
-        return;
-      }
+        if (!campaignResult.ok || !reportResult.ok) {
+          setReportState({ campaignId: id, status: 'error' });
+          return;
+        }
 
-      setReportState({
-        campaignId: id,
-        status: 'success',
-        campaign: campaignResult.data,
-        report: reportResult.data,
-      });
-    });
+        setReportState({
+          campaignId: id,
+          status: 'success',
+          campaign: campaignResult.data,
+          report: reportResult.data,
+        });
+      },
+    );
 
     return () => {
       ignore = true;
     };
-  }, [reportRequestId, selectedCampaign]);
+  }, [loadReport, reportRequestId, selectedCampaign]);
 
   const retryCampaigns = () => {
     setCampaignsState({ status: 'loading' });
@@ -120,6 +117,7 @@ export const useStoreAnalytics = (campaignId: string | null) => {
 
   return {
     campaignsState,
+    loadReport,
     // 고른 캠페인과 다른 캠페인의 결과면 아직 불러오는 중이다
     reportState:
       reportState && reportState.campaignId === selectedCampaign?.id

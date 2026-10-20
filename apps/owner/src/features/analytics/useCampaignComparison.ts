@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import type { Campaign } from '@owner/api/campaign';
-import { getCampaignReport } from '@owner/api/report';
 
 import { getComparisonCampaigns } from './analyticsCampaigns';
 import { summarizeReport } from './reportSummary';
+import type { CampaignReportLoader } from './useCampaignReportLoader';
 
 export interface ComparisonItem {
   campaign: Campaign;
@@ -18,8 +18,12 @@ type ComparisonState =
   | { status: 'error' }
   | { status: 'success'; items: ComparisonItem[] };
 
-// 캠페인 비교 목록의 캠페인마다 집행 기간 리포트를 받아 방문과 소진 포인트를 더한다
-export const useCampaignComparison = (campaigns: Campaign[] | null) => {
+// 캠페인 비교 목록의 캠페인마다 집행 기간 리포트를 받아 방문과 소진 포인트를 더한다.
+// 지금 보고 있는 캠페인의 리포트는 분석 화면이 받은 요청을 같이 쓴다
+export const useCampaignComparison = (
+  campaigns: Campaign[] | null,
+  loadReport: CampaignReportLoader,
+) => {
   const [state, setState] = useState<ComparisonState>({ status: 'loading' });
   // 값이 바뀌면 다시 불러온다
   const [requestId, setRequestId] = useState(0);
@@ -32,15 +36,7 @@ export const useCampaignComparison = (campaigns: Campaign[] | null) => {
     let ignore = false;
     const comparisonCampaigns = getComparisonCampaigns(campaigns);
 
-    Promise.all(
-      comparisonCampaigns.map(({ budget, id }) =>
-        getCampaignReport({
-          campaignId: id,
-          startDate: budget.startDate,
-          endDate: budget.endDate,
-        }),
-      ),
-    ).then((results) => {
+    Promise.all(comparisonCampaigns.map(loadReport)).then((results) => {
       if (ignore) {
         return;
       }
@@ -70,7 +66,7 @@ export const useCampaignComparison = (campaigns: Campaign[] | null) => {
     return () => {
       ignore = true;
     };
-  }, [campaigns, requestId]);
+  }, [campaigns, loadReport, requestId]);
 
   const retry = () => {
     setState({ status: 'loading' });

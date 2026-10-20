@@ -143,6 +143,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     campaignsState,
+    loadReport,
     reportState,
     retryCampaigns,
     retryReport,
@@ -259,6 +260,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
           <AnalyticsComparison
             campaigns={campaignsState.campaigns}
             getTitle={getTitle}
+            loadReport={loadReport}
             selectedId={selectedCampaign.id}
           />
         )}
