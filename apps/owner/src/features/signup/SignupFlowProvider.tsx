@@ -1,41 +1,84 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import type { SignupFlowValues } from '@owner/api/signupFlow';
+import {
+  getSignupProgress,
+  type SignupFlowValues,
+} from '@owner/api/signupFlow';
 
 import {
   SignupFlowContext,
   type SignupFlowContextValue,
 } from './signupFlowContext';
+import { SignupFlowStatus } from './SignupFlowStatus';
+import { getSignupStepPath, signupSteps } from './signupSteps';
 
-const createInitialValues = (): SignupFlowValues => ({
-  terms: {
-    service: false,
-    paidService: false,
-    privacy: false,
-    location: false,
-  },
-  store: { name: '', category: null, ownerName: '', phone: '' },
-  location: { place: null },
-  business: { registrationNumber: '' },
-  hours: { openDays: [], openTime: '', closeTime: '' },
-  images: { logoImage: null, interiorImages: [] },
-  menu: { menus: [] },
-});
-
-// 회원가입 플로우의 모든 단계 입력값을 한곳에 모아, 단계를 오가도 값이 유지되게 한다
+// 회원가입 플로우의 모든 단계 입력값을 한곳에 모아, 단계를 오가도 값이 유지되게 한다.
+// 들어올 때 서버에 저장한 값과 진행 상태를 불러와, 나갔다 다시 들어와도 저장한 값을 채우고 이어갈 단계로 보낸다
 export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
-  const [values, setValues] = useState(createInitialValues);
-  // 서버는 진행 상태가 없으면 0을 버전으로 준다
+  const navigate = useNavigate();
+  // 불러오기 전이면 null
+  const [values, setValues] = useState<SignupFlowValues | null>(null);
+  const [isLoadFailed, setIsLoadFailed] = useState(false);
+  // 값이 바뀌면 다시 불러온다
+  const [loadRequestId, setLoadRequestId] = useState(0);
   const [version, setVersion] = useState(0);
+
+  const handleProgressResult = useEffectEvent(
+    (result: Awaited<ReturnType<typeof getSignupProgress>>) => {
+      if (!result.ok) {
+        setIsLoadFailed(true);
+        return;
+      }
+
+      setValues(result.data.values);
+      setVersion(result.data.version);
+
+      // 들어온 주소와 상관없이 서버가 정한 이어갈 단계로 보낸다. 로그인하면 늘 약관 동의 주소로 들어온다
+      const resumeStep = signupSteps.find(
+        ({ id }) => id === result.data.resumeStep,
+      );
+
+      if (resumeStep) {
+        navigate(getSignupStepPath(resumeStep), { replace: true });
+      }
+    },
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    getSignupProgress().then((result) => {
+      if (!ignore) {
+        handleProgressResult(result);
+      }
+    });
+
+    // 개발 모드에서 effect가 두 번 실행되면 먼저 보낸 요청의 결과를 버린다
+    return () => {
+      ignore = true;
+    };
+  }, [loadRequestId]);
+
+  if (!values) {
+    return (
+      <SignupFlowStatus
+        onRetry={() => {
+          setIsLoadFailed(false);
+          setLoadRequestId((id) => id + 1);
+        }}
+        status={isLoadFailed ? 'error' : 'loading'}
+      />
+    );
+  }
 
   const updateStepValues: SignupFlowContextValue['updateStepValues'] = (
     stepId,
     patch,
   ) => {
-    setValues((prev) => ({
-      ...prev,
-      [stepId]: { ...prev[stepId], ...patch },
-    }));
+    setValues(
+      (prev) => prev && { ...prev, [stepId]: { ...prev[stepId], ...patch } },
+    );
   };
 
   return (

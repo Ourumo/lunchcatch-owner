@@ -1,5 +1,5 @@
 import { request } from './client';
-import type { ImageValue } from './imageUpload';
+import { type ImageValue, toSavedImage } from './imageUpload';
 import { mockDelay } from './mocks/delay';
 import { mockStorePlaces } from './mocks/places';
 import { mockOwnerTerms } from './mocks/terms';
@@ -58,7 +58,8 @@ export const saveTermsStep = async (): Promise<ApiResult<number>> => {
   }
 };
 
-// 카카오맵 장소 검색에서 선택한 가게 위치 정보
+// 카카오맵 장소 검색에서 선택한 가게 위치 정보.
+// 서버는 장소 ID, 도로명 주소, 좌표만 저장해, 서버에서 불러온 위치는 상호명·지번 주소·전화번호가 빈 문자열이다
 export interface StorePlace {
   kakaoPlaceId: string;
   placeName: string;
@@ -304,14 +305,50 @@ export const saveHoursStep = async (
   }
 };
 
+// 서버가 주는 요일별 영업시간. 시각은 HH:mm:ss로 온다
+export interface ServerBusinessHour {
+  dayOfWeek: string;
+  openTime: string | null;
+  closeTime: string | null;
+  isClosed: boolean | null;
+}
+
+const toTime = (time: string | null) => time?.slice(0, 5) ?? '';
+
+// 서버는 요일마다 시간을 따로 두지만, 화면은 영업일마다 같은 시간을 쓴다. 입점 신청과 가게 관리가 같이 쓴다.
+// 휴무가 아니고 시간이 있는 요일을 영업 요일로 보고, 시간은 첫 영업 요일 값을 쓴다
+export const toHoursStepValues = (
+  hours: ServerBusinessHour[],
+): HoursStepValues => {
+  const openHours = weekdays.flatMap(({ value }) => {
+    const day = hours.find(
+      (hour) =>
+        hour.dayOfWeek === serverWeekdays[value] &&
+        !hour.isClosed &&
+        hour.openTime &&
+        hour.closeTime,
+    );
+
+    return day ? [{ ...day, weekday: value }] : [];
+  });
+
+  return {
+    openDays: openHours.map(({ weekday }) => weekday),
+    openTime: toTime(openHours[0]?.openTime ?? null),
+    closeTime: toTime(openHours[0]?.closeTime ?? null),
+  };
+};
+
 export const MAX_MENUS = 3;
 export const MENU_NAME_MAX_LENGTH = 20;
 export const MENU_PRICE_MIN = 100;
 export const MENU_PRICE_MAX = 1_000_000;
 
-// 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격 모두 필수
+// 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격 모두 필수.
+// 서버에서 불러온 메뉴는 등록한 메뉴 ID가 있고, 사진을 올리기 전이면 사진이 없을 수 있다
 export interface MenuItemValues {
-  image: ImageValue;
+  id?: string | null;
+  image: ImageValue | null;
   name: string;
   // 쉼표 없는 숫자
   price: string;
@@ -380,6 +417,144 @@ export interface SignupFlowValues {
   images: ImagesStepValues;
   menu: MenuStepValues;
 }
+
+// 서버의 입점 단계 이름
+const signupStepIds: Record<string, keyof SignupFlowValues> = {
+  TERMS: 'terms',
+  STORE_INFO: 'store',
+  LOCATION: 'location',
+  HOURS: 'hours',
+  IMAGES: 'images',
+  MENU: 'menu',
+};
+
+interface StoreImageResponse {
+  url: string;
+  sortOrder: number;
+}
+
+// 내 가게 조회(GET /v1/owner/store) 중 입점 신청 입력값을 되살리는 데 쓰는 값.
+// 가게 기본 정보를 저장하기 전에는 가게 값이 모두 null이다
+interface SignupStoreResponse {
+  name: string | null;
+  businessCategory: string | null;
+  representativeName: string | null;
+  businessRegistrationNumber: string | null;
+  phone: string | null;
+  kakaoPlaceId: string | null;
+  roadAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  businessHours: ServerBusinessHour[];
+  logoImage: StoreImageResponse | null;
+  interiorImages: StoreImageResponse[];
+  menus: {
+    menuId: number;
+    name: string;
+    price: number;
+    sortOrder: number;
+    image: StoreImageResponse | null;
+  }[];
+  onboarding: {
+    // 최종 등록을 마쳤으면 null
+    resumeStep: string | null;
+    version: number;
+    steps: { step: string; completed: boolean }[];
+  };
+}
+
+export interface SignupProgress {
+  values: SignupFlowValues;
+  // 다음 단계 저장에 보낼 입점 진행 버전
+  version: number;
+  // 이어서 진행할 단계. 최종 등록을 마쳤으면 null
+  resumeStep: keyof SignupFlowValues | null;
+}
+
+const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
+  a.sortOrder - b.sortOrder;
+
+const isStoreCategory = (code: string | null): code is StoreCategory =>
+  storeCategories.some(({ value }) => value === code);
+
+// 입점 신청 중에 나갔다 다시 들어오면 서버에 저장한 값과 이어갈 단계를 불러온다.
+// 내 가게 조회 하나에 저장한 값과 진행 상태가 함께 있어, 진행 상태 조회를 따로 부르지 않는다.
+// 약관은 동의한 약관을 따로 주지 않아, 약관 단계가 끝났으면 모두 동의한 것으로 본다 (약관은 모두 필수)
+export const getSignupProgress = async (): Promise<
+  ApiResult<SignupProgress>
+> => {
+  try {
+    const data = await request<SignupStoreResponse>('/v1/owner/store');
+    const isTermsCompleted = data.onboarding.steps.some(
+      ({ completed, step }) => step === 'TERMS' && completed,
+    );
+    const { kakaoPlaceId, latitude, longitude, roadAddress } = data;
+
+    return {
+      ok: true,
+      data: {
+        version: data.onboarding.version,
+        resumeStep:
+          data.onboarding.resumeStep === null
+            ? null
+            : (signupStepIds[data.onboarding.resumeStep] ?? null),
+        values: {
+          terms: {
+            service: isTermsCompleted,
+            paidService: isTermsCompleted,
+            privacy: isTermsCompleted,
+            location: isTermsCompleted,
+          },
+          store: {
+            name: data.name ?? '',
+            category: isStoreCategory(data.businessCategory)
+              ? data.businessCategory
+              : null,
+            ownerName: data.representativeName ?? '',
+            phone: data.phone ?? '',
+          },
+          location: {
+            place:
+              kakaoPlaceId !== null &&
+              roadAddress !== null &&
+              latitude !== null &&
+              longitude !== null
+                ? {
+                    kakaoPlaceId,
+                    placeName: '',
+                    roadAddress,
+                    address: '',
+                    phone: '',
+                    latitude,
+                    longitude,
+                  }
+                : null,
+          },
+          business: {
+            registrationNumber: data.businessRegistrationNumber ?? '',
+          },
+          hours: toHoursStepValues(data.businessHours),
+          images: {
+            logoImage: data.logoImage ? toSavedImage(data.logoImage.url) : null,
+            interiorImages: [...data.interiorImages]
+              .sort(bySortOrder)
+              .map(({ url }) => toSavedImage(url)),
+          },
+          menu: {
+            menus: [...data.menus].sort(bySortOrder).map((menu) => ({
+              id: String(menu.menuId),
+              name: menu.name,
+              price: String(menu.price),
+              image: menu.image ? toSavedImage(menu.image.url) : null,
+            })),
+          },
+        },
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
+};
 
 // 모든 단계의 입력값을 한 번에 받아 가게 최종 등록까지 처리한다.
 // 실제 API는 단계마다 저장하므로(가게 기본 정보 저장 시 가게 ID 생성 등) 연동할 때 이 함수 내부를 단계별 호출로 바꾼다
