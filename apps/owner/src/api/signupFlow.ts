@@ -1,4 +1,4 @@
-import { request } from './client';
+import { ApiError, request } from './client';
 import { type ImageValue, toSavedImage } from './imageUpload';
 import { mockDelay } from './mocks/delay';
 import { mockStorePlaces } from './mocks/places';
@@ -43,6 +43,13 @@ interface OnboardingSaveResponse {
   version: number;
 }
 
+// 단계 저장 실패. 화면이 이유별로 안내하고 진행 상태를 다시 불러올 수 있게 서버가 거절한 이유(code)를 함께 돌려준다.
+// 응답을 받지 못했거나 본문이 없으면 code 없이 돌려준다
+const toSaveFailure = (error: unknown) => ({
+  ok: false as const,
+  code: error instanceof ApiError ? (error.code ?? undefined) : undefined,
+});
+
 // 약관 동의 저장. 약관은 모두 필수라 화면에서 모두 동의해야 부를 수 있고,
 // 서버가 동의 시점과 약관 버전을 남기므로 본문은 비워 보낸다. 성공하면 입점 진행 버전을 돌려준다
 export const saveTermsStep = async (): Promise<ApiResult<number>> => {
@@ -53,8 +60,8 @@ export const saveTermsStep = async (): Promise<ApiResult<number>> => {
     );
 
     return { ok: true, data: data.version };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    return toSaveFailure(error);
   }
 };
 
@@ -158,8 +165,8 @@ export const saveLocationStep = async (
     );
 
     return { ok: true, data: data.version };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    return toSaveFailure(error);
   }
 };
 
@@ -216,8 +223,8 @@ export const saveStoreStep = async (
     );
 
     return { ok: true, data: data.version };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    return toSaveFailure(error);
   }
 };
 
@@ -300,8 +307,8 @@ export const saveHoursStep = async (
     );
 
     return { ok: true, data: data.version };
-  } catch {
-    return { ok: false };
+  } catch (error) {
+    return toSaveFailure(error);
   }
 };
 

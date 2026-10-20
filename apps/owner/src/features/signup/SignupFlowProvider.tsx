@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import {
   getSignupProgress,
   type SignupFlowValues,
+  type SignupProgress,
 } from '@owner/api/signupFlow';
 
 import {
@@ -24,6 +25,19 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
   const [loadRequestId, setLoadRequestId] = useState(0);
   const [version, setVersion] = useState(0);
 
+  // 서버에 저장한 값으로 입력값과 버전을 바꾸고, 들어온 주소와 상관없이 서버가 정한 이어갈 단계로 보낸다.
+  // 로그인하면 늘 약관 동의 주소로 들어온다
+  const applyProgress = (progress: SignupProgress) => {
+    setValues(progress.values);
+    setVersion(progress.version);
+
+    const resumeStep = signupSteps.find(({ id }) => id === progress.resumeStep);
+
+    if (resumeStep) {
+      navigate(getSignupStepPath(resumeStep), { replace: true });
+    }
+  };
+
   const handleProgressResult = useEffectEvent(
     (result: Awaited<ReturnType<typeof getSignupProgress>>) => {
       if (!result.ok) {
@@ -31,19 +45,20 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      setValues(result.data.values);
-      setVersion(result.data.version);
-
-      // 들어온 주소와 상관없이 서버가 정한 이어갈 단계로 보낸다. 로그인하면 늘 약관 동의 주소로 들어온다
-      const resumeStep = signupSteps.find(
-        ({ id }) => id === result.data.resumeStep,
-      );
-
-      if (resumeStep) {
-        navigate(getSignupStepPath(resumeStep), { replace: true });
-      }
+      applyProgress(result.data);
     },
   );
+
+  // 저장이 진행 상태와 맞지 않아 거절되면 다시 불러온다. 화면은 그대로 두어 불러온 뒤 안내를 이어서 보여준다
+  const reload = async () => {
+    const result = await getSignupProgress();
+
+    if (result.ok) {
+      applyProgress(result.data);
+    }
+
+    return result.ok;
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -83,7 +98,7 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <SignupFlowContext
-      value={{ setVersion, updateStepValues, values, version }}
+      value={{ reload, setVersion, updateStepValues, values, version }}
     >
       {children}
     </SignupFlowContext>
