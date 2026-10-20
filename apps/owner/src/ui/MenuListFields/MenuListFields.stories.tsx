@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import type { ImageValue } from '@owner/api/imageUpload';
 import type { MenuFormRules } from '@owner/ui/MenuFormSheet/MenuFormSheet';
 
 import {
@@ -23,24 +24,26 @@ const rules: MenuFormRules = {
   }),
 };
 
-// 이미 올라간 사진 주소. 네트워크 없이 보이도록 data URL로 둔다
-const createUploadedUrl = (color: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
+// 이미 올라간 사진. 네트워크 없이 보이도록 data URL로 둔다
+const createUploadedImage = (color: string): ImageValue => ({
+  status: 'saved',
+  url: `data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#e7e5e4"/><rect x="120" y="90" width="160" height="120" rx="12" fill="${color}"/></svg>`,
-  )}`;
+  )}`,
+});
 
-type StoryImage = File | string;
+type StoryImage = ImageValue;
 
 const uploadedMenus: MenuListItem<StoryImage>[] = [
   {
     id: 'menu-1',
-    image: createUploadedUrl('#f56b20'),
+    image: createUploadedImage('#f56b20'),
     name: '수제 치즈 돈까스',
     price: '11000',
   },
   {
     id: 'menu-2',
-    image: createUploadedUrl('#78716c'),
+    image: createUploadedImage('#78716c'),
     name: '로스카츠 정식',
     price: '13000',
   },
@@ -96,7 +99,7 @@ export const Full: Story = {
       ...uploadedMenus,
       {
         id: 'menu-3',
-        image: createUploadedUrl('#a8a29e'),
+        image: createUploadedImage('#a8a29e'),
         name: '냉메밀 소바 세트',
         price: '9500',
       },

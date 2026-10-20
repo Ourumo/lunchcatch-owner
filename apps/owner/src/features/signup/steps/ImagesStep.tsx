@@ -22,7 +22,9 @@ export const ImagesStep = () => {
           updateStepValues('images', { interiorImages: images })
         }
         onLogoRemove={() => updateStepValues('images', { logoImage: null })}
-        onLogoSelect={(file) => updateStepValues('images', { logoImage: file })}
+        onLogoSelect={(image) =>
+          updateStepValues('images', { logoImage: image })
+        }
       />
     </div>
   );

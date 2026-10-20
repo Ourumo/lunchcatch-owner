@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { MAX_MENUS, menuInputRules } from '@owner/api/signupFlow';
 import {
-  getMenuIdsInUse,
-  type StoreImage,
-  updateStoreMenus,
-} from '@owner/api/store';
+  type ImageValue,
+  isSameImage,
+  toSavedImage,
+} from '@owner/api/imageUpload';
+import { MAX_MENUS, menuInputRules } from '@owner/api/signupFlow';
+import { getMenuIdsInUse, updateStoreMenus } from '@owner/api/store';
 import {
   MenuListFields,
   type MenuListItem,
@@ -15,7 +16,7 @@ import { StoreEditLayout } from './StoreEditLayout';
 import { useStoreEdit } from './useStoreEdit';
 
 // 수정 화면의 메뉴. 입점 등록과 같은 입력 화면을 쓰므로 가격은 쉼표 없는 숫자 문자열로 다루고 저장할 때 숫자로 바꾼다
-type StoreMenuItem = MenuListItem<StoreImage | null>;
+type StoreMenuItem = MenuListItem<ImageValue | null>;
 
 const IN_USE_NOTICE =
   '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요';
@@ -28,7 +29,7 @@ const isSameMenus = (a: StoreMenuItem[], b: StoreMenuItem[]) =>
       menu.id === b[index].id &&
       menu.name === b[index].name &&
       menu.price === b[index].price &&
-      menu.image === b[index].image,
+      isSameImage(menu.image, b[index].image),
   );
 
 // 메뉴 하나하나는 시트에서 검사하고, 여기서는 개수만 본다. 대표 메뉴는 선택이라 0개도 저장할 수 있다
@@ -74,7 +75,7 @@ export const StoreMenusEdit = () => {
     select: (store): StoreMenuItem[] =>
       store.menus.map(({ id, imageUrl, name, price }) => ({
         id,
-        image: imageUrl,
+        image: imageUrl ? toSavedImage(imageUrl) : null,
         name,
         price: String(price),
       })),
@@ -92,7 +93,7 @@ export const StoreMenusEdit = () => {
     <StoreEditLayout edit={edit} title="대표 메뉴">
       {edit.values && (
         <div className="px-page pt-6 pb-8">
-          <MenuListFields<StoreImage | null>
+          <MenuListFields<ImageValue | null>
             // 쓰이는 메뉴 ID를 불러오기 전이거나 불러오지 못하면 잘못 고치거나 지우지 않도록 수정과 삭제 버튼을 모두 숨긴다
             canEdit={(menu) => menuIdsInUse !== null && !isInUse(menu)}
             // 고치면 할인 중인 캠페인의 메뉴가 바뀌고, 지우면 그 캠페인이 없는 메뉴를 가리키게 되어 둘 다 막는다
