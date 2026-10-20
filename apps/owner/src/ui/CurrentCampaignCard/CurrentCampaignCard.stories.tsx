@@ -31,6 +31,8 @@ const activeCampaign: Campaign = {
     issueLimit: 50,
     usableFrom: '11:30',
     usableUntil: '15:00',
+    minOrderAmount: null,
+    notice: '',
   },
   poster: null,
   target: {

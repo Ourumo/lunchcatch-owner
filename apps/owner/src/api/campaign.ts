@@ -44,7 +44,13 @@ export interface CouponStepValues {
   // HH:mm, 30분 단위
   usableFrom: string;
   usableUntil: string;
+  // 선택 입력. 이 금액(원) 이상 주문해야 쿠폰을 쓸 수 있다. 입력하지 않으면 null
+  minOrderAmount: number | null;
+  // 선택 입력. NOTICE_MAX_LENGTH자 이하. 입력하지 않으면 빈 문자열
+  notice: string;
 }
+
+export const NOTICE_MAX_LENGTH = 500;
 
 // 반경 단위는 m
 export type ExposureRadius = 500 | 1000 | 2000 | 3000;
@@ -301,6 +307,8 @@ export const createInitialCampaignValues = (): CampaignValues => ({
     issueLimit: null,
     usableFrom: USABLE_TIME_START,
     usableUntil: USABLE_TIME_END,
+    minOrderAmount: null,
+    notice: '',
   },
   poster: null,
   target: { radius: 1000, gender: 'ALL', ageGroups: [] },
@@ -380,6 +388,8 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
     issueLimit: null,
     usableFrom: '',
     usableUntil: '',
+    minOrderAmount: null,
+    notice: '',
   },
   target: createInitialCampaignValues().target,
   budget: {
@@ -477,6 +487,9 @@ interface CampaignDetailResponse {
   // HH:mm:ss로 온다
   usableStartTime: string;
   usableEndTime: string;
+  // 입력하지 않았으면 null
+  minOrderAmount: number | null;
+  notice: string | null;
   targetRadius: number;
   targetGender: TargetGender;
   targetAgeGroups: string[];
@@ -527,6 +540,8 @@ const toCampaign = (data: CampaignDetailResponse): Campaign => ({
     issueLimit: data.issueQuantity,
     usableFrom: data.usableStartTime.slice(0, 5),
     usableUntil: data.usableEndTime.slice(0, 5),
+    minOrderAmount: data.minOrderAmount,
+    notice: data.notice ?? '',
   },
   target: {
     radius: data.targetRadius as ExposureRadius,
@@ -587,6 +602,11 @@ export const saveCouponStep = async (
         issueQuantity: coupon.issueLimit,
         usableStartTime: toServerTime(coupon.usableFrom),
         usableEndTime: toServerTime(coupon.usableUntil),
+        // 선택 입력은 비우면 보내지 않는다
+        ...(coupon.minOrderAmount !== null
+          ? { minOrderAmount: coupon.minOrderAmount }
+          : {}),
+        ...(coupon.notice.trim() ? { notice: coupon.notice.trim() } : {}),
       },
     });
 

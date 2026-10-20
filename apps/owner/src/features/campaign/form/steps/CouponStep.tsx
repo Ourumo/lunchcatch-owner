@@ -12,6 +12,7 @@ import {
   ISSUE_OPEN_TIME,
   isValidDiscountValue,
   MIN_USABLE_MINUTES,
+  NOTICE_MAX_LENGTH,
   USABLE_TIME_END,
   USABLE_TIME_START,
   USABLE_TIME_STEP_MINUTES,
@@ -75,13 +76,23 @@ const getDiscountedPrice = (
 interface FieldGroupProps {
   legend: string;
   description?: string;
+  // 선택 입력이면 제목 옆에 (선택)을 붙인다
+  isOptional?: boolean;
   children: ReactNode;
 }
 
-const FieldGroup = ({ children, description, legend }: FieldGroupProps) => (
+const FieldGroup = ({
+  children,
+  description,
+  isOptional,
+  legend,
+}: FieldGroupProps) => (
   <fieldset className="flex flex-col gap-3">
     <legend className="mb-3 text-body-mobile font-bold text-text-primary">
       {legend}
+      {isOptional && (
+        <span className="ml-1 font-normal text-text-secondary">(선택)</span>
+      )}
     </legend>
     {children}
     {description && (
@@ -91,6 +102,37 @@ const FieldGroup = ({ children, description, legend }: FieldGroupProps) => (
     )}
   </fieldset>
 );
+
+interface NoticeFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+// 유의사항은 여러 줄로 쓸 수 있어 Input과 같은 모양의 textarea를 쓴다
+const NoticeField = ({ onChange, value }: NoticeFieldProps) => {
+  const countId = useId();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <textarea
+        aria-describedby={countId}
+        aria-label="유의사항"
+        className="min-h-24 w-full resize-none rounded-md border border-border-subtle bg-bg-surface px-3 py-2.5 text-caption-web text-text-primary placeholder:text-text-secondary focus:border-action-primary focus:outline-none"
+        maxLength={NOTICE_MAX_LENGTH}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="예) 포장 주문에는 쓸 수 없어요."
+        rows={4}
+        value={value}
+      />
+      <p
+        className="-mt-1 mr-1 text-right text-caption-mobile text-text-secondary"
+        id={countId}
+      >
+        {value.length}/{NOTICE_MAX_LENGTH}
+      </p>
+    </div>
+  );
+};
 
 interface RadioCardProps {
   checked: boolean;
@@ -567,6 +609,43 @@ export const CouponStep = () => {
         <Info aria-hidden="true" className="size-4 shrink-0" />
         선착순 오픈은 매일 {ISSUE_OPEN_TIME}이에요
       </p>
+
+      <FieldGroup
+        description="이 금액 이상 주문해야 쿠폰을 쓸 수 있어요. 비워 두면 주문 금액과 상관없이 쓸 수 있어요."
+        isOptional
+        legend="최소 주문 금액"
+      >
+        <Input
+          aria-label="최소 주문 금액"
+          inputMode="numeric"
+          onChange={(event) =>
+            update({
+              minOrderAmount: toNumberOrNull(
+                event.target.value,
+                AMOUNT_MAX_DIGITS,
+              ),
+            })
+          }
+          placeholder="예) 10,000"
+          trailing="원"
+          value={
+            coupon.minOrderAmount === null
+              ? ''
+              : formatNumber(coupon.minOrderAmount)
+          }
+        />
+      </FieldGroup>
+
+      <FieldGroup
+        description="손님이 쿠폰을 받기 전에 확인할 내용을 적어 주세요."
+        isOptional
+        legend="유의사항"
+      >
+        <NoticeField
+          onChange={(notice) => update({ notice })}
+          value={coupon.notice}
+        />
+      </FieldGroup>
     </div>
   );
 };

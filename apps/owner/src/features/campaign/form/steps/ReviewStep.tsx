@@ -35,7 +35,7 @@ import {
   formatGender,
   formatRadius,
 } from '../../campaignFormat';
-import { DetailRow } from '../../detail/DetailSection';
+import { DetailNote, DetailRow } from '../../detail/DetailSection';
 import { PosterPreview } from '../../PosterPreview';
 import {
   type CampaignStep,
@@ -179,6 +179,15 @@ export const ReviewStep = () => {
             label="사용 가능 시간"
             value={`매일 ${coupon.usableFrom} ~ ${coupon.usableUntil}`}
           />
+          {coupon.minOrderAmount !== null && (
+            <DetailRow
+              label="최소 주문 금액"
+              value={`${formatNumber(coupon.minOrderAmount)}원 이상`}
+            />
+          )}
+          {coupon.notice && (
+            <DetailNote label="유의사항" value={coupon.notice} />
+          )}
         </dl>
       </ReviewSection>
 
