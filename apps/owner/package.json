@@ -13,6 +13,7 @@
   "dependencies": {
     "@repo/ui": "workspace:*",
     "@repo/utils": "workspace:*",
+    "axios": "catalog:",
     "barcode-detector": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
