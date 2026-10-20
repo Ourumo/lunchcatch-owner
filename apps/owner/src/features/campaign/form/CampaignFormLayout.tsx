@@ -5,7 +5,9 @@ import { CircleAlert } from 'lucide-react';
 
 import {
   type CampaignStepKey,
+  type CampaignValues,
   requestCampaignActivation,
+  saveBudgetStep,
   saveCampaignStep,
   saveCouponStep,
   saveTargetStep,
@@ -83,6 +85,20 @@ export const CampaignFormLayout = () => {
     );
   };
 
+  // 3·4단계 저장 응답은 서버에 저장된 현재 값이라 그 값으로 입력값을 맞춘다
+  const applySavedValues = <TStepKey extends 'target' | 'budget'>(
+    stepKey: TStepKey,
+    result: ApiResult<CampaignValues[TStepKey]>,
+  ): ApiResult<string> => {
+    if (!result.ok) {
+      return result;
+    }
+
+    updateStepValues(stepKey, result.data);
+
+    return { ok: true, data: campaignId };
+  };
+
   // 단계 값을 저장하고 이어 갈 캠페인 ID를 돌려준다. 1단계는 서버가 DRAFT의 ID를 정한다
   const saveCurrentStep = async (
     stepKey: CampaignStepKey,
@@ -92,16 +108,17 @@ export const CampaignFormLayout = () => {
     }
 
     if (stepKey === 'target') {
-      const result = await saveTargetStep(campaignId, values.target);
+      return applySavedValues(
+        'target',
+        await saveTargetStep(campaignId, values.target),
+      );
+    }
 
-      if (!result.ok) {
-        return result;
-      }
-
-      // 서버에 저장된 현재 값으로 맞춘다
-      updateStepValues('target', result.data);
-
-      return { ok: true, data: campaignId };
+    if (stepKey === 'budget') {
+      return applySavedValues(
+        'budget',
+        await saveBudgetStep(campaignId, values.budget),
+      );
     }
 
     const result = await saveCampaignStep(campaignId, stepKey, values[stepKey]);

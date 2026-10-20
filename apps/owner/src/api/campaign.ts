@@ -8,7 +8,7 @@ import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 목록·상세 조회와 쿠폰 조건·노출 대상 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록·상세 조회와 쿠폰 조건·노출 대상·하루 예산과 집행 기간 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -645,6 +645,12 @@ const toCampaignUpdateFailure = (error: unknown, invalidMessage: string) => {
       return { ok: false as const, message: NOT_EDITABLE_MESSAGE };
   }
 
+  // CAMPAIGN-007(최소 하루 예산 미만), 008(집행 기간 1일 미만, 종료일이 시작일보다 이름), 009(시작일이 내일보다 이름)는
+  // 화면 검사로 미리 막는다. 그래도 거절되면 서버 문구로 이유를 보여준다
+  if (error.status === 422 && error.message) {
+    return { ok: false as const, message: error.message };
+  }
+
   return error.status === 400
     ? { ok: false as const, message: invalidMessage }
     : { ok: false as const };
@@ -672,6 +678,31 @@ export const saveTargetStep = async (
     };
   } catch (error) {
     return toCampaignUpdateFailure(error, INVALID_TARGET_MESSAGE);
+  }
+};
+
+// 등록 4단계 하루 예산과 집행 기간 저장. 세 값은 함께 보내야 하고 DRAFT에서만 바꿀 수 있다
+export const saveBudgetStep = async (
+  id: string,
+  budget: BudgetStepValues,
+): Promise<ApiResult<BudgetStepValues>> => {
+  try {
+    const data = await patchCampaign(id, {
+      dailyBudget: budget.dailyBudget,
+      startDate: budget.startDate,
+      endDate: budget.endDate,
+    });
+
+    return {
+      ok: true,
+      data: {
+        dailyBudget: data.dailyBudget,
+        startDate: data.startDate ?? '',
+        endDate: data.endDate ?? '',
+      },
+    };
+  } catch (error) {
+    return toCampaignUpdateFailure(error, INVALID_BUDGET_MESSAGE);
   }
 };
 
