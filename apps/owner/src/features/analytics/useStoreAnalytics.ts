@@ -21,9 +21,27 @@ type ReportState =
   | {
       campaignId: string;
       status: 'success';
-      campaign: Campaign;
       report: CampaignDayReport[];
     };
+
+// 목록에는 할인 메뉴가 없어 특정 메뉴 할인의 메뉴 이름을 알 수 없다. 진행 중·일시중지 캠페인은 목록을 받을 때 상세로 채워지므로
+// 특정 메뉴 할인인 종료 캠페인만 상세를 다시 받는다. 상세를 받지 못하면 목록 값으로 두어 "특정 메뉴"로 보여준다
+const fillEndedMenuCampaigns = (campaigns: Campaign[]) =>
+  Promise.all(
+    campaigns.map(async (campaign) => {
+      if (
+        campaign.status !== 'ENDED' ||
+        campaign.coupon.discountTarget !== 'MENU' ||
+        campaign.coupon.menuId !== null
+      ) {
+        return campaign;
+      }
+
+      const result = await getCampaign(campaign.id);
+
+      return result.ok ? result.data : campaign;
+    }),
+  );
 
 // 가게 분석에 필요한 캠페인 목록과 가게 메뉴를 불러오고, 고른 캠페인의 리포트를 불러온다
 export const useStoreAnalytics = (campaignId: string | null) => {
@@ -40,7 +58,7 @@ export const useStoreAnalytics = (campaignId: string | null) => {
     let ignore = false;
 
     Promise.all([getCampaigns(), getMyStore()]).then(
-      ([campaignsResult, storeResult]) => {
+      async ([campaignsResult, storeResult]) => {
         if (ignore) {
           return;
         }
@@ -50,9 +68,17 @@ export const useStoreAnalytics = (campaignId: string | null) => {
           return;
         }
 
+        const campaigns = await fillEndedMenuCampaigns(
+          getAnalyzableCampaigns(campaignsResult.data),
+        );
+
+        if (ignore) {
+          return;
+        }
+
         setCampaignsState({
           status: 'success',
-          campaigns: getAnalyzableCampaigns(campaignsResult.data),
+          campaigns,
           menus: storeResult.data.menus,
         });
       },
@@ -79,26 +105,17 @@ export const useStoreAnalytics = (campaignId: string | null) => {
     let ignore = false;
     const { id } = selectedCampaign;
 
-    // 종료된 캠페인은 목록에 할인 메뉴가 없어 상세로 다시 받는다
-    Promise.all([getCampaign(id), loadReport(selectedCampaign)]).then(
-      ([campaignResult, reportResult]) => {
-        if (ignore) {
-          return;
-        }
+    loadReport(selectedCampaign).then((result) => {
+      if (ignore) {
+        return;
+      }
 
-        if (!campaignResult.ok || !reportResult.ok) {
-          setReportState({ campaignId: id, status: 'error' });
-          return;
-        }
-
-        setReportState({
-          campaignId: id,
-          status: 'success',
-          campaign: campaignResult.data,
-          report: reportResult.data,
-        });
-      },
-    );
+      setReportState(
+        result.ok
+          ? { campaignId: id, status: 'success', report: result.data }
+          : { campaignId: id, status: 'error' },
+      );
+    });
 
     return () => {
       ignore = true;

@@ -239,20 +239,14 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
       );
     }
 
-    // 상세를 받기 전에는 목록의 값으로 보여준다. 종료된 캠페인은 목록에 할인 메뉴가 없다
-    const campaign =
-      reportState?.status === 'success'
-        ? reportState.campaign
-        : selectedCampaign;
-
     return (
       <>
         <CampaignSelectButton
-          campaign={campaign}
+          campaign={selectedCampaign}
           onClick={() => setIsSelectOpen(true)}
-          title={getTitle(campaign)}
+          title={getTitle(selectedCampaign)}
         />
-        {renderReport(campaign)}
+        {renderReport(selectedCampaign)}
         {/* 비교할 다른 캠페인이 있을 때만 보여준다 */}
         {getComparisonCampaigns(campaignsState.campaigns).some(
           ({ id }) => id !== selectedCampaign.id,
