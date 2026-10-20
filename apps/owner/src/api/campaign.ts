@@ -10,7 +10,7 @@ import { type CampaignPoster, isPosterComplete } from './poster';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 상세 조회는 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록과 상세 조회는 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -316,14 +316,79 @@ const findCampaign = (id: string) =>
   mockCampaigns.find((campaign) => campaign.id === id);
 
 // 점주 본인 가게의 캠페인만 내려온다. 등록 시각 최신순
-export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
-  await mockDelay();
+interface CampaignListItemResponse {
+  campaignId: number;
+  status: CampaignStatus;
+  discountTargetType: DiscountTarget;
+  discountType: DiscountType;
+  discountValue: number;
+  dailyBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+}
 
-  const campaigns = [...mockCampaigns].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
+interface CampaignListResponse {
+  items: CampaignListItemResponse[];
+  // 마지막 페이지면 null
+  nextPageToken: string | null;
+}
+
+// 서버 목록 한 번에 받는 최대 개수
+const CAMPAIGN_LIST_PAGE_SIZE = 100;
+
+const fetchCampaignDetail = async (id: string) =>
+  toCampaign(
+    await request<CampaignDetailResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+    ),
   );
 
-  return { ok: true, data: structuredClone(campaigns) };
+// 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
+// 이 값을 보여주는 진행 중·다음 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
+  id: String(item.campaignId),
+  status: item.status,
+  pausedReason: null,
+  createdAt: item.createdAt,
+  reviewFailReasons: [],
+  performance: null,
+  poster: null,
+  coupon: {
+    discountTarget: item.discountTargetType,
+    menuId: null,
+    discountType: item.discountType,
+    discountValue: item.discountValue,
+    issueLimit: null,
+    usableFrom: '',
+    usableUntil: '',
+  },
+  target: createInitialCampaignValues().target,
+  budget: {
+    dailyBudget: item.dailyBudget,
+    startDate: item.startDate ?? '',
+    endDate: item.endDate ?? '',
+  },
+});
+
+// 최근 생성 순. 가게당 진행 중·다음 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
+export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
+  try {
+    const { items } = await request<CampaignListResponse>(
+      `/v1/owner/campaigns?pageSize=${CAMPAIGN_LIST_PAGE_SIZE}`,
+    );
+    const campaigns = await Promise.all(
+      items.map((item) =>
+        item.status === 'ENDED'
+          ? toListedCampaign(item)
+          : fetchCampaignDetail(String(item.campaignId)),
+      ),
+    );
+
+    return { ok: true, data: campaigns };
+  } catch {
+    return { ok: false };
+  }
 };
 
 // 지난 캠페인 전체 목록을 나눠 받는 한 구간
@@ -511,11 +576,7 @@ const toCampaign = (data: CampaignDetailResponse): Campaign => ({
 
 export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   try {
-    const data = await request<CampaignDetailResponse>(
-      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
-    );
-
-    return { ok: true, data: toCampaign(data) };
+    return { ok: true, data: await fetchCampaignDetail(id) };
   } catch (error) {
     // 없는 캠페인과 다른 점주의 캠페인을 서버가 같은 코드로 거절한다
     return error instanceof ApiError && error.code === 'CAMPAIGN-005'
