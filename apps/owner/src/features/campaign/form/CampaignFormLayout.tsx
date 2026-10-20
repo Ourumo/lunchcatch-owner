@@ -4,10 +4,13 @@ import { Button, Toast } from '@repo/ui';
 import { CircleAlert } from 'lucide-react';
 
 import {
+  type CampaignStepKey,
   requestCampaignActivation,
   saveCampaignStep,
   saveCouponStep,
+  saveTargetStep,
 } from '@owner/api/campaign';
+import type { ApiResult } from '@owner/api/types';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -33,7 +36,8 @@ interface ActionError {
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { campaignId, platformSettings, values } = useCampaignForm();
+  const { campaignId, platformSettings, updateStepValues, values } =
+    useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<ActionError>();
   const [reviewFailReasons, setReviewFailReasons] = useState<string[]>([]);
@@ -79,6 +83,32 @@ export const CampaignFormLayout = () => {
     );
   };
 
+  // 단계 값을 저장하고 이어 갈 캠페인 ID를 돌려준다. 1단계는 서버가 DRAFT의 ID를 정한다
+  const saveCurrentStep = async (
+    stepKey: CampaignStepKey,
+  ): Promise<ApiResult<string>> => {
+    if (stepKey === 'coupon') {
+      return saveCouponStep(values.coupon);
+    }
+
+    if (stepKey === 'target') {
+      const result = await saveTargetStep(campaignId, values.target);
+
+      if (!result.ok) {
+        return result;
+      }
+
+      // 서버에 저장된 현재 값으로 맞춘다
+      updateStepValues('target', result.data);
+
+      return { ok: true, data: campaignId };
+    }
+
+    const result = await saveCampaignStep(campaignId, stepKey, values[stepKey]);
+
+    return result.ok ? { ok: true, data: campaignId } : result;
+  };
+
   const requestActivation = async () => {
     setIsSaving(true);
     const result = await requestCampaignActivation(campaignId);
@@ -115,45 +145,27 @@ export const CampaignFormLayout = () => {
       return;
     }
 
-    if (currentStep.id === 'coupon') {
-      setIsSaving(true);
-      const result = await saveCouponStep(values.coupon);
-      setIsSaving(false);
+    if (!isValueStep(currentStep.id)) {
+      navigate(getCampaignEditPath(campaignId, nextStep));
+      return;
+    }
 
-      if (!result.ok) {
-        setActionError({
-          title: '저장하지 못했습니다',
-          message: result.message ?? SAVE_FAILED_MESSAGE,
-        });
-        return;
-      }
+    setIsSaving(true);
+    const result = await saveCurrentStep(currentStep.id);
+    setIsSaving(false);
 
-      // 처음 저장하면 서버가 만든 DRAFT의 ID로 이어 간다. 뒤로 가기로 ID 없는 1단계에 돌아오지 않게 기록을 바꿔치기한다
-      navigate(getCampaignEditPath(result.data, nextStep), {
-        replace: campaignId === NEW_CAMPAIGN_ID,
+    if (!result.ok) {
+      setActionError({
+        title: '저장하지 못했습니다',
+        message: result.message ?? SAVE_FAILED_MESSAGE,
       });
       return;
     }
 
-    if (isValueStep(currentStep.id)) {
-      setIsSaving(true);
-      const result = await saveCampaignStep(
-        campaignId,
-        currentStep.id,
-        values[currentStep.id],
-      );
-      setIsSaving(false);
-
-      if (!result.ok) {
-        setActionError({
-          title: '저장하지 못했습니다',
-          message: result.message ?? SAVE_FAILED_MESSAGE,
-        });
-        return;
-      }
-    }
-
-    navigate(getCampaignEditPath(campaignId, nextStep));
+    // 1단계를 처음 저장하면 서버가 만든 DRAFT의 ID로 이어 간다. 뒤로 가기로 ID 없는 1단계에 돌아오지 않게 기록을 바꿔치기한다
+    navigate(getCampaignEditPath(result.data, nextStep), {
+      replace: campaignId === NEW_CAMPAIGN_ID,
+    });
   };
 
   return (

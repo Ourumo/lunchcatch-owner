@@ -8,7 +8,7 @@ import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 목록·상세 조회와 쿠폰 조건 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록·상세 조회와 쿠폰 조건·노출 대상 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -503,6 +503,12 @@ const toAgeGroups = (ageGroups: string[]): AgeGroup[] => {
   return groups.length === Object.keys(serverAgeGroups).length ? [] : groups;
 };
 
+// 서버는 연령대를 1개 이상 받으므로, 화면의 전체(빈 배열)는 네 값으로 보낸다
+const toServerAgeGroups = (ageGroups: AgeGroup[]) =>
+  Object.entries(serverAgeGroups)
+    .filter(([, group]) => ageGroups.length === 0 || ageGroups.includes(group))
+    .map(([serverGroup]) => serverGroup);
+
 // 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다.
 // 포스터와 자동 검수 실패 사유는 mock으로 등록한 값이 있으면 fetchCampaignDetail에서 채운다
 const toCampaign = (data: CampaignDetailResponse): Campaign => ({
@@ -603,6 +609,69 @@ export const saveCouponStep = async (
     return error.status === 400
       ? { ok: false, message: INVALID_COUPON_MESSAGE }
       : { ok: false };
+  }
+};
+
+// 3·4단계 저장 응답. 저장한 뒤의 현재 값이다
+interface CampaignUpdateResponse {
+  campaignId: number;
+  targetRadius: number;
+  targetGender: TargetGender;
+  targetAgeGroups: string[];
+  dailyBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+const patchCampaign = (id: string, body: object) =>
+  request<CampaignUpdateResponse>(
+    `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body },
+  );
+
+// 3·4단계 저장 실패. 화면 검사로 미리 막는 값을 서버가 거절하면(400) 그 단계의 확인 안내를 보여준다
+const toCampaignUpdateFailure = (error: unknown, invalidMessage: string) => {
+  if (!(error instanceof ApiError)) {
+    return { ok: false as const };
+  }
+
+  switch (error.code) {
+    case 'CAMPAIGN-001':
+      return { ok: false as const, message: NOT_ACTIVE_OWNER_MESSAGE };
+    case 'CAMPAIGN-005':
+      return { ok: false as const, message: NOT_FOUND_MESSAGE };
+    // DRAFT가 아니면 노출 대상, 집행 기간을 바꿀 수 없다
+    case 'CAMPAIGN-006':
+      return { ok: false as const, message: NOT_EDITABLE_MESSAGE };
+  }
+
+  return error.status === 400
+    ? { ok: false as const, message: invalidMessage }
+    : { ok: false as const };
+};
+
+// 등록 3단계 노출 대상 저장. 반경, 성별, 연령대는 함께 보내야 한다
+export const saveTargetStep = async (
+  id: string,
+  target: TargetStepValues,
+): Promise<ApiResult<TargetStepValues>> => {
+  try {
+    const data = await patchCampaign(id, {
+      targetRadius: target.radius,
+      targetGender: target.gender,
+      targetAgeGroups: toServerAgeGroups(target.ageGroups),
+    });
+
+    return {
+      ok: true,
+      data: {
+        radius: data.targetRadius as ExposureRadius,
+        gender: data.targetGender,
+        ageGroups: toAgeGroups(data.targetAgeGroups),
+      },
+    };
+  } catch (error) {
+    return toCampaignUpdateFailure(error, INVALID_TARGET_MESSAGE);
   }
 };
 
