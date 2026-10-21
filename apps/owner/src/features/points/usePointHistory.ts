@@ -60,7 +60,7 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
   const [campaignTitles, setCampaignTitles] = useState<Record<string, string>>(
     {},
   );
-  // 캠페인 필터의 선택지. 집행된 적 있는 캠페인(진행 중, 중단, 종료)만 내역이 있어 이것만 둔다
+  // 캠페인 필터의 선택지. 집행된 적 있는 캠페인(진행 중, 일시중지, 종료)만 내역이 있어 이것만 둔다
   const [campaignOptions, setCampaignOptions] = useState<
     CampaignFilterOption[]
   >([]);

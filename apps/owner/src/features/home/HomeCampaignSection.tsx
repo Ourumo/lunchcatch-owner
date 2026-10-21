@@ -57,7 +57,7 @@ const getNoCurrentNotice = (next?: Campaign): NoCurrentNoticeProps => {
       description:
         next.reviewFailReasons.length > 0
           ? '자동 검수를 통과하지 못했어요. 포스터를 고친 뒤 다시 활성화를 요청해 주세요.'
-          : '남은 단계를 마치고 활성화를 요청하면 시작 대기 상태가 돼요.',
+          : '남은 단계를 마치고 활성화를 요청하면 대기 중 상태가 돼요.',
       // 등록 화면은 저장된 입력값을 불러와 첫 단계부터 보여준다
       action: { label: '이어서 작성하기', to: `/campaigns/${next.id}/edit` },
     };

@@ -96,7 +96,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Active: Story = {};
 
-// 점주가 직접 중단한 캠페인
+// 점주가 직접 일시중지한 캠페인
 export const PausedByOwner: Story = {
   args: {
     campaign: { ...activeCampaign, status: 'PAUSED', pausedReason: 'OWNER' },

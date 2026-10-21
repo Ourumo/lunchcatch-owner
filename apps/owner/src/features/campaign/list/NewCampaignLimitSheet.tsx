@@ -13,14 +13,14 @@ const linkClassName =
   'flex h-12 w-full items-center justify-center rounded-md text-body-sm-mobile font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
 
 export interface NewCampaignLimitSheetProps {
-  // 자리를 차지하고 있는 다음 캠페인 (작성 중 또는 시작 대기)
+  // 자리를 차지하고 있는 다음 캠페인 (작성 중 또는 대기 중)
   campaign: Campaign;
   title: string;
   onClose: () => void;
 }
 
 // 다음 캠페인 자리가 차 있을 때 "새 캠페인"을 누르면 띄운다.
-// 버튼을 막지 않고 자리를 비우는 다음 행동(이어서 작성, 삭제, 시작 대기 취소)으로 바로 잇기 위해서다
+// 버튼을 막지 않고 자리를 비우는 다음 행동(이어서 작성, 삭제, 대기 중 취소)으로 바로 잇기 위해서다
 export const NewCampaignLimitSheet = ({
   campaign,
   onClose,
@@ -60,7 +60,7 @@ export const NewCampaignLimitSheet = ({
     >
       <p className="text-center text-body-sm-mobile break-keep text-text-secondary">
         {status === 'SCHEDULED'
-          ? `${formatShortDate(budget.startDate)}에 시작할 "${title}" 캠페인이 있어요. 다음 캠페인은 1개만 준비할 수 있어서, 시작 대기를 취소해야 새로 만들 수 있어요.`
+          ? `${formatShortDate(budget.startDate)}에 시작할 "${title}" 캠페인이 있어요. 다음 캠페인은 1개만 준비할 수 있어서, 대기 중인 캠페인을 취소해야 새로 만들 수 있어요.`
           : `작성 중인 "${title}" 캠페인이 있어요. 다음 캠페인은 1개만 준비할 수 있어요.`}
       </p>
 

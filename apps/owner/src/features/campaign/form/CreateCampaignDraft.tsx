@@ -25,7 +25,7 @@ const CAMPAIGN_LIMIT_MESSAGE =
 
 // 새 캠페인 등록을 시작하면 그 가게의 캠페인을 먼저 확인하고 첫 단계로 이동한다.
 // 서버는 1단계를 저장할 때 그 가게의 DRAFT가 있으면 쿠폰 조건을 덮어쓰므로, 작성 중인 DRAFT가 있으면 그 DRAFT를 이어서 쓴다.
-// 서버는 끝나지 않은 캠페인(시작 대기, 진행 중, 중단)이 있으면 새 캠페인을 만들지 않아(CAMPAIGN-010) 이 화면에서 미리 안내한다
+// 서버는 끝나지 않은 캠페인(대기 중, 진행 중, 일시중지)이 있으면 새 캠페인을 만들지 않아(CAMPAIGN-010) 이 화면에서 미리 안내한다
 export const CreateCampaignDraft = () => {
   const navigate = useNavigate();
   const [failure, setFailure] = useState<CreateFailure>();

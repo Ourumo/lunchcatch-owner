@@ -25,7 +25,7 @@ import { useCampaignList } from './useCampaignList';
 
 const NEW_CAMPAIGN_PATH = '/campaigns/new';
 
-// 진행 중과 준비 중(작성 중 + 시작 대기)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
+// 진행 중과 준비 중(작성 중 + 대기 중)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
   return {
     current: campaigns.find(isCurrentCampaign),
@@ -135,11 +135,11 @@ const EmptySlot = ({ createLabel, description, title }: EmptySlotProps) => (
 
 const getNoCurrentDescription = (next?: Campaign) => {
   if (next?.status === 'SCHEDULED') {
-    return '시작 대기 중인 캠페인은 집행 시작일 00:00부터 노출돼요';
+    return '대기 중인 캠페인은 집행 시작일 00:00부터 노출돼요';
   }
 
   if (next?.status === 'DRAFT') {
-    return '작성 중인 캠페인을 마치고 활성화를 요청하면 시작 대기 상태가 돼요';
+    return '작성 중인 캠페인을 마치고 활성화를 요청하면 대기 중 상태가 돼요';
   }
 
   return '새 캠페인을 만들어 주변 직장인에게 가게를 알려 보세요';

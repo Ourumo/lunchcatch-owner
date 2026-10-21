@@ -224,8 +224,8 @@ const createArchivedCampaign = (index: number): Campaign => {
 };
 
 // 점주 계정 하나의 캠페인 목록이라고 가정한다. 가게당 ACTIVE(또는 PAUSED) 캠페인은 1건만 있을 수 있다.
-// 중단 상태 화면을 확인하려면 첫 캠페인의 status를 PAUSED로, pausedReason을 OWNER, NO_POINTS, ADMIN 중 하나로 바꾼다
-// 다음 캠페인(시작 대기, 검수 실패, 작성 중, 없음)은 위의 MOCK_NEXT_CAMPAIGN으로 고른다
+// 일시중지 상태 화면을 확인하려면 첫 캠페인의 status를 PAUSED로, pausedReason을 OWNER, NO_POINTS, ADMIN 중 하나로 바꾼다
+// 다음 캠페인(대기 중, 검수 실패, 작성 중, 없음)은 위의 MOCK_NEXT_CAMPAIGN으로 고른다
 // 지난 캠페인은 캠페인 탭의 미리보기 개수(2건)보다 많게 두어 "전체 보기"를 확인할 수 있게 하고,
 // 오래된 지난 캠페인을 더해 전체 목록의 무한 스크롤(20건씩)을 확인할 수 있게 45건을 둔다
 export const mockCampaigns: Campaign[] = [

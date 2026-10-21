@@ -282,7 +282,7 @@ export const ReviewStep = () => {
           aria-hidden="true"
           className="mt-0.5 size-3.5 shrink-0 text-text-secondary"
         />
-        자동 검수를 통과하면 시작 대기 상태가 되고, 집행 시작일 00:00부터 피드에
+        자동 검수를 통과하면 대기 중 상태가 되고, 집행 시작일 00:00부터 피드에
         노출돼요. 통과하지 못하면 사유를 알려 드려요.
       </p>
     </div>

@@ -142,7 +142,7 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
-// 준비 중(작성 중 + 시작 대기) 캠페인은 가게당 1건만 둔다.
+// 준비 중(작성 중 + 대기 중) 캠페인은 가게당 1건만 둔다.
 // 새 캠페인이 진행 중이 되면 기존 진행 중 캠페인은 종료되고(docs/requirements-common.md "캠페인 상태 정의"),
 // 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
 // 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
@@ -151,7 +151,7 @@ export const MAX_UPCOMING_CAMPAIGNS = 1;
 export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'DRAFT' || status === 'SCHEDULED';
 
-// 지금 집행 중인 캠페인(진행 중 또는 중단). 가게당 1건이고, 다음 캠페인이 시작되는 날 종료된다
+// 지금 집행 중인 캠페인(진행 중 또는 일시중지). 가게당 1건이고, 다음 캠페인이 시작되는 날 종료된다
 export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'ACTIVE' || status === 'PAUSED';
 
@@ -293,7 +293,7 @@ const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
 const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
-const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 있습니다.';
+const NOT_CANCELABLE_MESSAGE = '대기 중인 캠페인만 취소할 수 있습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
 const CAMPAIGN_LIMIT_MESSAGE =
@@ -619,7 +619,7 @@ export const saveCouponStep = async (
       return { ok: false, message: NOT_ACTIVE_OWNER_MESSAGE };
     }
 
-    // 끝나지 않은 캠페인(시작 대기, 진행 중, 중단)이 있으면 새 캠페인을 만들 수 없다. Swagger에는 아직 없는 코드다
+    // 끝나지 않은 캠페인(대기 중, 진행 중, 일시중지)이 있으면 새 캠페인을 만들 수 없다. Swagger에는 아직 없는 코드다
     if (error.code === 'CAMPAIGN-010') {
       return { ok: false, message: CAMPAIGN_LIMIT_MESSAGE };
     }
@@ -837,7 +837,7 @@ export const deleteCampaignDraft = async (
   return { ok: true, data: null };
 };
 
-// 시작 대기(SCHEDULED) 취소. 작성 중으로 되돌리고 입력값은 그대로 둔다
+// 대기 중(SCHEDULED) 취소. 작성 중으로 되돌리고 입력값은 그대로 둔다
 // (docs/requirements-common.md "캠페인 상태 정의"의 SCHEDULED 점주 액션 "취소(DRAFT로)").
 // 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
 export const cancelScheduledCampaign = async (

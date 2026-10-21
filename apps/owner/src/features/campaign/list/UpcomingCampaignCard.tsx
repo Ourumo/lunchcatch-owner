@@ -123,7 +123,7 @@ export const UpcomingCampaignCard = ({
             onClick={() => setOpenSheet('cancel')}
             variant="neutral"
           >
-            시작 대기 취소
+            대기 중 취소
           </Button>
         </div>
       )}
@@ -148,11 +148,11 @@ export const UpcomingCampaignCard = ({
       {/* 다시 활성화를 요청하면 되돌릴 수 있어 위험색 대신 기본 버튼으로 둔다 */}
       {openSheet === 'cancel' && (
         <CampaignActionSheet
-          confirmLabel="시작 대기 취소"
+          confirmLabel="대기 중 취소"
           description="작성 중으로 돌아가요. 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 요청해야 시작일부터 노출돼요."
           onClose={closeSheet}
           onConfirm={() => runAction(() => cancelScheduledCampaign(id))}
-          title="시작 대기를 취소할까요?"
+          title="대기 중인 캠페인을 취소할까요?"
         />
       )}
     </div>
