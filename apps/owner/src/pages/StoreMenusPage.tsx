@@ -1,7 +1,7 @@
-import { StoreMenusEdit } from '@owner/features/store/StoreMenusEdit';
+import { StoreMenusView } from '@owner/features/store/StoreMenusView';
 
 const StoreMenusPage = () => {
-  return <StoreMenusEdit />;
+  return <StoreMenusView />;
 };
 
 export default StoreMenusPage;
