@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { Toast } from '@repo/ui';
 
 import { getMe, logout } from '@owner/api/auth';
-import { submitSignupFlow } from '@owner/api/signupFlow';
+import { completeSignup } from '@owner/api/signupFlow';
 import { useAuth } from '@owner/auth/useAuth';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
@@ -125,6 +125,9 @@ export const SignupFlowLayout = () => {
     setIsSubmitting(true);
     setError(undefined);
 
+    // 바꾼 버전은 다음 렌더링에 반영되므로, 이어서 하는 최종 등록에는 받은 값을 바로 쓴다
+    let nextVersion = version;
+
     if (currentStep.save) {
       const saveResult = await currentStep.save(values, version);
 
@@ -134,7 +137,8 @@ export const SignupFlowLayout = () => {
         return;
       }
 
-      setVersion(saveResult.data);
+      nextVersion = saveResult.data;
+      setVersion(nextVersion);
     }
 
     if (nextStep) {
@@ -143,19 +147,17 @@ export const SignupFlowLayout = () => {
       return;
     }
 
-    const result = await submitSignupFlow(values);
-    setIsSubmitting(false);
+    // 마지막 단계를 저장하면 가게 최종 등록을 한다. 실패하면 단계 저장과 같이 이유별로 안내한다.
+    // 다시 누르면 마지막 단계 완료부터 다시 보내는데, 서버의 현재 단계가 그대로라 다시 받아 준다
+    const result = await completeSignup(nextVersion);
 
     if (!result.ok) {
-      if (result.message) {
-        setError({
-          title: '등록 신청에 실패했습니다',
-          description: result.message,
-        });
-      }
+      await handleSaveFailure(result.code);
+      setIsSubmitting(false);
       return;
     }
 
+    setIsSubmitting(false);
     navigate(SIGNUP_COMPLETE_PATH, { replace: true });
   };
 

@@ -1,5 +1,6 @@
 import {
   type ImageValue,
+  isImageOfFile,
   isImageUploading,
   type UploadableImage,
   uploadImage,
@@ -22,10 +23,6 @@ const STORE_IMAGE_LIMIT_MESSAGE =
 // 주소를 받기 전에 실패했어도 다시 올려야 다음으로 넘어가므로 같은 안내를 쓴다
 const LOGO_FAILED_MESSAGE = '대표 이미지가 비었어요. 다시 올려 주세요.';
 
-// 그 파일의 칸인지. 이미 가게에 붙어 있던 사진(saved)은 파일이 없어 고른 사진이 아니다
-const isImageOf = (image: ImageValue | null, file: File) =>
-  image !== null && image.status !== 'saved' && image.file === file;
-
 // 대표 이미지(필수 1장)와 매장 이미지(선택, 최대 3장) 등록.
 // 사진은 고르자마자 올리고 업로드 확인까지 해 바로 가게에 붙인다 ("다음"에서는 올리지 않는다)
 export const ImagesStep = () => {
@@ -42,13 +39,13 @@ export const ImagesStep = () => {
   const replaceInteriorImage = (file: File, nextImage: ImageValue) =>
     updateStepValues('images', ({ interiorImages: currentImages }) => ({
       interiorImages: currentImages.map((image) =>
-        isImageOf(image, file) ? nextImage : image,
+        isImageOfFile(image, file) ? nextImage : image,
       ),
     }));
 
   const replaceLogoImage = (file: File, nextImage: ImageValue) =>
     updateStepValues('images', ({ logoImage: currentImage }) =>
-      isImageOf(currentImage, file) ? { logoImage: nextImage } : {},
+      isImageOfFile(currentImage, file) ? { logoImage: nextImage } : {},
     );
 
   const uploadStoreImage = async (

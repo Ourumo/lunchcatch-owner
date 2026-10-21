@@ -83,10 +83,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         owner,
         setOwner,
-        // 입점 신청 API가 아직 mock이라 화면의 상태만 바꾼다. 새로고침하면 서버 상태(ONBOARDING)로 돌아간다
-        completeOnboarding: () => {
-          setOwner((prev) => prev && { ...prev, status: 'ACTIVE' });
-        },
         clearOwner: () => setOwner(null),
       }}
     >

@@ -48,6 +48,11 @@ export const isImageUploading = (image: ImageValue) =>
 export const isImageAttached = (image: ImageValue) =>
   image.status === 'attached' || image.status === 'saved';
 
+// 그 파일을 고른 칸인지. 올리는 동안 칸 값이 계속 바뀌어 고른 파일로 칸을 찾는다.
+// 이미 가게·메뉴에 붙어 있던 사진(saved)은 파일이 없어 고른 사진이 아니다
+export const isImageOfFile = (image: ImageValue | null, file: File) =>
+  image !== null && image.status !== 'saved' && image.file === file;
+
 export const toSavedImage = (url: string): ImageValue => ({
   status: 'saved',
   url,

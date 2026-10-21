@@ -409,6 +409,62 @@ export interface ImagesStepValues {
   interiorImages: ImageValue[];
 }
 
+// 서버의 현재 진행 단계와 완료를 요청한 단계가 다름 (409)
+const STEP_MISMATCH_CODE = 'STORE-002';
+
+// 그 단계를 이미 마쳤으면 지금 입점 진행 버전을, 아니면(불러오지 못한 경우 포함) null을 돌려준다
+const getCompletedStepVersion = async (step: string) => {
+  try {
+    const { onboarding } =
+      await request<Pick<SignupStoreResponse, 'onboarding'>>('/v1/owner/store');
+
+    return onboarding.steps.some(
+      (current) => current.step === step && current.completed,
+    )
+      ? onboarding.version
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+// 사진·메뉴 단계 완료. 다시 보내면 덮어쓰는 다른 단계와 달리, 서버의 현재 단계가 그 단계일 때만 받는다.
+// 이미 마친 단계로 돌아와 "다음"을 누르면 409 STORE-002로 거절하므로, 마친 단계면 지금 버전으로 그대로 넘어간다
+const completeOnboardingStep = async (
+  path: string,
+  step: string,
+  version: number,
+): Promise<ApiResult<number>> => {
+  try {
+    const data = await request<OnboardingSaveResponse>(path, {
+      method: 'POST',
+      body: { version },
+    });
+
+    return { ok: true, data: data.version };
+  } catch (error) {
+    if (error instanceof ApiError && error.code === STEP_MISMATCH_CODE) {
+      const completedVersion = await getCompletedStepVersion(step);
+
+      if (completedVersion !== null) {
+        return { ok: true, data: completedVersion };
+      }
+    }
+
+    return toSaveFailure(error);
+  }
+};
+
+// 사진 단계 완료. 사진은 고를 때 올리고 확인까지 마쳐 가게에 붙어 있으므로 단계 완료만 알린다.
+// 대표 이미지가 없으면 서버가 409 STORE-010으로 거절한다
+export const saveImagesStep = (version: number) =>
+  completeOnboardingStep('/v1/owner/store-images:complete', 'IMAGES', version);
+
+// 대표 메뉴 단계 완료. 메뉴는 추가할 때 등록하고 사진까지 올리므로 단계 완료만 알린다. 메뉴가 없어도 부른다.
+// 사진이 없는 메뉴가 있으면 서버가 409 STORE-013으로 거절한다
+export const saveMenuStep = (version: number) =>
+  completeOnboardingStep('/v1/owner/store-menus:complete', 'MENU', version);
+
 export interface MenuStepValues {
   // 대표 메뉴. 선택, 최대 MAX_MENUS개
   menus: MenuItemValues[];
@@ -563,16 +619,20 @@ export const getSignupProgress = async (): Promise<
   }
 };
 
-// 모든 단계의 입력값을 한 번에 받아 가게 최종 등록까지 처리한다.
-// 실제 API는 단계마다 저장하므로(가게 기본 정보 저장 시 가게 ID 생성 등) 연동할 때 이 함수 내부를 단계별 호출로 바꾼다
-export const submitSignupFlow = async (
-  values: SignupFlowValues,
+// 가게 최종 등록. 모든 필수 단계를 마쳤으면 서버가 점주를 ACTIVE로 바꾼다.
+// 로그인 상태는 바뀌지 않으므로 부른 쪽이 내 정보 조회로 다시 받는다.
+// 필요한 값이 부족하면 409 STORE-015, 이미 입점 신청 중이 아니면 403 OWNER-002로 거절한다
+export const completeSignup = async (
+  version: number,
 ): Promise<ApiResult<null>> => {
-  await mockDelay();
+  try {
+    await request<{ ownerStatus: string }>('/v1/owner/store:complete', {
+      method: 'POST',
+      body: { version },
+    });
 
-  if (!hasAgreedRequiredTerms(values.terms)) {
-    return { ok: false, message: '필수 약관에 동의해주세요.' };
+    return { ok: true, data: null };
+  } catch (error) {
+    return toSaveFailure(error);
   }
-
-  return { ok: true, data: null };
 };

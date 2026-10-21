@@ -3,6 +3,7 @@ import { Camera, RotateCw, X } from 'lucide-react';
 
 import type { ImageValue } from '@owner/api/imageUpload';
 import { FilePreviewImage } from '@owner/ui/FilePreviewImage/FilePreviewImage';
+import { ACCEPTED_IMAGE_TYPES, getImageFileError } from '@owner/ui/imageFile';
 
 export type ImageUploadSlotSize = 'sm' | 'lg';
 
@@ -26,10 +27,6 @@ export interface ImageUploadSlotProps {
   errorMessage?: string;
   multiple?: boolean;
 }
-
-// 요구사항: jpg, png만, 10MB 이하
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const sizeClassNames: Record<
   ImageUploadSlotSize,
@@ -55,18 +52,6 @@ const sizeClassNames: Record<
     label: 'text-caption-mobile',
     removeButton: 'top-1 right-1 size-7',
   },
-};
-
-const getFileError = (file: File) => {
-  if (!ACCEPTED_TYPES.includes(file.type)) {
-    return 'jpg, png 파일만 등록할 수 있어요';
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    return '10MB 이하 사진만 등록할 수 있어요';
-  }
-
-  return undefined;
 };
 
 // 점주 화면용 사진 등록 칸. 빈 칸을 누르면 사진을 고르고, 사진이 있으면 미리보기를 보여주며 누르면 교체한다.
@@ -136,7 +121,7 @@ export const ImageUploadSlot = ({
       return;
     }
 
-    const errors = files.map(getFileError);
+    const errors = files.map(getImageFileError);
     const acceptedFiles = files.filter((_, index) => !errors[index]);
     setFileError(errors.find(Boolean));
 
@@ -153,7 +138,7 @@ export const ImageUploadSlot = ({
         ) : (
           <label className={boxClassName}>
             <input
-              accept={ACCEPTED_TYPES.join(',')}
+              accept={ACCEPTED_IMAGE_TYPES.join(',')}
               aria-describedby={visibleError ? errorId : undefined}
               aria-label={image ? `${label} 변경` : `${label} 등록`}
               className="sr-only"
