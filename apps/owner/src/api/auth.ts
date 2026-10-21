@@ -194,6 +194,24 @@ export const logout = async (): Promise<ApiResult<null>> => {
   return { ok: true, data: null };
 };
 
+// 최초 튜토리얼 완료. 서버가 tutorialViewed를 true로 바꾼다(200, data: { tutorialViewed: true }).
+// 이미 true여도 같은 성공을 주므로 실패한 뒤 다시 보내도 된다. 로그인 상태는 부른 쪽이 성공한 뒤에만 바꾼다.
+// 실패하면 서버가 거절한 이유(code)를 함께 돌려준다. ACTIVE가 아니면 403 OWNER-002다
+export const completeTutorial = async (): Promise<ApiResult<null>> => {
+  try {
+    await request<{ tutorialViewed: boolean }>('/v1/owner/me/tutorial', {
+      method: 'PATCH',
+    });
+
+    return { ok: true, data: null };
+  } catch (error) {
+    return {
+      ok: false,
+      code: error instanceof ApiError ? (error.code ?? undefined) : undefined,
+    };
+  }
+};
+
 // 개발용 로그인 상태(.env의 VITE_MOCK_OWNER_STATUS). 그 상태의 테스트 계정이 없거나
 // 개발 서버가 꺼져 있으면 화면을 볼 수 없어, 로컬 개발에서만 서버에 묻지 않고 이 상태를 쓴다. 배포 빌드에서는 무시한다
 const getMockOwnerStatus = (): LoginResponse['status'] | null => {

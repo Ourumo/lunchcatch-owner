@@ -1,7 +1,13 @@
+import { FirstVisitTutorial } from '@owner/features/home/FirstVisitTutorial';
 import { HomeDashboard } from '@owner/features/home/HomeDashboard';
 
 const HomePage = () => {
-  return <HomeDashboard />;
+  return (
+    <>
+      <HomeDashboard />
+      <FirstVisitTutorial />
+    </>
+  );
 };
 
 export default HomePage;
