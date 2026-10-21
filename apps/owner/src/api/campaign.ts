@@ -142,15 +142,6 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
-// 준비 중(작성 중 + 대기 중) 캠페인은 가게당 1건만 둔다.
-// 새 캠페인이 진행 중이 되면 기존 진행 중 캠페인은 종료되고(docs/requirements-common.md "캠페인 상태 정의"),
-// 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
-// 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
-export const MAX_UPCOMING_CAMPAIGNS = 1;
-
-export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
-  status === 'DRAFT' || status === 'SCHEDULED';
-
 // 지금 집행 중인 캠페인(진행 중 또는 일시중지). 실적이 쌓이는 캠페인이다
 export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'ACTIVE' || status === 'PAUSED';
@@ -365,7 +356,7 @@ const fetchCampaignDetail = async (id: string): Promise<Campaign> => ({
 });
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
-// 이 값을 보여주는 진행 중·다음 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
 const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   id: String(item.campaignId),
   status: item.status,
@@ -393,7 +384,7 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   },
 });
 
-// 최근 생성 순. 가게당 진행 중·다음 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
+// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
 export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
   try {
     const { items } = await request<CampaignListResponse>(
@@ -810,7 +801,7 @@ export const requestCampaignActivation = async (
   };
 };
 
-// 작성 중(DRAFT) 캠페인 삭제. 다음 캠페인 자리를 비워 새 캠페인을 만들 수 있게 한다.
+// 작성 중(DRAFT) 캠페인 삭제.
 // 명세에 없는 기능이라 API 추가 요청이 필요하다
 export const deleteCampaignDraft = async (
   id: string,
