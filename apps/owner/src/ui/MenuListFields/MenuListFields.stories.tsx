@@ -32,7 +32,18 @@ const createUploadedImage = (color: string): ImageValue => ({
   )}`,
 });
 
-type StoryImage = ImageValue;
+// 새로 고른 사진. 네트워크 없이 미리보기를 보여주기 위한 예시 파일
+const createFile = (name: string, color: string) =>
+  new File(
+    [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#ffd8c4"/><circle cx="200" cy="150" r="80" fill="${color}"/></svg>`,
+    ],
+    name,
+    { type: 'image/svg+xml' },
+  );
+
+// 사진이 없는 메뉴(가게 관리, 입점 등록에서 사진을 올리기 전)도 보여준다
+type StoryImage = ImageValue | null;
 
 const uploadedMenus: MenuListItem<StoryImage>[] = [
   {
@@ -104,6 +115,37 @@ export const Full: Story = {
         price: '9500',
       },
     ],
+  },
+};
+
+// 입점 등록: 등록한 메뉴는 바꿀 수 없고, 메뉴마다 사진 업로드 상태를 보여준다.
+// 올리는 중, 올리지 못함(다시 시도), 사진 없음(새로고침으로 고른 파일이 사라진 경우, 사진 등록)
+export const UploadStates: Story = {
+  args: {
+    menus: [
+      {
+        id: 'menu-1',
+        image: {
+          status: 'uploading',
+          file: createFile('menu-1.svg', '#f56b20'),
+          progress: 40,
+        },
+        name: '수제 치즈 돈까스',
+        price: '11000',
+      },
+      {
+        id: null,
+        image: { status: 'failed', file: createFile('menu-2.svg', '#78716c') },
+        name: '로스카츠 정식',
+        price: '13000',
+      },
+      { id: 'menu-3', image: null, name: '냉메밀 소바 세트', price: '9500' },
+    ],
+    canEdit: () => false,
+    notice: '등록한 메뉴는 지금은 바꾸거나 지울 수 없어요',
+    onRetry: () => {},
+    onImageSelect: () => {},
+    disabled: true,
   },
 };
 
