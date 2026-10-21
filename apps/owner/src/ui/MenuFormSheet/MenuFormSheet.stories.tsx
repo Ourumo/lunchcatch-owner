@@ -11,6 +11,7 @@ import {
 const rules: MenuFormRules = {
   nameMaxLength: 20,
   priceMax: 1_000_000,
+  descriptionMaxLength: 500,
   getErrors: ({ image, name, price }) => ({
     image: image ? undefined : '메뉴 사진을 등록해주세요',
     name: name.trim() ? undefined : '메뉴명을 입력해주세요',
@@ -78,6 +79,7 @@ export const Edit: Story = {
       image: { status: 'saved', url: uploadedImageUrl },
       name: '수제 치즈 돈까스',
       price: '11000',
+      description: '모짜렐라 치즈를 가득 넣은 두툼한 수제 돈까스',
     },
   },
 };
