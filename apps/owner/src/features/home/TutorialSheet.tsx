@@ -2,8 +2,6 @@ import { type ReactNode, useState } from 'react';
 import { BottomSheet, Button } from '@repo/ui';
 import { ChartColumn, CircleAlert, Clock, Coins, Ticket } from 'lucide-react';
 
-import { useAuth } from '@owner/auth/useAuth';
-
 interface TutorialStep {
   icon: ReactNode;
   title: string;
@@ -49,18 +47,22 @@ const tutorialSteps: TutorialStep[] = [
 const SAVE_FAILED_MESSAGE =
   '완료를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
-// 최초 튜토리얼. 홈 위에 시트로 띄워 단계를 넘긴다.
-// 마지막 단계의 시작하기와 건너뛰기, 시트를 닫는 동작(Esc, 아래로 끌기)을 모두 완료로 보고 서버에 저장한다.
-// 저장에 성공하면 로그인 상태의 tutorialViewed가 바뀌어 쓰는 쪽이 시트를 내린다. 실패하면 시트에 남아 다시 시도하게 한다
-export const TutorialSheet = () => {
-  const { completeTutorial } = useAuth();
+interface TutorialSheetProps {
+  // 마지막 단계의 시작하기, 건너뛰기, 시트를 닫는 동작(Esc, 아래로 끌기)에서 부른다.
+  // 쓰는 쪽이 시트를 내리고 true를 돌려준다. false면 시트에 남아 실패 안내와 다시 시도를 보여준다
+  onFinish: () => Promise<boolean>;
+}
+
+// 런치캐치 사용법 튜토리얼. 홈 위에 시트로 띄워 단계를 넘긴다.
+// 처음 볼 때는 끝내면 완료를 서버에 저장하고(FirstVisitTutorial), 다시 볼 때는 닫기만 한다
+export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   const step = tutorialSteps[stepIndex];
   const isLastStep = stepIndex === tutorialSteps.length - 1;
 
-  const complete = async () => {
+  const finish = async () => {
     if (isSaving) {
       return;
     }
@@ -68,10 +70,8 @@ export const TutorialSheet = () => {
     setIsSaving(true);
     setHasFailed(false);
 
-    const result = await completeTutorial();
-
     // 성공하면 쓰는 쪽이 시트를 내리므로 상태를 되돌리지 않는다
-    if (!result.ok) {
+    if (!(await onFinish())) {
       setIsSaving(false);
       setHasFailed(true);
     }
@@ -87,7 +87,7 @@ export const TutorialSheet = () => {
     <BottomSheet
       closeOnBackdrop={false}
       isOpen
-      onClose={complete}
+      onClose={finish}
       title="런치캐치 둘러보기"
     >
       <div className="flex flex-col">
@@ -97,7 +97,7 @@ export const TutorialSheet = () => {
             {stepIndex + 1} / {tutorialSteps.length}
           </p>
           {!isLastStep && (
-            <Button disabled={isSaving} onClick={complete} variant="tertiary">
+            <Button disabled={isSaving} onClick={finish} variant="tertiary">
               건너뛰기
             </Button>
           )}
@@ -165,7 +165,7 @@ export const TutorialSheet = () => {
             className={`h-12 ${stepIndex > 0 ? 'col-span-2' : 'col-span-3'}`}
             isLoading={isSaving}
             onClick={
-              isLastStep || hasFailed ? complete : () => goTo(stepIndex + 1)
+              isLastStep || hasFailed ? finish : () => goTo(stepIndex + 1)
             }
           >
             {hasFailed ? '다시 시도' : isLastStep ? '시작하기' : '다음'}

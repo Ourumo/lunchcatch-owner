@@ -1,5 +1,5 @@
+import { FirstVisitTutorial } from '@owner/features/home/FirstVisitTutorial';
 import { HomeDashboard } from '@owner/features/home/HomeDashboard';
-import { FirstVisitTutorial } from '@owner/features/tutorial/FirstVisitTutorial';
 
 const HomePage = () => {
   return (
