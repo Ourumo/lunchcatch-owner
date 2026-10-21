@@ -21,7 +21,7 @@ type StoreMenuItem = MenuListItem<ImageValue | null>;
 const IN_USE_NOTICE =
   '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요';
 
-// 순서, ID, 이름, 가격, 사진이 모두 같으면 바뀌지 않은 것으로 본다
+// 순서, ID, 이름, 가격, 설명, 사진이 모두 같으면 바뀌지 않은 것으로 본다
 const isSameMenus = (a: StoreMenuItem[], b: StoreMenuItem[]) =>
   a.length === b.length &&
   a.every(
@@ -29,6 +29,7 @@ const isSameMenus = (a: StoreMenuItem[], b: StoreMenuItem[]) =>
       menu.id === b[index].id &&
       menu.name === b[index].name &&
       menu.price === b[index].price &&
+      menu.description === b[index].description &&
       isSameImage(menu.image, b[index].image),
   );
 
@@ -38,11 +39,12 @@ const isValidMenus = (menus: StoreMenuItem[]) => menus.length <= MAX_MENUS;
 // 새로 추가한 메뉴는 id 없이 오므로 null로 보내 새 ID를 받게 한다
 const saveMenus = (menus: StoreMenuItem[]) =>
   updateStoreMenus(
-    menus.map(({ id, image, name, price }) => ({
+    menus.map(({ description, id, image, name, price }) => ({
       id: id ?? null,
       image,
       name,
       price: Number(price),
+      description,
     })),
   );
 
@@ -73,11 +75,12 @@ const useMenuIdsInUse = () => {
 export const StoreMenusEdit = () => {
   const edit = useStoreEdit({
     select: (store): StoreMenuItem[] =>
-      store.menus.map(({ id, imageUrl, name, price }) => ({
+      store.menus.map(({ description, id, imageUrl, name, price }) => ({
         id,
         image: imageUrl ? toSavedImage(imageUrl) : null,
         name,
         price: String(price),
+        description,
       })),
     isEqual: isSameMenus,
     isValid: isValidMenus,

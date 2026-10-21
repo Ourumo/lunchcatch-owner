@@ -14,6 +14,7 @@ import {
 const rules: MenuFormRules = {
   nameMaxLength: 20,
   priceMax: 1_000_000,
+  descriptionMaxLength: 500,
   getErrors: ({ image, name, price }) => ({
     image: image ? undefined : '메뉴 사진을 등록해주세요',
     name: name.trim() ? undefined : '메뉴명을 입력해주세요',
@@ -51,12 +52,14 @@ const uploadedMenus: MenuListItem<StoryImage>[] = [
     image: createUploadedImage('#f56b20'),
     name: '수제 치즈 돈까스',
     price: '11000',
+    description: '모짜렐라 치즈를 가득 넣은 두툼한 수제 돈까스',
   },
   {
     id: 'menu-2',
     image: createUploadedImage('#78716c'),
     name: '로스카츠 정식',
     price: '13000',
+    description: '',
   },
 ];
 
@@ -113,6 +116,7 @@ export const Full: Story = {
         image: createUploadedImage('#a8a29e'),
         name: '냉메밀 소바 세트',
         price: '9500',
+        description: '',
       },
     ],
   },
@@ -132,14 +136,22 @@ export const UploadStates: Story = {
         },
         name: '수제 치즈 돈까스',
         price: '11000',
+        description: '',
       },
       {
         id: null,
         image: { status: 'failed', file: createFile('menu-2.svg', '#78716c') },
         name: '로스카츠 정식',
         price: '13000',
+        description: '',
       },
-      { id: 'menu-3', image: null, name: '냉메밀 소바 세트', price: '9500' },
+      {
+        id: 'menu-3',
+        image: null,
+        name: '냉메밀 소바 세트',
+        price: '9500',
+        description: '',
+      },
     ],
     canEdit: () => false,
     notice: '등록한 메뉴는 지금은 바꾸거나 지울 수 없어요',

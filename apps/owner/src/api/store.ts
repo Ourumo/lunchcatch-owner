@@ -23,6 +23,8 @@ export interface StoreMenu {
   id: string;
   name: string;
   price: number;
+  // 없으면 빈 문자열
+  description: string;
   // 메뉴는 사진 없이 먼저 등록되므로 사진이 없을 수 있다
   imageUrl: string | null;
 }
@@ -53,6 +55,7 @@ export interface StoreMenuValues {
   id: string | null;
   name: string;
   price: number;
+  description: string;
   // 서버에서 불러온 메뉴는 사진이 없을 수 있다. 저장할 때 사진이 없으면 거절한다
   image: ImageValue | null;
 }
@@ -101,6 +104,7 @@ interface StoreResponse {
     menuId: number;
     name: string;
     price: number;
+    description: string | null;
     sortOrder: number;
     image: StoreImageResponse | null;
   }[];
@@ -133,6 +137,7 @@ export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
           id: String(menu.menuId),
           name: menu.name,
           price: menu.price,
+          description: menu.description ?? '',
           imageUrl: menu.image?.url ?? null,
         })),
       },
@@ -220,7 +225,7 @@ export const getMenuIdsInUse = async (): Promise<ApiResult<string[]>> => {
 };
 
 // 대표 메뉴 수정 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정"). 선택, 최대 MAX_MENUS개
-// 메뉴명·가격·사진 규칙은 입점 등록과 같다. 캠페인이 쓰는 메뉴를 고치거나 빼는 요청은 받지 않는다.
+// 메뉴명·가격·사진·설명 규칙은 입점 등록과 같다. 캠페인이 쓰는 메뉴를 고치거나 빼는 요청은 받지 않는다.
 // 기존 메뉴는 ID를 그대로 두어 캠페인의 할인 대상이 유지되고, 새로 추가한 메뉴만 새 ID를 받는다.
 // 사진은 매장 사진과 같이 새로 고른 파일만 올린다
 export const updateStoreMenus = async (
@@ -254,7 +259,7 @@ export const updateStoreMenus = async (
 
   const keptIds = new Set(requestedIds);
 
-  // 쓰이는 메뉴는 빠지지 않고, 이름·가격·사진도 지금 값 그대로 와야 한다. 새로 고른 사진은 파일로 오므로 바뀐 것으로 본다
+  // 쓰이는 메뉴는 빠지지 않고, 이름·가격·설명·사진도 지금 값 그대로 와야 한다. 새로 고른 사진은 파일로 오므로 바뀐 것으로 본다
   const isInUseMenuChanged = [...findMenuIdsInUse()].some((id) => {
     const current = mockStore.menus.find((menu) => menu.id === id);
     const requested = menus.find((menu) => menu.id === id);
@@ -264,6 +269,7 @@ export const updateStoreMenus = async (
       (current !== undefined &&
         (requested.name.trim() !== current.name ||
           requested.price !== current.price ||
+          requested.description.trim() !== current.description ||
           !isSameImage(
             requested.image,
             current.imageUrl === null ? null : toSavedImage(current.imageUrl),
@@ -282,10 +288,11 @@ export const updateStoreMenus = async (
     }
   });
 
-  mockStore.menus = menus.map(({ id, image, name, price }) => ({
+  mockStore.menus = menus.map(({ description, id, image, name, price }) => ({
     id: id ?? createMockMenuId(),
     name: name.trim(),
     price,
+    description: description.trim(),
     // 사진이 없는 메뉴는 위 검사(hasInvalidMenu)에서 거절되지만, 타입으로는 남아 있어 그대로 넘긴다
     imageUrl: image && uploadMockImage(image),
   }));

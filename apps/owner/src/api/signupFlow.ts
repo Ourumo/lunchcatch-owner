@@ -353,8 +353,10 @@ export const MAX_MENUS = 3;
 export const MENU_NAME_MAX_LENGTH = 20;
 export const MENU_PRICE_MIN = 100;
 export const MENU_PRICE_MAX = 1_000_000;
+// 서버가 받는 메뉴 설명 길이
+export const MENU_DESCRIPTION_MAX_LENGTH = 500;
 
-// 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격 모두 필수.
+// 입력 검사를 통과해 목록에 들어간 대표 메뉴. 사진, 메뉴명, 가격은 필수이고 설명은 선택.
 // 서버에서 불러온 메뉴는 등록한 메뉴 ID가 있고, 사진을 올리기 전이면 사진이 없을 수 있다
 export interface MenuItemValues {
   id?: string | null;
@@ -362,6 +364,8 @@ export interface MenuItemValues {
   name: string;
   // 쉼표 없는 숫자
   price: string;
+  // 없으면 빈 문자열
+  description: string;
 }
 
 // 바텀시트에서 입력 중인 대표 메뉴. 저장 전이라 비어 있을 수 있다
@@ -369,16 +373,18 @@ export interface MenuDraft {
   image: ImageValue | null;
   name: string;
   price: string;
+  description: string;
 }
 
-export type MenuField = keyof MenuDraft;
+// 검사하는 칸. 설명은 선택이고 길이는 입력칸에서 막는다
+export type MenuField = 'image' | 'name' | 'price';
 
 // 사진은 있는지만 본다. 가게 관리에서는 이미 올라간 사진도 넘긴다
 export const getMenuErrors = ({
   image,
   name,
   price,
-}: MenuDraft): Record<MenuField, string | undefined> => {
+}: Pick<MenuDraft, MenuField>): Record<MenuField, string | undefined> => {
   const priceValue = Number(price);
 
   return {
@@ -400,6 +406,7 @@ export const getMenuErrors = ({
 export const menuInputRules = {
   nameMaxLength: MENU_NAME_MAX_LENGTH,
   priceMax: MENU_PRICE_MAX,
+  descriptionMaxLength: MENU_DESCRIPTION_MAX_LENGTH,
   getErrors: getMenuErrors,
 };
 
@@ -502,6 +509,7 @@ interface SignupStoreResponse {
     menuId: number;
     name: string;
     price: number;
+    description: string | null;
     sortOrder: number;
     image: StoreImageResponse | null;
   }[];
@@ -595,6 +603,7 @@ export const getSignupProgress = async (): Promise<
               id: String(menu.menuId),
               name: menu.name,
               price: String(menu.price),
+              description: menu.description ?? '',
               image: menu.image ? toSavedImage(menu.image.url) : null,
             })),
           },

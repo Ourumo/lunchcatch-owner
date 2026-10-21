@@ -17,15 +17,25 @@ interface StoreMenuRegisterResponse {
 
 // 대표 메뉴 등록. 등록한 메뉴 ID를 돌려주고, 그 ID로 메뉴 사진을 올린다.
 // 같은 메뉴를 다시 보내면 메뉴가 하나 더 생기고 지울 수 없으므로, 받은 ID를 기억해 다시 부르지 않는다.
-// 실패하면 서버가 거절한 이유(code)를 함께 돌려준다
+// 설명은 선택이라 비어 있으면 보내지 않는다. 실패하면 서버가 거절한 이유(code)를 함께 돌려준다
 export const registerStoreMenu = async ({
+  description,
   name,
   price,
-}: Pick<MenuItemValues, 'name' | 'price'>): Promise<ApiResult<string>> => {
+}: Pick<MenuItemValues, 'description' | 'name' | 'price'>): Promise<
+  ApiResult<string>
+> => {
   try {
     const data = await request<StoreMenuRegisterResponse>(
       '/v1/owner/store-menus',
-      { method: 'POST', body: { name: name.trim(), price: Number(price) } },
+      {
+        method: 'POST',
+        body: {
+          name: name.trim(),
+          price: Number(price),
+          description: description.trim() || undefined,
+        },
+      },
     );
 
     return { ok: true, data: String(data.menuId) };

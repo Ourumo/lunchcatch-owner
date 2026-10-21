@@ -237,6 +237,12 @@ export const MenuListFields = <TImage extends ImageValue | null>({
                     <p className="mt-0.5 text-body-sm-mobile text-text-secondary">
                       {formatPriceDigits(menu.price)}원
                     </p>
+                    {/* 긴 설명은 목록에서 한 줄만 보여주고 수정 시트에서 모두 본다 */}
+                    {menu.description && (
+                      <p className="mt-0.5 truncate text-caption-mobile text-text-secondary">
+                        {menu.description}
+                      </p>
+                    )}
                     {statusMessage && (
                       <p
                         className="mt-0.5 text-caption-mobile break-keep text-status-danger-fg"

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { BottomSheet, Button, Input } from '@repo/ui';
 
 import type { ImageValue } from '@owner/api/imageUpload';
@@ -6,11 +6,12 @@ import type { MenuField } from '@owner/api/signupFlow';
 import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
 import { formatPriceDigits, toPriceDigits } from '@owner/ui/menuPrice';
 
-// 시트에서 입력을 마친 메뉴. 가격은 쉼표 없는 숫자 문자열
+// 시트에서 입력을 마친 메뉴. 가격은 쉼표 없는 숫자 문자열. 설명은 선택이라 없으면 빈 문자열이다
 export interface MenuFormValues {
   image: ImageValue;
   name: string;
   price: string;
+  description: string;
 }
 
 // 시트에서 입력 중인 메뉴. 저장 전이라 사진이 비어 있을 수 있다
@@ -18,12 +19,14 @@ export interface MenuFormDraft {
   image: ImageValue | null;
   name: string;
   price: string;
+  description: string;
 }
 
 // 메뉴 입력 규칙. api의 값과 검사 함수를 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export interface MenuFormRules {
   nameMaxLength: number;
   priceMax: number;
+  descriptionMaxLength: number;
   getErrors: (draft: MenuFormDraft) => Record<MenuField, string | undefined>;
 }
 
@@ -44,8 +47,10 @@ export const MenuFormSheet = ({
   onSave,
   rules,
 }: MenuFormSheetProps) => {
+  const descriptionId = useId();
+  const descriptionCountId = useId();
   const [draft, setDraft] = useState<MenuFormDraft>(
-    initialMenu ?? { image: null, name: '', price: '' },
+    initialMenu ?? { image: null, name: '', price: '', description: '' },
   );
   // 입력 중에는 오류를 보여주지 않고, 칸을 벗어나거나 확인을 누른 뒤부터 보여준다
   const [touched, setTouched] = useState<Record<MenuField, boolean>>({
@@ -77,6 +82,7 @@ export const MenuFormSheet = ({
       image: draft.image,
       name: draft.name.trim(),
       price: draft.price,
+      description: draft.description.trim(),
     });
   };
 
@@ -131,6 +137,34 @@ export const MenuFormSheet = ({
           trailing="원"
           value={formatPriceDigits(draft.price)}
         />
+        {/* 여러 줄로 쓸 수 있어 Input과 같은 모양의 textarea를 쓴다. 길이는 입력칸에서 막는다 */}
+        <div className="flex flex-col gap-2">
+          <label
+            className="text-caption-web font-medium text-text-primary"
+            htmlFor={descriptionId}
+          >
+            메뉴 설명{' '}
+            <span className="font-normal text-text-secondary">(선택)</span>
+          </label>
+          <textarea
+            aria-describedby={descriptionCountId}
+            className="min-h-24 w-full resize-none rounded-md border border-border-subtle bg-bg-surface px-3 py-2.5 text-caption-web text-text-primary placeholder:text-text-secondary focus:border-action-primary focus:outline-none"
+            id={descriptionId}
+            maxLength={rules.descriptionMaxLength}
+            onChange={(event) =>
+              updateDraft({ description: event.target.value })
+            }
+            placeholder="예) 24시간 우려낸 진한 사골 국물"
+            rows={3}
+            value={draft.description}
+          />
+          <p
+            className="-mt-1 mr-1 text-right text-caption-mobile text-text-secondary"
+            id={descriptionCountId}
+          >
+            {draft.description.length}/{rules.descriptionMaxLength}
+          </p>
+        </div>
       </div>
       {/* 입점 등록의 다음 버튼, 가게 관리의 저장 버튼과 헷갈리지 않도록 시트는 확인으로 둔다 */}
       <Button className="mt-5 w-full" onClick={handleConfirm}>
