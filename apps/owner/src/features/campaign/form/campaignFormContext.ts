@@ -13,8 +13,15 @@ export interface CampaignFormContextValue {
     stepKey: TStepKey,
     patch: Partial<CampaignValues[TStepKey]>,
   ) => void;
-  // 포스터는 없을 수도(null) 있어 부분 수정 대신 통째로 바꾼다
-  setPoster: (poster: CampaignValues['poster']) => void;
+  // 포스터는 없을 수도(null) 있어 부분 수정 대신 통째로 바꾼다.
+  // 업로드가 끝난 뒤처럼 그사이 바뀐 값을 이어받아야 하면 함수로 넘긴다
+  setPoster: (
+    poster:
+      | CampaignValues['poster']
+      | ((prev: CampaignValues['poster']) => CampaignValues['poster']),
+  ) => void;
+  // 서버에 저장된 캠페인을 지금 화면을 둔 채 다시 불러온다. 작성 중이 아니게 됐으면 상세 화면으로 간다
+  reload: () => void;
 }
 
 export const CampaignFormContext =

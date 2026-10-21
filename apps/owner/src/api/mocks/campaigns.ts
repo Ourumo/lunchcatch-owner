@@ -25,8 +25,7 @@ const createdDaysAgo = (days: number) => {
 const [cheeseKatsu, rosuKatsu, soba] = mockStore.menus;
 
 // 현재 캠페인(끝나지 않은 캠페인 1건)으로 목록에 넣을 캠페인. 바꾸면 캠페인 탭과 홈에서 상태별 화면을 확인할 수 있다
-type MockCurrentCampaign =
-  'ACTIVE' | 'SCHEDULED' | 'REVIEW_FAILED' | 'DRAFT' | 'NONE';
+type MockCurrentCampaign = 'ACTIVE' | 'SCHEDULED' | 'DRAFT' | 'NONE';
 
 const MOCK_CURRENT_CAMPAIGN: MockCurrentCampaign = 'ACTIVE';
 
@@ -41,7 +40,6 @@ const mockCurrentCampaigns: Record<
     status: 'ACTIVE',
     pausedReason: null,
     createdAt: createdDaysAgo(5),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'ALL',
       menuId: null,
@@ -56,11 +54,11 @@ const mockCurrentCampaigns: Record<
     poster: {
       posterId: 'poster-active',
       templateId: 'template-orange-modern',
+      imageObjectKey: null,
       slots: {
         eventName: '오늘 점심 한정 특별 혜택!',
         discountText: '전 메뉴 2,000원 할인',
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },
@@ -94,7 +92,6 @@ const mockCurrentCampaigns: Record<
     status: 'SCHEDULED',
     pausedReason: null,
     createdAt: createdDaysAgo(1),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'MENU',
       menuId: cheeseKatsu.id,
@@ -109,11 +106,11 @@ const mockCurrentCampaigns: Record<
     poster: {
       posterId: 'poster-scheduled',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '치즈가 쭉 늘어나는 점심',
         discountText: `${cheeseKatsu.name} 3,000원 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },
@@ -125,45 +122,6 @@ const mockCurrentCampaigns: Record<
     },
     performance: null,
   },
-  REVIEW_FAILED: {
-    id: 'campaign-review-failed',
-    status: 'DRAFT',
-    pausedReason: null,
-    createdAt: createdDaysAgo(1),
-    reviewFailReasons: [
-      '포스터 문구에 금지 표현 "최고"가 들어 있어요.',
-      '이미지 속 글자가 차지하는 비율이 기준보다 높아요.',
-    ],
-    coupon: {
-      discountTarget: 'MENU',
-      menuId: soba.id,
-      discountType: 'PERCENT',
-      discountValue: 15,
-      issueLimit: 40,
-      usableFrom: '12:00',
-      usableUntil: '14:30',
-      minOrderAmount: null,
-      notice: '',
-    },
-    poster: {
-      posterId: 'poster-review-failed',
-      templateId: 'template-classic-wood',
-      slots: {
-        eventName: '여름 최고의 한 그릇',
-        discountText: `${soba.name} 15% 할인`,
-        period: '12:00 ~ 14:30',
-        storeName: mockStore.name,
-        imageUrl: soba.imageUrl,
-      },
-    },
-    target: { radius: 2000, gender: 'FEMALE', ageGroups: ['TWENTIES'] },
-    budget: {
-      dailyBudget: 6000,
-      startDate: daysFromToday(2),
-      endDate: daysFromToday(6),
-    },
-    performance: null,
-  },
   DRAFT: {
     // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다.
     // 지금은 막힌 전체 메뉴 퍼센트 할인으로 두어, 예전에 저장된 DRAFT가 1단계에서 막히는지도 확인한다
@@ -171,7 +129,6 @@ const mockCurrentCampaigns: Record<
     status: 'DRAFT',
     pausedReason: null,
     createdAt: createdDaysAgo(0),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'ALL',
       menuId: null,
@@ -240,7 +197,6 @@ const createArchivedCampaign = (index: number): Campaign => {
     status: 'ENDED',
     pausedReason: null,
     createdAt: createdDaysAgo(endDaysAgo + 9),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: coupon.menu ? 'MENU' : 'ALL',
       menuId: coupon.menu?.id ?? null,
@@ -255,11 +211,11 @@ const createArchivedCampaign = (index: number): Campaign => {
     poster: {
       posterId: `poster-archived-${number}`,
       templateId: archivedTemplateIds[index % archivedTemplateIds.length],
+      imageObjectKey: null,
       slots: {
         eventName: archivedEventNames[index % archivedEventNames.length],
         discountText: `${target} ${value} 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: (coupon.menu ?? cheeseKatsu).imageUrl,
       },
     },
@@ -292,7 +248,6 @@ export const mockCampaigns: Campaign[] = [
     status: 'ENDED',
     pausedReason: null,
     createdAt: createdDaysAgo(22),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'ALL',
       menuId: null,
@@ -307,11 +262,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-1',
       templateId: 'template-orange-modern',
+      imageObjectKey: null,
       slots: {
         eventName: '오픈 기념 점심 할인',
         discountText: '전 메뉴 3,000원 할인',
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: rosuKatsu.imageUrl,
       },
     },
@@ -336,7 +291,6 @@ export const mockCampaigns: Campaign[] = [
     status: 'ENDED',
     pausedReason: null,
     createdAt: createdDaysAgo(37),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'MENU',
       menuId: rosuKatsu.id,
@@ -351,11 +305,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-2',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '메뉴 한정 특가',
         discountText: `${rosuKatsu.name} 40% 할인`,
         period: '11:30 ~ 13:30',
-        storeName: mockStore.name,
         imageUrl: rosuKatsu.imageUrl,
       },
     },
@@ -380,7 +334,6 @@ export const mockCampaigns: Campaign[] = [
     status: 'ENDED',
     pausedReason: null,
     createdAt: createdDaysAgo(58),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'MENU',
       menuId: soba.id,
@@ -395,11 +348,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-3',
       templateId: 'template-classic-wood',
+      imageObjectKey: null,
       slots: {
         eventName: '여름 한정 시원한 점심',
         discountText: `${soba.name} 2,000원 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: soba.imageUrl,
       },
     },
@@ -428,7 +381,6 @@ export const mockCampaigns: Campaign[] = [
     status: 'ENDED',
     pausedReason: null,
     createdAt: createdDaysAgo(79),
-    reviewFailReasons: [],
     coupon: {
       discountTarget: 'MENU',
       menuId: cheeseKatsu.id,
@@ -443,11 +395,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-4',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '첫 캠페인 기념',
         discountText: `${cheeseKatsu.name} 25% 할인`,
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },

@@ -2,11 +2,12 @@ import axios from 'axios';
 
 import { ApiError } from './client';
 
-// 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록")
+// 가게·메뉴 사진과 포스터 이미지 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록", "포스터 생성")
 
 // 업로드 주소를 받은 업로드. 실패한 뒤 다시 시도할 때 받은 주소와 줄인 사진을 그대로 쓴다
 export interface UploadTicket {
-  uploadId: string;
+  // 올린 파일을 가리키는 값. 가게·메뉴 사진은 업로드 확인에 쓰는 uploadId, 포스터 이미지는 포스터 생성에 보내는 objectKey
+  uploadKey: string;
   uploadUrl: string;
   // 업로드 주소를 받은 시각(ms). 주소는 10분 동안만 쓸 수 있다
   issuedAt: number;
@@ -25,8 +26,8 @@ export type ImageValue =
   | { status: 'uploading'; file: File; progress: number }
   // 올리지 못했다. upload가 있으면 다시 시도할 때 이어서 하고, code는 서버가 거절한 이유다
   | { status: 'failed'; file: File; upload?: UploadTicket; code?: string }
-  // 업로드 확인까지 마쳐 가게·메뉴에 붙었다. 확인 응답에 주소가 없어 고른 파일로 보여준다
-  | { status: 'attached'; file: File }
+  // 업로드(확인이 있으면 확인까지)를 마쳤다. 확인 응답에 주소가 없어 고른 파일로 보여준다
+  | { status: 'attached'; file: File; uploadKey: string }
   // 이미 가게·메뉴에 붙은 사진
   | { status: 'saved'; url: string };
 
@@ -120,17 +121,32 @@ export interface PrepareUploadRequest {
   fileSize: number;
 }
 
+// 가게·메뉴 사진의 발급 응답. 올린 뒤 uploadId로 업로드를 확인한다
 export interface PrepareUploadResponse {
   uploadId: string;
   // 10분 안에 써야 한다
   uploadUrl: string;
 }
 
+// 포스터 이미지의 발급 응답. 업로드 확인 없이 objectKey를 포스터 생성에 보낸다
+export interface PrepareObjectUploadResponse {
+  objectKey: string;
+  // 10분 안에 써야 한다
+  uploadUrl: string;
+}
+
+const toUploadKey = (
+  response: PrepareUploadResponse | PrepareObjectUploadResponse,
+) => ('uploadId' in response ? response.uploadId : response.objectKey);
+
 export interface UploadImageOptions {
   // 이미지 종류별 업로드 주소 발급 API. 서버가 거절하면 ApiError를 던진다
-  prepare: (request: PrepareUploadRequest) => Promise<PrepareUploadResponse>;
-  // 이미지 종류별 업로드 확인 API. 서버가 S3에 올라간 것을 확인해야 가게·메뉴에 붙는다. 거절하면 ApiError를 던진다
-  confirm: (uploadId: string) => Promise<void>;
+  prepare: (
+    request: PrepareUploadRequest,
+  ) => Promise<PrepareUploadResponse | PrepareObjectUploadResponse>;
+  // 이미지 종류별 업로드 확인 API. 서버가 S3에 올라간 것을 확인해야 가게·메뉴에 붙는다. 거절하면 ApiError를 던진다.
+  // 확인 단계가 없는 이미지(포스터)는 넘기지 않는다
+  confirm?: (uploadKey: string) => Promise<void>;
   // 0~100
   onProgress?: (progress: number) => void;
 }
@@ -140,7 +156,7 @@ const canReuseUpload = (upload: UploadTicket | undefined) =>
   upload !== undefined &&
   (upload.isUploaded || Date.now() - upload.issuedAt < UPLOAD_URL_REUSE_MS);
 
-// 사진 한 장을 줄여 S3에 올리고 업로드 확인까지 한 뒤, 끝난 칸의 값(attached 또는 failed)을 돌려준다.
+// 사진 한 장을 줄여 S3에 올리고 업로드 확인(있으면)까지 한 뒤, 끝난 칸의 값(attached 또는 failed)을 돌려준다.
 // jpg·png, 10MB 이하인지는 사진 칸에서 먼저 거른다.
 // 실패한 칸을 다시 넘기면 실패한 곳부터 다시 한다. 업로드 주소를 새로 받을 때마다 서버가 자리를 잡아
 // (매장 사진은 3장) 받은 주소를 되도록 다시 쓴다:
@@ -158,15 +174,15 @@ export const uploadImage = async (
   try {
     if (!upload) {
       const blob = await resizeImage(file);
-      const { uploadId, uploadUrl } = await prepare({
+      const response = await prepare({
         originalFilename: file.name,
         contentType: file.type,
         fileSize: blob.size,
       });
 
       upload = {
-        uploadId,
-        uploadUrl,
+        uploadKey: toUploadKey(response),
+        uploadUrl: response.uploadUrl,
         issuedAt: Date.now(),
         blob,
         isUploaded: false,
@@ -188,9 +204,9 @@ export const uploadImage = async (
       upload = { ...upload, isUploaded: true };
     }
 
-    await confirm(upload.uploadId);
+    await confirm?.(upload.uploadKey);
 
-    return { status: 'attached', file };
+    return { status: 'attached', file, uploadKey: upload.uploadKey };
   } catch (error) {
     // S3가 주소를 거절하면(403, 만료 등) 그 주소로는 다시 올릴 수 없어 다음 시도에서 주소부터 새로 받는다
     const isUploadUrlRejected =

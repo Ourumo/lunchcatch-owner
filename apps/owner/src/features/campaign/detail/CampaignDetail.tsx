@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
-import { CircleAlert, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 import {
   type Campaign,
@@ -9,7 +9,6 @@ import {
   SERVING_TIME_END,
   SERVING_TIME_START,
 } from '@owner/api/campaign';
-import type { PosterTemplate } from '@owner/api/poster';
 import type { StoreMenu } from '@owner/api/store';
 import { useGoBack } from '@owner/hooks/useGoBack';
 import {
@@ -34,26 +33,7 @@ import { useCampaignDetail } from './useCampaignDetail';
 const LIST_PATH = '/campaigns';
 
 const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
-  const { budget, pausedReason, reviewFailReasons, status } = campaign;
-
-  if (status === 'DRAFT' && reviewFailReasons.length > 0) {
-    return (
-      <div className="rounded-xl bg-status-danger-bg p-4">
-        <p className="flex items-center gap-1.5 text-body-sm-mobile font-bold text-status-danger-fg">
-          <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-          자동 검수를 통과하지 못했어요
-        </p>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-caption-mobile break-keep text-text-primary">
-          {reviewFailReasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-        <p className="mt-2 text-caption-mobile break-keep text-text-secondary">
-          포스터를 고친 뒤 다시 활성화를 요청해 주세요.
-        </p>
-      </div>
-    );
-  }
+  const { budget, pausedReason, status } = campaign;
 
   const message =
     status === 'DRAFT'
@@ -79,43 +59,38 @@ const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
   );
 };
 
-interface PosterSectionProps {
-  campaign: Campaign;
-  templates: PosterTemplate[];
-}
-
-const PosterSection = ({ campaign, templates }: PosterSectionProps) => {
-  const { poster } = campaign;
-  const template = templates.find(({ id }) => id === poster?.templateId);
-
-  return (
-    <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
-      <h2 className="text-body-mobile font-bold text-text-primary">포스터</h2>
-      {poster && template ? (
-        <div className="mt-3 overflow-hidden rounded-lg border border-border-subtle">
-          <PosterPreview html={template.html} slots={poster.slots} />
-        </div>
-      ) : (
-        <p className="mt-3 flex h-32 items-center justify-center rounded-lg border border-dashed border-border-subtle text-body-sm-mobile text-text-secondary">
-          {poster
-            ? '포스터 템플릿을 불러오지 못했어요'
-            : '아직 포스터를 만들지 않았어요'}
-        </p>
-      )}
-    </section>
-  );
-};
+// 서버가 만든 완성 포스터를 그대로 보여준다
+const PosterSection = ({
+  posterHtml,
+}: {
+  posterHtml: string | 'none' | null;
+}) => (
+  <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
+    <h2 className="text-body-mobile font-bold text-text-primary">포스터</h2>
+    {posterHtml && posterHtml !== 'none' ? (
+      <div className="mt-3 overflow-hidden rounded-lg border border-border-subtle">
+        <PosterPreview html={posterHtml} />
+      </div>
+    ) : (
+      <p className="mt-3 flex h-32 items-center justify-center rounded-lg border border-dashed border-border-subtle text-body-sm-mobile text-text-secondary">
+        {posterHtml === null
+          ? '포스터를 불러오지 못했어요'
+          : '아직 포스터를 만들지 않았어요'}
+      </p>
+    )}
+  </section>
+);
 
 interface CampaignContentProps {
   campaign: Campaign;
   menus: StoreMenu[];
-  templates: PosterTemplate[];
+  posterHtml: string | 'none' | null;
 }
 
 const CampaignContent = ({
   campaign,
   menus,
-  templates,
+  posterHtml,
 }: CampaignContentProps) => {
   const { budget, coupon, createdAt, pausedReason, performance, status } =
     campaign;
@@ -142,7 +117,7 @@ const CampaignContent = ({
       </div>
 
       <StatusNotice campaign={campaign} />
-      <PosterSection campaign={campaign} templates={templates} />
+      <PosterSection posterHtml={posterHtml} />
 
       <DetailSection title="쿠폰 조건">
         <DetailRow
@@ -334,7 +309,7 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
       <CampaignContent
         campaign={state.campaign}
         menus={state.menus}
-        templates={state.templates}
+        posterHtml={state.posterHtml}
       />
     );
   };

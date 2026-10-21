@@ -51,20 +51,12 @@ export const CurrentCampaignCard = ({
   footer,
   title,
 }: CurrentCampaignCardProps) => {
-  const {
-    budget,
-    coupon,
-    pausedReason,
-    performance,
-    reviewFailReasons,
-    status,
-  } = campaign;
+  const { budget, coupon, pausedReason, performance, status } = campaign;
   const today = performance?.today;
   const issueLimit = coupon.issueLimit ?? 0;
   const issuedCount = today?.issuedCount ?? 0;
   // 사용은 발급된 쿠폰 중에서만 나오므로 발급 막대를 넘지 않게 한다
   const redeemedCount = Math.min(today?.redeemedCount ?? 0, issuedCount);
-  const isReviewFailed = status === 'DRAFT' && reviewFailReasons.length > 0;
 
   return (
     <div className="overflow-hidden rounded-xl border border-border-subtle bg-bg-surface transition-colors has-[>a:hover]:border-brand-300">
@@ -93,17 +85,6 @@ export const CurrentCampaignCard = ({
               className="mt-0.5 size-3.5 shrink-0 text-text-secondary"
             />
             {pausedNotices[pausedReason]}
-          </p>
-        )}
-
-        {isReviewFailed && (
-          <p className="mt-3 flex gap-1.5 rounded-lg bg-status-danger-bg px-3 py-2.5 text-caption-mobile break-keep text-text-primary">
-            <CircleAlert
-              aria-hidden="true"
-              className="mt-0.5 size-3.5 shrink-0 text-status-danger-fg"
-            />
-            자동 검수를 통과하지 못했어요. 포스터를 고친 뒤 다시 활성화를 요청해
-            주세요.
           </p>
         )}
 
