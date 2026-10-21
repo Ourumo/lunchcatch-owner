@@ -8,6 +8,9 @@ import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 
+import { saveCampaignDraft } from './campaignDraftStorage';
+import { useCampaignForm } from './useCampaignForm';
+
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
 
@@ -25,7 +28,8 @@ export interface PointSummaryProps {
 
 // 필요 포인트(하루 예산 x 집행 일수)와 잔액을 비교한다. 하루 예산 단계와 확인 단계에서 함께 쓴다.
 // 잔액이 모자라도 저장과 활성화는 막지 않고 부족분과 충전 버튼만 보여준다.
-// 충전은 결제 화면을 거쳐 이 단계로 돌아온다. 돌아오면 잔액을 다시 불러와 부족분을 다시 계산한다
+// 충전은 결제 화면을 거쳐 이 단계로 돌아온다. 떠나기 전에 작성 중인 값을 저장해 두고,
+// 돌아오면 그 값으로 이어 쓰며 잔액을 다시 불러와 부족분을 다시 계산한다
 export const PointSummary = ({
   balance,
   requiredPoints,
@@ -33,6 +37,7 @@ export const PointSummary = ({
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const chargePolicy = useChargePolicy();
   const startCharge = usePointCharge();
+  const { campaignId, values } = useCampaignForm();
   const shortage = balance ? requiredPoints - balance.balance : 0;
 
   return (
@@ -94,7 +99,10 @@ export const PointSummary = ({
         <PointChargeSheet
           balance={balance.balance}
           policy={chargePolicy}
-          onCharge={startCharge}
+          onCharge={(amount) => {
+            saveCampaignDraft(campaignId, values);
+            startCharge(amount);
+          }}
           onClose={() => setIsChargeOpen(false)}
           shortage={shortage}
         />
