@@ -25,7 +25,7 @@ export const CurrentCampaignActions = ({
 }: CurrentCampaignActionsProps) => {
   const { id, status } = campaign;
   const [openSheet, setOpenSheet] = useState<'cancel' | null>(null);
-  // 취소하려는 사이 집행이 시작돼 상태가 바뀌었다. 시트에서 안내를 읽고 닫으면 목록을 다시 불러온다
+  // 취소하려는 사이 집행이 시작됐거나 캠페인을 찾을 수 없어 목록이 지금과 다르다. 시트에서 안내를 읽고 닫으면 목록을 다시 불러온다
   const [isStatusChanged, setIsStatusChanged] = useState(false);
 
   const closeSheet = () => {
@@ -43,7 +43,10 @@ export const CurrentCampaignActions = ({
 
     if (result.ok) {
       onChanged();
-    } else if (result.code === 'CAMPAIGN-006') {
+    } else if (
+      result.code === 'CAMPAIGN-006' ||
+      result.code === 'CAMPAIGN-005'
+    ) {
       setIsStatusChanged(true);
     }
 

@@ -819,13 +819,18 @@ export const cancelScheduledCampaign = async (
 
     return { ok: true, data: status };
   } catch (error) {
-    // 그사이 집행이 시작됐거나 끝났다. 화면이 code를 보고 목록을 다시 불러온다
+    // 그사이 집행이 시작됐거나 끝났다(006), 캠페인을 찾을 수 없다(005).
+    // 화면이 code를 보고 목록을 다시 불러온다
     if (error instanceof ApiError && error.code === 'CAMPAIGN-006') {
       return {
         ok: false,
         code: error.code,
         message: NOT_CANCELABLE_MESSAGE,
       };
+    }
+
+    if (error instanceof ApiError && error.code === 'CAMPAIGN-005') {
+      return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
     }
 
     return toCampaignFailure(error);
