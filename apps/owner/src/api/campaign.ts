@@ -155,13 +155,6 @@ export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
 export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'ACTIVE' || status === 'PAUSED';
 
-// 새 캠페인의 시작일이 진행 중 캠페인의 종료일과 같거나 그보다 앞이면, 진행 중 캠페인은 그 시작일에 일찍 종료된다.
-// 날짜는 YYYY-MM-DD라 문자열로 비교한다. 시작일을 고르기 전이면 겹치지 않는 것으로 본다
-export const endsCurrentCampaignEarly = (
-  startDate: string,
-  currentCampaign: Pick<Campaign, 'budget'>,
-) => Boolean(startDate) && startDate <= currentCampaign.budget.endDate;
-
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
 
