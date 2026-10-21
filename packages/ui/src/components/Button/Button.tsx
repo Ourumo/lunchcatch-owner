@@ -23,6 +23,10 @@ const variantClassNames: Record<ButtonVariant, string> = {
     'border-transparent bg-status-danger-border text-text-inverse enabled:hover:opacity-90',
 };
 
+/**
+ * 종류와 테마별 스타일 및 키보드 포커스 표시를 공통으로 제공하는 작업 버튼입니다.
+ * isLoading 상태에서는 클릭을 차단하고 아이콘 대신 로딩 표시를 렌더링합니다.
+ */
 export function Button({
   children,
   className,
