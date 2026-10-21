@@ -23,7 +23,6 @@ const activeCampaign: Campaign = {
   status: 'ACTIVE',
   pausedReason: null,
   createdAt: '2026-10-01T09:00:00+09:00',
-  reviewFailReasons: [],
   coupon: {
     discountTarget: 'ALL',
     menuId: null,
@@ -218,18 +217,6 @@ export const Draft: Story = {
       ...activeCampaign,
       status: 'DRAFT',
       budget: { dailyBudget: null, startDate: '', endDate: '' },
-      performance: null,
-    },
-  },
-};
-
-// 자동 검수를 통과하지 못한 작성 중 캠페인
-export const DraftReviewFailed: Story = {
-  args: {
-    campaign: {
-      ...activeCampaign,
-      status: 'DRAFT',
-      reviewFailReasons: ['포스터 문구에 금지 표현 "최저가"가 들어 있어요.'],
       performance: null,
     },
   },

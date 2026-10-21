@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react';
 import { Link } from 'react-router';
 import { Button } from '@repo/ui';
-import { CircleAlert, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 import {
   type Campaign,
@@ -33,26 +33,7 @@ import { useCampaignDetail } from './useCampaignDetail';
 const LIST_PATH = '/campaigns';
 
 const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
-  const { budget, pausedReason, reviewFailReasons, status } = campaign;
-
-  if (status === 'DRAFT' && reviewFailReasons.length > 0) {
-    return (
-      <div className="rounded-xl bg-status-danger-bg p-4">
-        <p className="flex items-center gap-1.5 text-body-sm-mobile font-bold text-status-danger-fg">
-          <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-          자동 검수를 통과하지 못했어요
-        </p>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-caption-mobile break-keep text-text-primary">
-          {reviewFailReasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-        <p className="mt-2 text-caption-mobile break-keep text-text-secondary">
-          포스터를 고친 뒤 다시 활성화를 요청해 주세요.
-        </p>
-      </div>
-    );
-  }
+  const { budget, pausedReason, status } = campaign;
 
   const message =
     status === 'DRAFT'

@@ -139,8 +139,6 @@ export interface Campaign extends CampaignValues {
   pausedReason: PausedReason | null;
   // ISO 8601
   createdAt: string;
-  // 마지막 자동 검수가 FAIL이면 그 사유. 통과했거나 검수 전이면 빈 배열
-  reviewFailReasons: string[];
   // 한 번도 집행되지 않은 DRAFT, SCHEDULED는 null
   performance: CampaignPerformance | null;
 }
@@ -308,23 +306,6 @@ export const createInitialCampaignValues = (): CampaignValues => ({
   budget: { dailyBudget: null, startDate: '', endDate: '' },
 });
 
-type ServerCampaignExtras = Pick<Campaign, 'reviewFailReasons'>;
-
-// 활성화 요청을 연동하기 전까지, 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
-// 새로고침하면 사라진다. 활성화 API를 연동하면 지운다
-const mockServerCampaignExtras = new Map<string, ServerCampaignExtras>();
-
-const updateServerCampaignExtras = (
-  id: string,
-  patch: Partial<ServerCampaignExtras>,
-) => {
-  mockServerCampaignExtras.set(id, {
-    reviewFailReasons: [],
-    ...mockServerCampaignExtras.get(id),
-    ...patch,
-  });
-};
-
 // 점주 본인 가게의 캠페인만 내려온다. 등록 시각 최신순
 interface CampaignListItemResponse {
   campaignId: number;
@@ -350,14 +331,11 @@ const CAMPAIGN_LIST_PAGE_SIZE = 100;
 // 작성 중이면 이어서 작성할 수 있게 저장된 포스터도 불러온다.
 // 다른 상태는 포스터를 고칠 수 없어, 캠페인 상세가 완성 HTML을 따로 불러온다
 const fetchCampaignDetail = async (id: string): Promise<Campaign> => {
-  const campaign: Campaign = {
-    ...toCampaign(
-      await request<CampaignDetailResponse>(
-        `/v1/owner/campaigns/${encodeURIComponent(id)}`,
-      ),
+  const campaign = toCampaign(
+    await request<CampaignDetailResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
     ),
-    ...structuredClone(mockServerCampaignExtras.get(id)),
-  };
+  );
 
   if (campaign.status !== 'DRAFT') {
     return campaign;
@@ -379,7 +357,6 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   status: item.status,
   pausedReason: null,
   createdAt: item.createdAt,
-  reviewFailReasons: [],
   performance: null,
   poster: null,
   coupon: {
@@ -524,14 +501,12 @@ const toServerAgeGroups = (ageGroups: AgeGroup[]) =>
     .filter(([, group]) => ageGroups.length === 0 || ageGroups.includes(group))
     .map(([serverGroup]) => serverGroup);
 
-// 상세 응답에는 포스터, 성과, 자동 검수 실패 사유가 없어 비워 둔다.
-// 포스터와 자동 검수 실패 사유는 mock으로 등록한 값이 있으면 fetchCampaignDetail에서 채운다
+// 상세 응답에는 포스터와 성과가 없어 비워 둔다. 작성 중이면 포스터는 fetchCampaignDetail에서 채운다
 const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   id: String(data.campaignId),
   status: data.status,
   pausedReason: data.pausedReason,
   createdAt: data.createdAt,
-  reviewFailReasons: [],
   performance: null,
   poster: null,
   coupon: {
@@ -792,23 +767,15 @@ export const savePosterStep = async (
   }
 };
 
-// 활성화 요청 결과. 자동 검수를 통과하면 SCHEDULED가 되고, 통과하지 못하면 DRAFT로 남고 사유를 돌려준다
-export type ActivationResult =
-  | { result: 'PASS'; campaign: Campaign }
-  | { result: 'FAIL'; reasons: string[] };
-
-// 관리자 "검수 기준 관리"의 금지 표현 사전을 흉내 낸 값. 연동하면 서버가 판정한다
-const MOCK_FORBIDDEN_WORDS = ['최고', '1위', '최저가', '무료'];
-
 const NOT_READY_MESSAGE =
   '아직 채우지 않은 단계가 있어 활성화를 요청할 수 없습니다.';
 
-// 활성화 요청 시 (1) 포스터와 필수 입력값을 확인하고 (2) 포스터를 자동 검수한다.
+// 활성화 요청 시 포스터와 필수 입력값을 확인한다. 자동 검수는 실패하지 않는다(기능 축소).
 // 잔액은 검사하지 않는다. 잔액이 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다.
-// 활성화 API가 없어 서버 캠페인은 검수 결과만 돌려주고 상태는 DRAFT로 남는다
+// 활성화 API를 연동하기 전이라 서버 캠페인의 상태는 DRAFT로 남는다
 export const requestCampaignActivation = async (
   id: string,
-): Promise<ApiResult<ActivationResult>> => {
+): Promise<ApiResult<null>> => {
   await mockDelay();
 
   let campaign: Campaign;
@@ -832,22 +799,7 @@ export const requestCampaignActivation = async (
     return { ok: false, message: NOT_READY_MESSAGE };
   }
 
-  const { discountText, eventName } = (campaign.poster as CampaignPoster).slots;
-  const posterText = [discountText, eventName].join(' ');
-  const reasons = MOCK_FORBIDDEN_WORDS.filter((word) =>
-    posterText.includes(word),
-  ).map((word) => `포스터 문구에 금지 표현 "${word}"가 들어 있어요.`);
-
-  updateServerCampaignExtras(id, { reviewFailReasons: reasons });
-
-  if (reasons.length > 0) {
-    return { ok: true, data: { result: 'FAIL', reasons } };
-  }
-
-  return {
-    ok: true,
-    data: { result: 'PASS', campaign: structuredClone(campaign) },
-  };
+  return { ok: true, data: null };
 };
 
 // 상태를 바꾸는 점주 처리. 요청 본문 없이 보내고, 이미 바뀐 상태면 서버가 다시 성공으로 돌려준다
