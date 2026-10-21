@@ -10,7 +10,8 @@ import {
   isHoursStepComplete,
   MAX_INTERIOR_IMAGES,
   MAX_MENUS,
-  type Weekday,
+  type ServerBusinessHour,
+  toHoursStepValues,
   weekdays,
 } from './signupFlow';
 import type { ApiResult } from './types';
@@ -93,13 +94,7 @@ interface StoreResponse {
   storeId: number | null;
   name: string | null;
   roadAddress: string | null;
-  businessHours: {
-    dayOfWeek: string;
-    // 시각은 HH:mm:ss로 올 수 있다
-    openTime: string | null;
-    closeTime: string | null;
-    isClosed: boolean | null;
-  }[];
+  businessHours: ServerBusinessHour[];
   logoImage: StoreImageResponse | null;
   interiorImages: StoreImageResponse[];
   menus: {
@@ -111,44 +106,8 @@ interface StoreResponse {
   }[];
 }
 
-const serverWeekdays: Record<string, Weekday> = {
-  MONDAY: 'MON',
-  TUESDAY: 'TUE',
-  WEDNESDAY: 'WED',
-  THURSDAY: 'THU',
-  FRIDAY: 'FRI',
-  SATURDAY: 'SAT',
-  SUNDAY: 'SUN',
-};
-
 const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
   a.sortOrder - b.sortOrder;
-
-const toTime = (time: string | null) => time?.slice(0, 5) ?? '';
-
-// 서버는 요일마다 시간을 따로 두지만, 화면은 영업일마다 같은 시간을 쓴다(입점 등록 영업시간 입력값).
-// 휴무가 아니고 시간이 있는 요일을 영업 요일로 보고, 시간은 첫 영업 요일 값을 쓴다
-const toBusinessHours = (
-  hours: StoreResponse['businessHours'],
-): HoursStepValues => {
-  const openHours = weekdays.flatMap(({ value }) => {
-    const day = hours.find(
-      (hour) =>
-        serverWeekdays[hour.dayOfWeek] === value &&
-        !hour.isClosed &&
-        hour.openTime &&
-        hour.closeTime,
-    );
-
-    return day ? [{ ...day, weekday: value }] : [];
-  });
-
-  return {
-    openDays: openHours.map(({ weekday }) => weekday),
-    openTime: toTime(openHours[0]?.openTime ?? null),
-    closeTime: toTime(openHours[0]?.closeTime ?? null),
-  };
-};
 
 export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
   try {
@@ -169,7 +128,7 @@ export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
         interiorImageUrls: [...data.interiorImages]
           .sort(bySortOrder)
           .map(({ url }) => url),
-        businessHours: toBusinessHours(data.businessHours),
+        businessHours: toHoursStepValues(data.businessHours),
         menus: [...data.menus].sort(bySortOrder).map((menu) => ({
           id: String(menu.menuId),
           name: menu.name,

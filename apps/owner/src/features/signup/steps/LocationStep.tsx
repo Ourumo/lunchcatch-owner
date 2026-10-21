@@ -147,12 +147,17 @@ export const LocationStep = () => {
               <p className="text-body-mobile font-semibold break-keep text-text-primary">
                 {place.roadAddress}
               </p>
-              <p className="mt-1 text-body-sm-mobile break-keep text-text-secondary">
-                {place.placeName}
-              </p>
-              <p className="text-body-sm-mobile break-keep text-text-secondary">
-                {place.address}
-              </p>
+              {/* 서버에서 불러온 위치는 상호명과 지번 주소가 없다 */}
+              {place.placeName && (
+                <p className="mt-1 text-body-sm-mobile break-keep text-text-secondary">
+                  {place.placeName}
+                </p>
+              )}
+              {place.address && (
+                <p className="text-body-sm-mobile break-keep text-text-secondary">
+                  {place.address}
+                </p>
+              )}
             </div>
             <button
               aria-label="선택한 가게 위치 초기화"

@@ -2,6 +2,8 @@
 interface ImportMetaEnv {
   // API 서버 주소 (예: https://api.lunchcatch.com). 개발에서는 비워 두고 Vite 프록시를 쓴다
   readonly VITE_API_BASE_URL?: string;
+  // 카카오 지도 JavaScript 키. 입점 신청 매장 위치의 장소 검색에 쓴다 (카카오 디벨로퍼스에 등록한 도메인에서만 동작)
+  readonly VITE_KAKAO_JS_KEY?: string;
   // 개발용 로그인 상태 (ACTIVE, ONBOARDING). 로컬 개발에서만 읽는다 (api/auth.ts getMe)
   readonly VITE_MOCK_OWNER_STATUS?: string;
 }

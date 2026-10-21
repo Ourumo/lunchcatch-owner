@@ -5,8 +5,13 @@ import {
   isStoreStepComplete,
   isValidTimeRange,
   ownerTerms,
+  saveHoursStep,
+  saveLocationStep,
+  saveStoreStep,
+  saveTermsStep,
   type SignupFlowValues,
 } from '@owner/api/signupFlow';
+import type { ApiResult } from '@owner/api/types';
 
 export type SignupStepId = keyof SignupFlowValues;
 
@@ -19,6 +24,11 @@ export interface SignupStep {
   canProceed?: (values: SignupFlowValues) => boolean;
   // 하단 버튼 위에 보여줄 진행 상황 안내. 다 채운 뒤에도 완료 문구를 보여준다
   progressHint?: (values: SignupFlowValues) => string;
+  // "다음"을 누르면 이 단계를 서버에 저장한다. 성공해야 다음 단계로 넘어가고, 받은 입점 진행 버전을 다음 저장에 보낸다
+  save?: (
+    values: SignupFlowValues,
+    version: number,
+  ) => Promise<ApiResult<number>>;
 }
 
 const getTermsProgressHint = ({ terms }: SignupFlowValues) => {
@@ -61,6 +71,7 @@ export const signupSteps: SignupStep[] = [
     title: '약관 동의',
     canProceed: ({ terms }) => hasAgreedRequiredTerms(terms),
     progressHint: getTermsProgressHint,
+    save: saveTermsStep,
   },
   {
     id: 'store',
@@ -68,6 +79,8 @@ export const signupSteps: SignupStep[] = [
     title: '가게 기본 정보',
     canProceed: ({ store, business }) => isStoreStepComplete(store, business),
     progressHint: getStoreProgressHint,
+    save: ({ store, business }, version) =>
+      saveStoreStep(store, business, version),
   },
   {
     id: 'location',
@@ -76,6 +89,7 @@ export const signupSteps: SignupStep[] = [
     canProceed: ({ location }) => location.place !== null,
     progressHint: ({ location }) =>
       location.place ? '가게 위치를 선택했어요' : '가게 위치를 선택해주세요',
+    save: ({ location }, version) => saveLocationStep(location, version),
   },
   {
     id: 'hours',
@@ -83,6 +97,7 @@ export const signupSteps: SignupStep[] = [
     title: '영업시간 설정',
     canProceed: ({ hours }) => isHoursStepComplete(hours),
     progressHint: getHoursProgressHint,
+    save: ({ hours }, version) => saveHoursStep(hours, version),
   },
   {
     id: 'images',
