@@ -130,6 +130,7 @@
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-600);
   --semantic-action-primary-disabled: var(--primitive-neutral-200);
+  --semantic-action-disabled-fg: var(--primitive-neutral-900);
 
   --semantic-surface-brand: var(--primitive-brand-100);
   --semantic-bg-brand: var(--primitive-brand-500);
@@ -184,6 +185,7 @@
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-400);
   --semantic-action-primary-disabled: var(--primitive-neutral-500);
+  --semantic-action-disabled-fg: var(--primitive-neutral-0);
 
   --semantic-surface-brand: var(--primitive-brand-900);
   --semantic-bg-brand: var(--primitive-brand-500);
@@ -256,6 +258,7 @@
   --color-action-primary: var(--semantic-action-primary);
   --color-action-primary-hover: var(--semantic-action-primary-hover);
   --color-action-primary-disabled: var(--semantic-action-primary-disabled);
+  --color-action-disabled-fg: var(--semantic-action-disabled-fg);
   --color-surface-brand: var(--semantic-surface-brand);
   --color-bg-brand: var(--semantic-bg-brand);
   --color-text-brand: var(--semantic-text-brand);

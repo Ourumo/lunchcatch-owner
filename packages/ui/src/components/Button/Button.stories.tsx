@@ -59,3 +59,24 @@ export const Loading: Story = {
     isLoading: true,
   },
 };
+
+export const VariantStates: Story = {
+  render: () => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {(['primary', 'secondary', 'neutral', 'tertiary', 'danger'] as const).map(
+        (variant) => (
+          <div key={variant} className="flex flex-col items-start gap-3">
+            <span>{variant}</span>
+            <Button variant={variant}>기본 버튼</Button>
+            <Button variant={variant} disabled>
+              비활성 버튼
+            </Button>
+            <Button variant={variant} isLoading>
+              처리 중
+            </Button>
+          </div>
+        ),
+      )}
+    </div>
+  ),
+};
