@@ -409,6 +409,57 @@ export interface ImagesStepValues {
   interiorImages: ImageValue[];
 }
 
+// 서버의 현재 진행 단계와 완료를 요청한 단계가 다름 (409)
+const STEP_MISMATCH_CODE = 'STORE-002';
+
+// 그 단계를 이미 마쳤으면 지금 입점 진행 버전을, 아니면(불러오지 못한 경우 포함) null을 돌려준다
+const getCompletedStepVersion = async (step: string) => {
+  try {
+    const { onboarding } =
+      await request<Pick<SignupStoreResponse, 'onboarding'>>('/v1/owner/store');
+
+    return onboarding.steps.some(
+      (current) => current.step === step && current.completed,
+    )
+      ? onboarding.version
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+// 사진·메뉴 단계 완료. 다시 보내면 덮어쓰는 다른 단계와 달리, 서버의 현재 단계가 그 단계일 때만 받는다.
+// 이미 마친 단계로 돌아와 "다음"을 누르면 409 STORE-002로 거절하므로, 마친 단계면 지금 버전으로 그대로 넘어간다
+const completeOnboardingStep = async (
+  path: string,
+  step: string,
+  version: number,
+): Promise<ApiResult<number>> => {
+  try {
+    const data = await request<OnboardingSaveResponse>(path, {
+      method: 'POST',
+      body: { version },
+    });
+
+    return { ok: true, data: data.version };
+  } catch (error) {
+    if (error instanceof ApiError && error.code === STEP_MISMATCH_CODE) {
+      const completedVersion = await getCompletedStepVersion(step);
+
+      if (completedVersion !== null) {
+        return { ok: true, data: completedVersion };
+      }
+    }
+
+    return toSaveFailure(error);
+  }
+};
+
+// 사진 단계 완료. 사진은 고를 때 올리고 확인까지 마쳐 가게에 붙어 있으므로 단계 완료만 알린다.
+// 대표 이미지가 없으면 서버가 409 STORE-010으로 거절한다
+export const saveImagesStep = (version: number) =>
+  completeOnboardingStep('/v1/owner/store-images:complete', 'IMAGES', version);
+
 export interface MenuStepValues {
   // 대표 메뉴. 선택, 최대 MAX_MENUS개
   menus: MenuItemValues[];

@@ -7,6 +7,7 @@ import {
   isValidTimeRange,
   ownerTerms,
   saveHoursStep,
+  saveImagesStep,
   saveLocationStep,
   saveStoreStep,
   saveTermsStep,
@@ -130,6 +131,7 @@ export const signupSteps: SignupStep[] = [
       isImageAttached(images.logoImage) &&
       images.interiorImages.every(isImageAttached),
     progressHint: getImagesProgressHint,
+    save: (_values, version) => saveImagesStep(version),
   },
   {
     id: 'menu',
