@@ -31,28 +31,15 @@ interface HomeHeaderProps {
 }
 
 // 알림 기능이 없어 알림 아이콘 대신 잔액을 둔다. 잔액이 모자라면 캠페인이 멈추므로 늘 보이게 한다.
-// 사용법은 자주 보지 않아 인사말 줄 오른쪽에 아이콘만 작게 둔다. 잔액이 커져도 가게 이름 자리를 줄이지 않도록 잔액과 다른 줄에 둔다
+// 사용법은 자주 보지 않아 가게 이름 아래에 작은 글자로 둔다.
+// 오른쪽 위 잔액과 줄도 방향도 달라 잘못 누르지 않고, 잔액이 커져도 가게 이름 자리를 줄이지 않는다
 const HomeHeader = ({
   balance,
   onBalanceClick,
   onHelpClick,
   store,
 }: HomeHeaderProps) => (
-  <header className="flex flex-col gap-0.5">
-    <div className="flex items-center justify-between gap-2">
-      <p className="truncate text-caption-mobile text-text-secondary">
-        오늘도 힘찬 점심 장사 되세요
-      </p>
-      {/* 누르는 영역은 40px로 두되 줄 높이를 늘리지 않도록 바깥 여백을 당긴다 */}
-      <button
-        aria-label="런치캐치 사용법 다시 보기"
-        className="-my-2.5 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary focus-visible:outline-2 focus-visible:outline-action-primary"
-        onClick={onHelpClick}
-        type="button"
-      >
-        <CircleHelp aria-hidden="true" className="size-5" />
-      </button>
-    </div>
+  <header className="flex flex-col">
     <div className="flex items-center justify-between gap-3">
       <h1 className="min-w-0 truncate text-h2-mobile font-bold text-text-primary">
         {store.name}
@@ -71,6 +58,15 @@ const HomeHeader = ({
         />
       </button>
     </div>
+    {/* 누르는 영역은 높이 44px로 두되 위쪽 영역이 높아지지 않도록 바깥 여백을 당긴다 */}
+    <button
+      className="-my-2 -ml-2 flex h-11 items-center gap-1 self-start rounded-full px-2 text-caption-mobile font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary focus-visible:outline-2 focus-visible:outline-action-primary"
+      onClick={onHelpClick}
+      type="button"
+    >
+      <CircleHelp aria-hidden="true" className="size-4" />
+      런치캐치 사용법
+    </button>
   </header>
 );
 
