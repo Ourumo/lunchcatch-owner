@@ -1,4 +1,8 @@
 import { request } from './client';
+import type {
+  PrepareObjectUploadResponse,
+  PrepareUploadRequest,
+} from './imageUpload';
 import type { ApiResult } from './types';
 
 // 포스터 템플릿 조회와 슬롯 채우기 (docs/requirements-owner.md "포스터 관리")
@@ -17,8 +21,7 @@ export interface PosterSlotValues {
   discountText: string;
   // 집행 기간인지 사용 가능 시간인지 확정되지 않아 화면에 적을 문구 그대로 둔다
   period: string;
-  storeName: string;
-  // 가게 이미지 또는 메뉴 이미지. 고르지 않으면 null
+  // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
   imageUrl: string | null;
 }
 
@@ -27,6 +30,8 @@ export interface CampaignPoster {
   // 처음 만들 때는 빈 문자열이고, 저장하면 서버가 정한다
   posterId: string;
   templateId: string;
+  // 2단계에서 올린 포스터 이미지. 포스터 생성에 그대로 보낸다. 올리기 전이면 null
+  imageObjectKey: string | null;
   slots: PosterSlotValues;
 }
 
@@ -34,16 +39,15 @@ export interface CampaignPoster {
 export const POSTER_TEXT_MAX_LENGTH = {
   discountText: 20,
   eventName: 30,
-  storeName: 20,
 } as const;
 
-// 포스터 생성에 필요한 값(템플릿, 할인 내용, 기간, 가게명)이 모두 있는지. 이미지와 이벤트명은 선택이다
+// 포스터 생성에 필요한 값(템플릿, 이미지, 할인 내용, 기간)이 모두 있는지. 이벤트명은 선택이다
 export const isPosterComplete = (poster: CampaignPoster | null) =>
   poster !== null &&
   poster.templateId !== '' &&
+  poster.imageObjectKey !== null &&
   poster.slots.discountText.trim() !== '' &&
-  poster.slots.period.trim() !== '' &&
-  poster.slots.storeName.trim() !== '';
+  poster.slots.period.trim() !== '';
 
 // 게시되고 활성인 템플릿만 최신순으로 내려온다
 interface OwnerTemplateResponse {
@@ -100,3 +104,13 @@ export const fillPosterTemplate = (html: string, slots: PosterSlotValues) => {
 
   return document.documentElement.outerHTML;
 };
+
+// 포스터 이미지 업로드 주소 발급. 작성 중(DRAFT) 캠페인에서만 된다. 공통 업로드 함수(uploadImage)의 prepare에 넘긴다
+export const preparePosterImageUpload = (
+  campaignId: string,
+  { contentType, fileSize }: PrepareUploadRequest,
+) =>
+  request<PrepareObjectUploadResponse>(
+    `/v1/owner/campaigns/${encodeURIComponent(campaignId)}/poster:prepareUpload`,
+    { method: 'POST', body: { contentType, fileSize } },
+  );

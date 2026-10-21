@@ -56,11 +56,11 @@ const mockCurrentCampaigns: Record<
     poster: {
       posterId: 'poster-active',
       templateId: 'template-orange-modern',
+      imageObjectKey: null,
       slots: {
         eventName: '오늘 점심 한정 특별 혜택!',
         discountText: '전 메뉴 2,000원 할인',
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },
@@ -109,11 +109,11 @@ const mockCurrentCampaigns: Record<
     poster: {
       posterId: 'poster-scheduled',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '치즈가 쭉 늘어나는 점심',
         discountText: `${cheeseKatsu.name} 3,000원 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },
@@ -148,11 +148,11 @@ const mockCurrentCampaigns: Record<
     poster: {
       posterId: 'poster-review-failed',
       templateId: 'template-classic-wood',
+      imageObjectKey: null,
       slots: {
         eventName: '여름 최고의 한 그릇',
         discountText: `${soba.name} 15% 할인`,
         period: '12:00 ~ 14:30',
-        storeName: mockStore.name,
         imageUrl: soba.imageUrl,
       },
     },
@@ -255,11 +255,11 @@ const createArchivedCampaign = (index: number): Campaign => {
     poster: {
       posterId: `poster-archived-${number}`,
       templateId: archivedTemplateIds[index % archivedTemplateIds.length],
+      imageObjectKey: null,
       slots: {
         eventName: archivedEventNames[index % archivedEventNames.length],
         discountText: `${target} ${value} 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: (coupon.menu ?? cheeseKatsu).imageUrl,
       },
     },
@@ -307,11 +307,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-1',
       templateId: 'template-orange-modern',
+      imageObjectKey: null,
       slots: {
         eventName: '오픈 기념 점심 할인',
         discountText: '전 메뉴 3,000원 할인',
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: rosuKatsu.imageUrl,
       },
     },
@@ -351,11 +351,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-2',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '메뉴 한정 특가',
         discountText: `${rosuKatsu.name} 40% 할인`,
         period: '11:30 ~ 13:30',
-        storeName: mockStore.name,
         imageUrl: rosuKatsu.imageUrl,
       },
     },
@@ -395,11 +395,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-3',
       templateId: 'template-classic-wood',
+      imageObjectKey: null,
       slots: {
         eventName: '여름 한정 시원한 점심',
         discountText: `${soba.name} 2,000원 할인`,
         period: '11:30 ~ 14:00',
-        storeName: mockStore.name,
         imageUrl: soba.imageUrl,
       },
     },
@@ -443,11 +443,11 @@ export const mockCampaigns: Campaign[] = [
     poster: {
       posterId: 'poster-ended-4',
       templateId: 'template-retro-pop',
+      imageObjectKey: null,
       slots: {
         eventName: '첫 캠페인 기념',
         discountText: `${cheeseKatsu.name} 25% 할인`,
         period: '11:30 ~ 15:00',
-        storeName: mockStore.name,
         imageUrl: cheeseKatsu.imageUrl,
       },
     },

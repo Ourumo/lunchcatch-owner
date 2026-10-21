@@ -122,7 +122,15 @@ export const CampaignFormProvider = ({
     };
 
     const setPoster: CampaignFormContextValue['setPoster'] = (poster) => {
-      setValues((prev) => (prev ? { ...prev, poster } : prev));
+      setValues((prev) =>
+        prev
+          ? {
+              ...prev,
+              poster:
+                typeof poster === 'function' ? poster(prev.poster) : poster,
+            }
+          : prev,
+      );
     };
 
     return (

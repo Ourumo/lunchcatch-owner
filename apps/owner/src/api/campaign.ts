@@ -779,10 +779,8 @@ export const requestCampaignActivation = async (
     return { ok: false, message: NOT_READY_MESSAGE };
   }
 
-  const { discountText, eventName, storeName } = (
-    campaign.poster as CampaignPoster
-  ).slots;
-  const posterText = [discountText, eventName, storeName].join(' ');
+  const { discountText, eventName } = (campaign.poster as CampaignPoster).slots;
+  const posterText = [discountText, eventName].join(' ');
   const reasons = MOCK_FORBIDDEN_WORDS.filter((word) =>
     posterText.includes(word),
   ).map((word) => `포스터 문구에 금지 표현 "${word}"가 들어 있어요.`);

@@ -1,16 +1,25 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { Input } from '@repo/ui';
-import { Check, ImageOff, Info } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 
+import {
+  type ImageValue,
+  isImageOfFile,
+  toSavedImage,
+  type UploadableImage,
+  uploadImage,
+} from '@owner/api/imageUpload';
 import {
   type CampaignPoster,
   getPosterTemplates,
   POSTER_TEXT_MAX_LENGTH,
   type PosterSlotValues,
   type PosterTemplate,
+  preparePosterImageUpload,
 } from '@owner/api/poster';
 import { getMyStore, type MyStore } from '@owner/api/store';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
+import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
 
 import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
@@ -20,6 +29,32 @@ const THUMBNAIL_WIDTH = 96;
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
+
+// 미리보기용으로 줄이는 긴 변. 미리보기는 폭 360px 안팎이라 이 정도면 충분하다
+const PREVIEW_IMAGE_SIDE = 720;
+
+// 미리보기 iframe은 sandbox라 출처가 없어 이 화면이 만든 blob 주소를 읽지 못한다.
+// 그래서 작게 줄인 data 주소로 넘긴다. 글을 고칠 때마다 다시 그리므로 원본 그대로 넣지 않는다
+const toPreviewImageUrl = async (file: File) => {
+  const bitmap = await createImageBitmap(file);
+
+  try {
+    const scale = Math.min(
+      1,
+      PREVIEW_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height),
+    );
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas
+      .getContext('2d')
+      ?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } finally {
+    bitmap.close();
+  }
+};
 
 interface FieldGroupProps {
   legend: string;
@@ -89,72 +124,17 @@ const TemplateOptions = ({
   );
 };
 
-interface ImageOptionsProps {
-  store: MyStore;
-  selectedUrl: string | null;
-  onSelect: (imageUrl: string | null) => void;
-}
-
-// 입점 때 등록한 대표 메뉴 이미지와 가게 대표 이미지 중에서 고른다. 고르지 않으면 이미지 없이 만든다
-const ImageOptions = ({ onSelect, selectedUrl, store }: ImageOptionsProps) => {
-  const name = useId();
-  // 사진이 없는 메뉴와 아직 올리지 않은 대표 이미지는 고를 수 없어 뺀다
-  const options = [
-    ...store.menus.map((menu) => ({ label: menu.name, url: menu.imageUrl })),
-    { label: '가게 대표 이미지', url: store.logoImageUrl },
-  ].filter(
-    (option): option is { label: string; url: string } => option.url !== null,
-  );
-  const optionClassName =
-    'relative block size-16 overflow-hidden rounded-lg border-2 border-border-subtle transition-colors peer-checked:border-action-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary';
-
-  return (
-    <div className="-mx-page flex gap-2 overflow-x-auto px-page pb-1">
-      <label className="shrink-0 cursor-pointer">
-        <input
-          checked={selectedUrl === null}
-          className="peer sr-only"
-          name={name}
-          onChange={() => onSelect(null)}
-          type="radio"
-        />
-        <span
-          className={`${optionClassName} flex items-center justify-center bg-surface-subtle`}
-        >
-          <ImageOff aria-hidden="true" className="size-5 text-text-secondary" />
-        </span>
-        <span className="mt-1 block w-16 truncate text-center text-caption-mobile text-text-secondary">
-          이미지 없이
-        </span>
-      </label>
-      {options.map((option) => (
-        <label className="shrink-0 cursor-pointer" key={option.label}>
-          <input
-            checked={selectedUrl === option.url}
-            className="peer sr-only"
-            name={name}
-            onChange={() => onSelect(option.url)}
-            type="radio"
-          />
-          <span className={optionClassName}>
-            <img alt="" className="size-full object-cover" src={option.url} />
-          </span>
-          <span className="mt-1 block w-16 truncate text-center text-caption-mobile text-text-secondary">
-            {option.label}
-          </span>
-        </label>
-      ))}
-    </div>
-  );
-};
-
-// 등록 2단계: 관리자가 게시한 템플릿을 고르고, 할인 내용·이벤트명·가게명·이미지를 슬롯에 채운다.
+// 등록 2단계: 관리자가 게시한 템플릿을 고르고, 포스터 이미지를 올리고, 할인 내용·이벤트명을 슬롯에 채운다.
 // 템플릿 HTML 구조와 광고 라벨은 바꿀 수 없고, 슬롯 값만 바뀐다
 export const PosterStep = () => {
-  const { setPoster, values } = useCampaignForm();
+  const { campaignId, setPoster, values } = useCampaignForm();
   const { coupon, poster } = values;
   const [templates, setTemplates] = useState<Loadable<PosterTemplate[]>>();
   const [store, setStore] = useState<Loadable<MyStore>>();
+  // 이미지 칸의 업로드 상태. 이미 올린 이미지는 미리보기 주소로 보여준다
+  const [image, setImage] = useState<ImageValue | null>(() =>
+    poster?.slots.imageUrl ? toSavedImage(poster.slots.imageUrl) : null,
+  );
   // 포스터에 적는 기간은 쿠폰 사용 가능 시간을 따른다. 1단계에서 바꾸면 여기에도 반영한다
   const period = `${coupon.usableFrom} ~ ${coupon.usableUntil}`;
 
@@ -185,24 +165,16 @@ export const PosterStep = () => {
     }
   }, [period, poster, setPoster]);
 
-  // 아직 포스터가 없을 때 템플릿을 고르면 쿠폰 조건과 가게 정보로 슬롯을 미리 채운다
-  const createDefaultSlots = (currentStore: MyStore): PosterSlotValues => {
-    const menu =
-      coupon.discountTarget === 'MENU'
-        ? currentStore.menus.find(({ id }) => id === coupon.menuId)
-        : undefined;
-
-    return {
-      discountText: getCampaignTitle(coupon, currentStore.menus).slice(
-        0,
-        POSTER_TEXT_MAX_LENGTH.discountText,
-      ),
-      eventName: DEFAULT_EVENT_NAME,
-      imageUrl: (menu ?? currentStore.menus[0])?.imageUrl ?? null,
-      period,
-      storeName: currentStore.name,
-    };
-  };
+  // 아직 포스터가 없을 때 템플릿을 고르면 쿠폰 조건으로 슬롯을 미리 채운다. 이미지는 따로 올린다
+  const createDefaultSlots = (currentStore: MyStore): PosterSlotValues => ({
+    discountText: getCampaignTitle(coupon, currentStore.menus).slice(
+      0,
+      POSTER_TEXT_MAX_LENGTH.discountText,
+    ),
+    eventName: DEFAULT_EVENT_NAME,
+    imageUrl: null,
+    period,
+  });
 
   if (templates === undefined || store === undefined) {
     return (
@@ -249,6 +221,7 @@ export const PosterStep = () => {
     setPoster({
       posterId: poster?.posterId ?? '',
       templateId: poster?.templateId ?? '',
+      imageObjectKey: poster?.imageObjectKey ?? null,
       ...patch,
       slots: { ...slots, ...patch.slots },
     });
@@ -256,6 +229,41 @@ export const PosterStep = () => {
 
   const updateSlots = (patch: Partial<PosterSlotValues>) =>
     updatePoster({ slots: { ...slots, ...patch } });
+
+  // 이미지는 고르자마자 올린다. 올리는 동안에는 이전 이미지로 저장되지 않게 키를 비우고,
+  // 다 올리면 그사이 바뀐 글은 그대로 두고 이미지만 바꾼다
+  const uploadPosterImage = async (target: UploadableImage) => {
+    const { file } = target;
+
+    setImage({ status: 'uploading', file, progress: 0 });
+    setPoster((prev) => prev && { ...prev, imageObjectKey: null });
+
+    const uploaded = await uploadImage(target, {
+      prepare: (request) => preparePosterImageUpload(campaignId, request),
+      onProgress: (progress) =>
+        setImage((current) =>
+          isImageOfFile(current, file)
+            ? { status: 'uploading', file, progress }
+            : current,
+        ),
+    });
+
+    // 그사이 다른 이미지를 골랐으면 이 결과는 버린다
+    setImage((current) => (isImageOfFile(current, file) ? uploaded : current));
+
+    if (uploaded.status === 'attached') {
+      const imageUrl = await toPreviewImageUrl(file);
+
+      setPoster(
+        (prev) =>
+          prev && {
+            ...prev,
+            imageObjectKey: uploaded.uploadKey,
+            slots: { ...prev.slots, imageUrl },
+          },
+      );
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8 px-page">
@@ -313,18 +321,6 @@ export const PosterStep = () => {
               trailing={`${slots.eventName.length}/${POSTER_TEXT_MAX_LENGTH.eventName}`}
               value={slots.eventName}
             />
-            <Input
-              errorMessage={
-                slots.storeName.trim() ? undefined : '가게명을 입력해 주세요'
-              }
-              label="가게명"
-              maxLength={POSTER_TEXT_MAX_LENGTH.storeName}
-              onChange={(event) =>
-                updateSlots({ storeName: event.target.value })
-              }
-              trailing={`${slots.storeName.length}/${POSTER_TEXT_MAX_LENGTH.storeName}`}
-              value={slots.storeName}
-            />
             <div className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-subtle px-3 py-2.5 text-caption-web">
               <span className="text-text-secondary">기간</span>
               <span className="font-medium text-text-primary">{period}</span>
@@ -335,11 +331,21 @@ export const PosterStep = () => {
             </p>
           </FieldGroup>
 
-          <FieldGroup legend="이미지">
-            <ImageOptions
-              onSelect={(imageUrl) => updateSlots({ imageUrl })}
-              selectedUrl={slots.imageUrl}
-              store={store}
+          <FieldGroup
+            description="jpg, png 파일을 10MB 이하로 올려 주세요. 고르면 바로 올라가요."
+            legend="이미지"
+          >
+            <ImageUploadSlot
+              image={image}
+              label="포스터 이미지"
+              onRetry={() => {
+                if (image?.status === 'failed') {
+                  void uploadPosterImage(image);
+                }
+              }}
+              onSelect={([file]) =>
+                void uploadPosterImage({ status: 'selected', file })
+              }
             />
           </FieldGroup>
         </>
