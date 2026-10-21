@@ -619,16 +619,20 @@ export const getSignupProgress = async (): Promise<
   }
 };
 
-// 모든 단계의 입력값을 한 번에 받아 가게 최종 등록까지 처리한다.
-// 실제 API는 단계마다 저장하므로(가게 기본 정보 저장 시 가게 ID 생성 등) 연동할 때 이 함수 내부를 단계별 호출로 바꾼다
-export const submitSignupFlow = async (
-  values: SignupFlowValues,
+// 가게 최종 등록. 모든 필수 단계를 마쳤으면 서버가 점주를 ACTIVE로 바꾼다.
+// 로그인 상태는 바뀌지 않으므로 부른 쪽이 내 정보 조회로 다시 받는다.
+// 필요한 값이 부족하면 409 STORE-015, 이미 입점 신청 중이 아니면 403 OWNER-002로 거절한다
+export const completeSignup = async (
+  version: number,
 ): Promise<ApiResult<null>> => {
-  await mockDelay();
+  try {
+    await request<{ ownerStatus: string }>('/v1/owner/store:complete', {
+      method: 'POST',
+      body: { version },
+    });
 
-  if (!hasAgreedRequiredTerms(values.terms)) {
-    return { ok: false, message: '필수 약관에 동의해주세요.' };
+    return { ok: true, data: null };
+  } catch (error) {
+    return toSaveFailure(error);
   }
-
-  return { ok: true, data: null };
 };
