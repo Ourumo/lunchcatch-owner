@@ -26,7 +26,9 @@ import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatu
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
+import { PerformanceError } from '../PerformanceError';
 import { PosterPreview } from '../PosterPreview';
+import { useCampaignPerformance } from '../useCampaignPerformance';
 import { DetailNote, DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
 
@@ -92,8 +94,13 @@ const CampaignContent = ({
   menus,
   posterHtml,
 }: CampaignContentProps) => {
-  const { budget, coupon, createdAt, pausedReason, performance, status } =
-    campaign;
+  const { budget, coupon, createdAt, pausedReason, status } = campaign;
+  const { retry: retryPerformance, state: performanceState } =
+    useCampaignPerformance(campaign);
+  // 작성 중·대기 중은 집행 전이라 성과가 없다
+  const canHavePerformance = status !== 'DRAFT' && status !== 'SCHEDULED';
+  const performance =
+    performanceState.status === 'success' ? performanceState.data : null;
   const menu = menus.find(({ id }) => id === coupon.menuId);
   const hasPeriod = Boolean(budget.startDate && budget.endDate);
   const periodDays = hasPeriod
@@ -189,6 +196,22 @@ const CampaignContent = ({
           }
         />
       </DetailSection>
+
+      {canHavePerformance && performanceState.status === 'loading' && (
+        <div
+          aria-busy="true"
+          className="h-40 animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
+        >
+          <span className="sr-only">실적을 불러오는 중</span>
+        </div>
+      )}
+
+      {canHavePerformance && performanceState.status === 'error' && (
+        <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
+          <h2 className="text-body-mobile font-bold text-text-primary">실적</h2>
+          <PerformanceError className="mt-3" onRetry={retryPerformance} />
+        </section>
+      )}
 
       {today && (
         <DetailSection title="오늘 실적">
