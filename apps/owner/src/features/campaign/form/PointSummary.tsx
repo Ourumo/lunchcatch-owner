@@ -2,10 +2,14 @@ import { type ReactNode, useState } from 'react';
 import { Button } from '@repo/ui';
 import { CircleCheck } from 'lucide-react';
 
-import { chargePoints, type PointBalance } from '@owner/api/points';
+import type { PointBalance } from '@owner/api/points';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+
+import { saveCampaignDraft } from './campaignDraftStorage';
+import { useCampaignForm } from './useCampaignForm';
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
@@ -20,31 +24,21 @@ const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
 export interface PointSummaryProps {
   requiredPoints: number;
   balance: Loadable<PointBalance>;
-  // 충전에 성공하면 바뀐 잔액을 넘긴다. 부른 쪽이 잔액을 바꾸면 부족분을 다시 계산한다
-  onBalanceChange: (balance: PointBalance) => void;
 }
 
 // 필요 포인트(하루 예산 x 집행 일수)와 잔액을 비교한다. 하루 예산 단계와 확인 단계에서 함께 쓴다.
 // 잔액이 모자라도 저장과 활성화는 막지 않고 부족분과 충전 버튼만 보여준다.
-// 충전은 등록 흐름을 끊지 않도록 페이지를 옮기지 않고 충전 시트로 그 자리에서 한다
+// 충전은 결제 화면을 거쳐 이 단계로 돌아온다. 떠나기 전에 작성 중인 값을 저장해 두고,
+// 돌아오면 그 값으로 이어 쓰며 잔액을 다시 불러와 부족분을 다시 계산한다
 export const PointSummary = ({
   balance,
-  onBalanceChange,
   requiredPoints,
 }: PointSummaryProps) => {
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const chargePolicy = useChargePolicy();
+  const startCharge = usePointCharge();
+  const { campaignId, values } = useCampaignForm();
   const shortage = balance ? requiredPoints - balance.balance : 0;
-
-  const handleCharge = async (amount: number) => {
-    const result = await chargePoints(amount);
-
-    if (result.ok) {
-      onBalanceChange(result.data);
-    }
-
-    return result;
-  };
 
   return (
     <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
@@ -105,7 +99,10 @@ export const PointSummary = ({
         <PointChargeSheet
           balance={balance.balance}
           policy={chargePolicy}
-          onCharge={handleCharge}
+          onCharge={(amount) => {
+            saveCampaignDraft(campaignId, values);
+            startCharge(amount);
+          }}
           onClose={() => setIsChargeOpen(false)}
           shortage={shortage}
         />

@@ -15,6 +15,8 @@ catalog:
   '@storybook/addon-vitest': ^10.6.0
   '@storybook/react-vite': ^10.6.0
   '@tailwindcss/vite': ^4.3.3
+  # 2.10.0은 나온 지 하루라 그 전 버전으로 고정한다. 올릴 때는 나온 지 2주 넘은 버전으로
+  '@tosspayments/tosspayments-sdk': 2.9.0
   '@types/babel__core': ^7.20.5
   '@types/node': ^24.13.3
   '@types/react': ^19.2.18

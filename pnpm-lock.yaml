@@ -191,6 +191,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
+    '@tosspayments/tosspayments-sdk':
+      specifier: 2.9.0
+      version: 2.9.0
     '@types/babel__core':
       specifier: ^7.20.5
       version: 7.20.5
@@ -395,6 +398,9 @@ importers:
       '@repo/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tosspayments/tosspayments-sdk':
+        specifier: 'catalog:'
+        version: 2.9.0
       axios:
         specifier: 'catalog:'
         version: 1.20.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
@@ -1649,6 +1655,9 @@ packages:
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
+
+  '@tosspayments/tosspayments-sdk@2.9.0':
+    resolution: {integrity: sha512-/gyBo9cQSYwNGFcbJwXbEfIdebPvQwoTeXbzSrT+7u3C8VcaWxfNt9LnT6YiZhwmrTbg3/SuV9i5ji7pJsSw7w==}
 
   '@turbo/darwin-64@2.11.4':
     resolution: {integrity: sha512-fEmcQVa95k79tZjcay5b2A4cpR/VrlNUki4AN7EbA+32vj5C5rBUE1q3i2yOFxsB2n01sOlzIZ+s2p2zADCTig==}
@@ -3877,6 +3886,8 @@ snapshots:
   '@testing-library/user-event@14.6.7(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
+
+  '@tosspayments/tosspayments-sdk@2.9.0': {}
 
   '@turbo/darwin-64@2.11.4':
     optional: true

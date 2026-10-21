@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import { getCampaigns } from '@owner/api/campaign';
 import {
-  chargePoints,
   getPointBalance,
   getPointHistoryPage,
   getTodaySpentPoints,
@@ -245,24 +244,11 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
     });
   };
 
-  // 충전하면 잔액은 결제 응답으로 바로 바꾸고, 내역은 지금 목록을 둔 채 처음부터 다시 불러와 충전 건을 넣는다
-  const charge = async (amount: number) => {
-    const result = await chargePoints(amount);
-
-    if (result.ok) {
-      setBalanceState({ status: 'success', balance: result.data });
-      setHistoryRequestId((id) => id + 1);
-    }
-
-    return result;
-  };
-
   return {
     balanceState,
     campaignOptions,
     campaignTitles,
     changeFilter,
-    charge,
     filter,
     historyState,
     loadMoreHistory,

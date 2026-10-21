@@ -192,7 +192,6 @@ export const BudgetStep = () => {
       {hasBudget && hasPeriod && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
-          onBalanceChange={setBalance}
           requiredPoints={budget.dailyBudget * periodDays}
         />
       )}

@@ -259,7 +259,6 @@ export const ReviewStep = () => {
       {isBudgetComplete && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
-          onBalanceChange={setBalance}
           requiredPoints={budget.dailyBudget * periodDays}
         />
       )}

@@ -16,6 +16,7 @@ import {
 import type { ApiResult } from '@owner/api/types';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { takeCampaignDraft } from './campaignDraftStorage';
 import {
   CampaignFormContext,
   type CampaignFormContextValue,
@@ -82,7 +83,10 @@ export const CampaignFormProvider = ({
         }
 
         const { budget, coupon, poster, status, target } = campaignResult.data;
-        setValues({ budget, coupon, poster, target });
+        // 충전하러 결제 화면에 다녀왔으면 떠나기 전에 작성 중이던 값으로 이어 쓴다 (campaignDraftStorage)
+        setValues(
+          takeCampaignDraft(campaignId) ?? { budget, coupon, poster, target },
+        );
         setLoadState({
           status: 'loaded',
           campaignStatus: status,
