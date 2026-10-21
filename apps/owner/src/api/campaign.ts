@@ -7,7 +7,7 @@ import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 목록·상세 조회와 쿠폰 조건·노출 대상·하루 예산과 집행 기간 저장은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록·상세 조회, 쿠폰 조건·노출 대상·하루 예산과 집행 기간 저장, 상태 변경(취소·중단·재개·종료)은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -279,10 +279,10 @@ const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
-const NOT_CANCELABLE_MESSAGE =
-  '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
+const NOT_ACTIVE_OWNER_ACTION_MESSAGE =
+  '입점을 마친 점주만 캠페인을 관리할 수 있습니다.';
 const CAMPAIGN_LIMIT_MESSAGE =
   '캠페인은 한 번에 하나만 운영할 수 있습니다. 지금 캠페인이 끝난 뒤에 새로 만들어 주세요.';
 
@@ -799,40 +799,78 @@ export const requestCampaignActivation = async (
   };
 };
 
-// 취소 응답. 처리 뒤의 상태다
+// 상태를 바꾸는 점주 처리. 요청 본문 없이 보내고, 이미 바뀐 상태면 서버가 다시 성공으로 돌려준다
+type CampaignAction = 'cancel' | 'pause' | 'resume' | 'end';
+
+// 처리 응답. 처리 뒤의 상태다
 interface CampaignStatusResponse {
   campaignId: number;
   status: CampaignStatus;
 }
 
-// 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
-// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다.
-// 이미 작성 중이면 서버가 다시 성공으로 돌려준다
-export const cancelScheduledCampaign = async (
+// 409 CAMPAIGN-006. 그사이 상태가 바뀌어 지금 상태에서는 할 수 없다
+const STATUS_CHANGED_MESSAGES: Record<CampaignAction, string> = {
+  cancel:
+    '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.',
+  pause:
+    '캠페인 상태가 바뀌어 중단할 수 없습니다. 진행 중인 캠페인만 중단할 수 있습니다.',
+  resume:
+    '캠페인 상태가 바뀌어 다시 시작할 수 없습니다. 직접 중단한 캠페인만 다시 시작할 수 있습니다.',
+  end: '캠페인 상태가 바뀌어 종료할 수 없습니다. 일시중지한 캠페인만 종료할 수 있습니다.',
+};
+
+const requestCampaignAction = async (
   id: string,
+  action: CampaignAction,
 ): Promise<ApiResult<CampaignStatus>> => {
   try {
     const { status } = await request<CampaignStatusResponse>(
-      `/v1/owner/campaigns/${encodeURIComponent(id)}:cancel`,
+      `/v1/owner/campaigns/${encodeURIComponent(id)}:${action}`,
       { method: 'POST' },
     );
 
     return { ok: true, data: status };
   } catch (error) {
-    // 그사이 집행이 시작됐거나 끝났다(006), 캠페인을 찾을 수 없다(005).
-    // 화면이 code를 보고 목록을 다시 불러온다
-    if (error instanceof ApiError && error.code === 'CAMPAIGN-006') {
-      return {
-        ok: false,
-        code: error.code,
-        message: NOT_CANCELABLE_MESSAGE,
-      };
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
     }
 
-    if (error instanceof ApiError && error.code === 'CAMPAIGN-005') {
-      return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
+    switch (error.code) {
+      // 상태가 바뀌었거나(006) 캠페인을 찾을 수 없다(005). 화면이 code를 보고 목록을 다시 불러온다
+      case 'CAMPAIGN-006':
+        return {
+          ok: false,
+          code: error.code,
+          message: STATUS_CHANGED_MESSAGES[action],
+        };
+      case 'CAMPAIGN-005':
+        return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
+      case 'CAMPAIGN-001':
+        return { ok: false, message: NOT_ACTIVE_OWNER_ACTION_MESSAGE };
     }
 
-    return toCampaignFailure(error);
+    // 재개 거절(집행 기간이 끝남, 오늘 남은 예산이 노출 단가보다 적음)은 오류 코드가 정해지지 않아 서버 문구를 보여준다
+    if (error.code && error.status >= 400 && error.status < 500) {
+      return { ok: false, message: error.message };
+    }
+
+    return { ok: false };
   }
 };
+
+// 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
+// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
+export const cancelScheduledCampaign = (id: string) =>
+  requestCampaignAction(id, 'cancel');
+
+// 진행 중(ACTIVE) 캠페인 중단. PAUSED(사유 OWNER)가 되고 다음 피드 요청부터 노출되지 않는다.
+// 오늘 이미 쓴 포인트는 돌려주지 않는다
+export const pauseCampaign = (id: string) => requestCampaignAction(id, 'pause');
+
+// 점주가 직접 중단한(PAUSED, 사유 OWNER) 캠페인 재개. ACTIVE가 되고 바로 다시 노출된다
+export const resumeCampaign = (id: string) =>
+  requestCampaignAction(id, 'resume');
+
+// 일시중지(PAUSED) 캠페인 종료. ENDED가 되고 되돌릴 수 없다. 진행 중이면 먼저 중단해야 한다.
+// 종료하면 새 캠페인을 등록할 수 있다
+export const endCampaign = (id: string) => requestCampaignAction(id, 'end');
