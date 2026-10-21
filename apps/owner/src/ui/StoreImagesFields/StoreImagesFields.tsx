@@ -41,6 +41,8 @@ export interface StoreImagesFieldsProps {
   onInteriorImagesChange: (images: ImageValue[]) => void;
   // 넘기면 업로드에 실패한 칸에 다시 시도 버튼을 보여주고, 누르면 그 칸의 사진을 넘긴다
   onRetry?: (image: ImageValue) => void;
+  // 대표 이미지 칸 아래에 보여줄 오류 안내 (예: 바꾸다 실패해 대표 이미지가 비었을 때)
+  logoErrorMessage?: string;
   // 매장 이미지 추가와 다시 시도를 막는다 (예: 한 장씩 차례로 올리는 중)
   interiorDisabled?: boolean;
   // 매장 이미지 칸 아래에 보여줄 오류 안내 (예: 서버가 더 받지 않을 때)
@@ -56,6 +58,7 @@ export const StoreImagesFields = ({
   interiorDisabled = false,
   interiorErrorMessage,
   interiorImages,
+  logoErrorMessage,
   logoImage,
   maxInteriorImages,
   onInteriorImagesChange,
@@ -87,6 +90,7 @@ export const StoreImagesFields = ({
           대표 이미지
         </h2>
         <ImageUploadSlot
+          errorMessage={logoErrorMessage}
           image={logoImage}
           label="대표 이미지"
           onRemove={onLogoRemove}
