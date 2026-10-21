@@ -217,7 +217,7 @@ const findMenuIdsInUse = () =>
     ),
   );
 
-// 진행 중·중단·시작 대기 캠페인의 "특정 메뉴 할인"이 쓰는 메뉴 ID. 대표 메뉴 수정에서 수정과 삭제를 막는 데 쓴다
+// 진행 중·일시중지·대기 중 캠페인의 "특정 메뉴 할인"이 쓰는 메뉴 ID. 대표 메뉴 수정에서 수정과 삭제를 막는 데 쓴다
 export const getMenuIdsInUse = async (): Promise<ApiResult<string[]>> => {
   await mockDelay();
 

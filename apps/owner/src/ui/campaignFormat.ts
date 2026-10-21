@@ -42,7 +42,7 @@ export const getCampaignTitle = (
 };
 
 export const pausedNotices: Record<PausedReason, string> = {
-  OWNER: '직접 중단한 캠페인이에요. 언제든 다시 시작할 수 있어요.',
+  OWNER: '직접 일시중지한 캠페인이에요. 언제든 다시 시작할 수 있어요.',
   NO_POINTS:
     '포인트 잔액이 부족해 노출이 멈췄어요. 충전하면 자동으로 다시 시작돼요.',
   ADMIN: '운영 정책에 따라 관리자가 노출을 중단했어요.',

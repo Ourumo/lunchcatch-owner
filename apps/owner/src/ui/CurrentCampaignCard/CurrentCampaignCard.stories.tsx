@@ -1,4 +1,5 @@
 import { MemoryRouter } from 'react-router';
+import { Button } from '@repo/ui';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { Campaign, CampaignTodayPerformance } from '@owner/api/campaign';
@@ -96,7 +97,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Active: Story = {};
 
-// 점주가 직접 중단한 캠페인
+// 점주가 직접 일시중지한 캠페인
 export const PausedByOwner: Story = {
   args: {
     campaign: { ...activeCampaign, status: 'PAUSED', pausedReason: 'OWNER' },
@@ -142,5 +143,59 @@ export const OverIssued: Story = {
       reservedPoints: 10000,
       spentPoints: 9800,
     }),
+  },
+};
+
+// 집행 전이라 실적 없이 시작일을 보여준다
+const scheduledCampaign: Campaign = {
+  ...activeCampaign,
+  status: 'SCHEDULED',
+  budget: {
+    ...activeCampaign.budget,
+    startDate: daysFromToday(3),
+    endDate: daysFromToday(9),
+  },
+  performance: null,
+};
+
+export const Scheduled: Story = {
+  args: { campaign: scheduledCampaign },
+};
+
+// 캠페인 탭에서는 카드 아래에 대기 중 취소 버튼을 붙인다
+export const ScheduledWithFooter: Story = {
+  args: {
+    campaign: scheduledCampaign,
+    footer: (
+      <div className="border-t border-border-subtle p-3">
+        <Button className="h-11 w-full" variant="neutral">
+          대기 중 취소
+        </Button>
+      </div>
+    ),
+  },
+};
+
+// 작성 중이면 만든 날을 보여주고, 아직 정하지 않은 기간은 "기간 미정"으로 보인다
+export const Draft: Story = {
+  args: {
+    campaign: {
+      ...activeCampaign,
+      status: 'DRAFT',
+      budget: { dailyBudget: null, startDate: '', endDate: '' },
+      performance: null,
+    },
+  },
+};
+
+// 자동 검수를 통과하지 못한 작성 중 캠페인
+export const DraftReviewFailed: Story = {
+  args: {
+    campaign: {
+      ...activeCampaign,
+      status: 'DRAFT',
+      reviewFailReasons: ['포스터 문구에 금지 표현 "최저가"가 들어 있어요.'],
+      performance: null,
+    },
   },
 };

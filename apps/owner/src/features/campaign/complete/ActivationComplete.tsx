@@ -16,7 +16,7 @@ export interface ActivationCompleteProps {
   campaignId: string;
 }
 
-// 활성화 요청이 자동 검수를 통과해 시작 대기(SCHEDULED)가 된 뒤의 안내 화면
+// 활성화 요청이 자동 검수를 통과해 대기 중(SCHEDULED)이 된 뒤의 안내 화면
 export const ActivationComplete = ({ campaignId }: ActivationCompleteProps) => {
   const [campaign, setCampaign] = useState<Campaign>();
   const [menus, setMenus] = useState<StoreMenu[]>([]);

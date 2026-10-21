@@ -1,5 +1,4 @@
 import { ApiError, request } from './client';
-import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
@@ -142,25 +141,13 @@ export interface Campaign extends CampaignValues {
   performance: CampaignPerformance | null;
 }
 
-// 준비 중(작성 중 + 시작 대기) 캠페인은 가게당 1건만 둔다.
-// 새 캠페인이 진행 중이 되면 기존 진행 중 캠페인은 종료되고(docs/requirements-common.md "캠페인 상태 정의"),
-// 집행 기간은 활성화 뒤에 바꿀 수 없어 준비 중인 캠페인끼리 날짜가 겹치면 앞 캠페인이 예고 없이 일찍 끝난다.
-// 그래서 "지금 1개 + 다음 1개"로 둔다. 명세에 없는 정책이라 서버 검증과 함께 확인이 필요하다
-export const MAX_UPCOMING_CAMPAIGNS = 1;
-
-export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
-  status === 'DRAFT' || status === 'SCHEDULED';
-
-// 지금 집행 중인 캠페인(진행 중 또는 중단). 가게당 1건이고, 다음 캠페인이 시작되는 날 종료된다
+// 지금 집행 중인 캠페인(진행 중 또는 일시중지). 실적이 쌓이는 캠페인이다
 export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'ACTIVE' || status === 'PAUSED';
 
-// 새 캠페인의 시작일이 진행 중 캠페인의 종료일과 같거나 그보다 앞이면, 진행 중 캠페인은 그 시작일에 일찍 종료된다.
-// 날짜는 YYYY-MM-DD라 문자열로 비교한다. 시작일을 고르기 전이면 겹치지 않는 것으로 본다
-export const endsCurrentCampaignEarly = (
-  startDate: string,
-  currentCampaign: Pick<Campaign, 'budget'>,
-) => Boolean(startDate) && startDate <= currentCampaign.budget.endDate;
+// 끝나지 않은 캠페인(작성 중, 대기 중, 진행 중, 일시중지). 가게당 1건만 있을 수 있다
+export const isUnfinishedCampaign = ({ status }: Pick<Campaign, 'status'>) =>
+  status !== 'ENDED';
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
@@ -292,8 +279,8 @@ const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
-const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
-const NOT_CANCELABLE_MESSAGE = '시작 대기 중인 캠페인만 취소할 수 있습니다.';
+const NOT_CANCELABLE_MESSAGE =
+  '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
 const CAMPAIGN_LIMIT_MESSAGE =
@@ -316,9 +303,6 @@ export const createInitialCampaignValues = (): CampaignValues => ({
   target: { radius: 1000, gender: 'ALL', ageGroups: [] },
   budget: { dailyBudget: null, startDate: '', endDate: '' },
 });
-
-const findCampaign = (id: string) =>
-  mockCampaigns.find((campaign) => campaign.id === id);
 
 type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
 
@@ -370,7 +354,7 @@ const fetchCampaignDetail = async (id: string): Promise<Campaign> => ({
 });
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
-// 이 값을 보여주는 진행 중·다음 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
 const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   id: String(item.campaignId),
   status: item.status,
@@ -398,7 +382,7 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   },
 });
 
-// 최근 생성 순. 가게당 진행 중·다음 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
+// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
 export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
   try {
     const { items } = await request<CampaignListResponse>(
@@ -619,7 +603,7 @@ export const saveCouponStep = async (
       return { ok: false, message: NOT_ACTIVE_OWNER_MESSAGE };
     }
 
-    // 끝나지 않은 캠페인(시작 대기, 진행 중, 중단)이 있으면 새 캠페인을 만들 수 없다. Swagger에는 아직 없는 코드다
+    // 끝나지 않은 캠페인(대기 중, 진행 중, 일시중지)이 있으면 새 캠페인을 만들 수 없다. Swagger에는 아직 없는 코드다
     if (error.code === 'CAMPAIGN-010') {
       return { ok: false, message: CAMPAIGN_LIMIT_MESSAGE };
     }
@@ -815,47 +799,40 @@ export const requestCampaignActivation = async (
   };
 };
 
-// 작성 중(DRAFT) 캠페인 삭제. 다음 캠페인 자리를 비워 새 캠페인을 만들 수 있게 한다.
-// 명세에 없는 기능이라 API 추가 요청이 필요하다
-export const deleteCampaignDraft = async (
-  id: string,
-): Promise<ApiResult<null>> => {
-  await mockDelay();
+// 취소 응답. 처리 뒤의 상태다
+interface CampaignStatusResponse {
+  campaignId: number;
+  status: CampaignStatus;
+}
 
-  const index = mockCampaigns.findIndex((campaign) => campaign.id === id);
-
-  if (index === -1) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
-  if (mockCampaigns[index].status !== 'DRAFT') {
-    return { ok: false, message: NOT_DELETABLE_MESSAGE };
-  }
-
-  mockCampaigns.splice(index, 1);
-
-  return { ok: true, data: null };
-};
-
-// 시작 대기(SCHEDULED) 취소. 작성 중으로 되돌리고 입력값은 그대로 둔다
-// (docs/requirements-common.md "캠페인 상태 정의"의 SCHEDULED 점주 액션 "취소(DRAFT로)").
-// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
+// 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
+// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다.
+// 이미 작성 중이면 서버가 다시 성공으로 돌려준다
 export const cancelScheduledCampaign = async (
   id: string,
-): Promise<ApiResult<Campaign>> => {
-  await mockDelay();
+): Promise<ApiResult<CampaignStatus>> => {
+  try {
+    const { status } = await request<CampaignStatusResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}:cancel`,
+      { method: 'POST' },
+    );
 
-  const campaign = findCampaign(id);
+    return { ok: true, data: status };
+  } catch (error) {
+    // 그사이 집행이 시작됐거나 끝났다(006), 캠페인을 찾을 수 없다(005).
+    // 화면이 code를 보고 목록을 다시 불러온다
+    if (error instanceof ApiError && error.code === 'CAMPAIGN-006') {
+      return {
+        ok: false,
+        code: error.code,
+        message: NOT_CANCELABLE_MESSAGE,
+      };
+    }
 
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
+    if (error instanceof ApiError && error.code === 'CAMPAIGN-005') {
+      return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
+    }
+
+    return toCampaignFailure(error);
   }
-
-  if (campaign.status !== 'SCHEDULED') {
-    return { ok: false, message: NOT_CANCELABLE_MESSAGE };
-  }
-
-  campaign.status = 'DRAFT';
-
-  return { ok: true, data: structuredClone(campaign) };
 };
