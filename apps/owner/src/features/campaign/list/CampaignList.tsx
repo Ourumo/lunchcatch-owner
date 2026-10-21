@@ -3,11 +3,7 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
-import {
-  type Campaign,
-  isUnfinishedCampaign,
-  isUpcomingCampaign,
-} from '@owner/api/campaign';
+import { type Campaign, isUnfinishedCampaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
@@ -36,7 +32,7 @@ const groupCampaigns = (campaigns: Campaign[]) => {
 const newCampaignClassName =
   '-mr-2 flex h-11 items-center gap-1 rounded-full px-2 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-action-primary';
 
-// 다음 캠페인 자리가 차 있으면 이동하지 않고 안내 시트를 연다
+// 운영 중인 캠페인이 있으면 이동하지 않고 안내 시트를 연다
 const NewCampaignButton = ({ onLimited }: { onLimited?: () => void }) => {
   const content = (
     <>
@@ -241,10 +237,14 @@ const CampaignSections = ({
 export const CampaignList = () => {
   const { reload, retry, state } = useCampaignList();
   const [isLimitSheetOpen, setIsLimitSheetOpen] = useState(false);
-  // 목록을 불러오기 전에는 자리를 알 수 없어 바로 이동한다. 이때도 작성 화면이 제한을 다시 확인한다
-  const next =
+  // 대기 중, 진행 중, 일시중지 캠페인이 있으면 새로 만들 수 없다. 작성 중이면 작성 화면이 그 캠페인을 이어서 연다.
+  // 목록을 불러오기 전에는 알 수 없어 바로 이동한다. 이때도 작성 화면이 제한을 다시 확인한다
+  const running =
     state.status === 'success'
-      ? state.campaigns.find(isUpcomingCampaign)
+      ? state.campaigns.find(
+          (campaign) =>
+            isUnfinishedCampaign(campaign) && campaign.status !== 'DRAFT',
+        )
       : undefined;
 
   const renderContent = () => {
@@ -276,18 +276,18 @@ export const CampaignList = () => {
           title="캠페인"
           trailing={
             <NewCampaignButton
-              onLimited={next ? () => setIsLimitSheetOpen(true) : undefined}
+              onLimited={running ? () => setIsLimitSheetOpen(true) : undefined}
             />
           }
         />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
 
-      {isLimitSheetOpen && next && state.status === 'success' && (
+      {isLimitSheetOpen && running && state.status === 'success' && (
         <NewCampaignLimitSheet
-          campaign={next}
+          campaign={running}
           onClose={() => setIsLimitSheetOpen(false)}
-          title={getCampaignTitle(next.coupon, state.menus)}
+          title={getCampaignTitle(running.coupon, state.menus)}
         />
       )}
     </>
