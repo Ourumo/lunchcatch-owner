@@ -9,6 +9,7 @@ import {
   saveHoursStep,
   saveImagesStep,
   saveLocationStep,
+  saveMenuStep,
   saveStoreStep,
   saveTermsStep,
   type SignupFlowValues,
@@ -165,6 +166,7 @@ export const signupSteps: SignupStep[] = [
           Boolean(id) && image !== null && isImageAttached(image),
       ),
     progressHint: getMenuProgressHint,
+    save: (_values, version) => saveMenuStep(version),
   },
 ];
 

@@ -460,6 +460,11 @@ const completeOnboardingStep = async (
 export const saveImagesStep = (version: number) =>
   completeOnboardingStep('/v1/owner/store-images:complete', 'IMAGES', version);
 
+// 대표 메뉴 단계 완료. 메뉴는 추가할 때 등록하고 사진까지 올리므로 단계 완료만 알린다. 메뉴가 없어도 부른다.
+// 사진이 없는 메뉴가 있으면 서버가 409 STORE-013으로 거절한다
+export const saveMenuStep = (version: number) =>
+  completeOnboardingStep('/v1/owner/store-menus:complete', 'MENU', version);
+
 export interface MenuStepValues {
   // 대표 메뉴. 선택, 최대 MAX_MENUS개
   menus: MenuItemValues[];
