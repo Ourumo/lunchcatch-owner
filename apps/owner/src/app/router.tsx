@@ -23,6 +23,7 @@ import {
   STORE_MENUS_PATH,
   STORE_PATH,
 } from '@owner/features/store/storePaths';
+import { POINT_CHARGE_PATH } from '@owner/hooks/usePointCharge';
 import AuthLayout from '@owner/layout/AuthLayout';
 import MainLayout from '@owner/layout/MainLayout';
 import TabLayout from '@owner/layout/TabLayout';
@@ -40,6 +41,7 @@ import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import ComingSoonPage from '@owner/pages/ComingSoonPage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
+import PointChargePage from '@owner/pages/PointChargePage';
 import PointHistoryPage from '@owner/pages/PointHistoryPage';
 import QrScanPage from '@owner/pages/QrScanPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
@@ -142,6 +144,7 @@ export const router = createBrowserRouter([
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
           { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
+          { path: POINT_CHARGE_PATH, element: <PointChargePage /> },
           { path: '/qr-scan', element: <QrScanPage /> },
           // 분석에서 연결했지만 아직 만들지 않은 화면
           {
