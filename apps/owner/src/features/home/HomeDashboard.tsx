@@ -94,21 +94,26 @@ const LowBalanceAlert = ({ onCharge }: { onCharge: () => void }) => (
   </div>
 );
 
-// 점심에 가장 자주 쓰는 기능이라 홈의 주 버튼으로 크게 둔다
+// 쿠폰 사용 처리는 실제로 매장 기기에서 손님이 직접 하고, 점주 앱 QR 스캔은 시연용이다.
+// 홈의 주 기능처럼 보이지 않도록 보조 버튼으로 두되, 시연할 때 바로 찾을 수 있게 자리는 위에 둔다
 const QrScanLink = () => (
   <Link
-    className="flex h-16 items-center justify-center gap-2.5 rounded-xl bg-action-primary text-body-mobile font-bold text-text-inverse transition-colors hover:bg-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+    className="flex h-13 items-center gap-2.5 rounded-xl border border-border-subtle bg-bg-surface px-4 text-body-mobile font-medium text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
     to={QR_SCAN_PATH}
   >
-    <QrCode aria-hidden="true" className="size-6" />
-    QR 코드 스캔
+    <QrCode aria-hidden="true" className="size-5 text-action-primary" />
+    <span className="flex-1">QR로 쿠폰 사용 처리</span>
+    <ChevronRight
+      aria-hidden="true"
+      className="size-5 shrink-0 text-text-tertiary"
+    />
   </Link>
 );
 
 const HomeSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-5 px-page py-5">
     <span className="sr-only">홈 화면을 불러오는 중</span>
-    {[48, 64, 176].map((height, index) => (
+    {[64, 52, 176].map((height, index) => (
       <div
         aria-hidden="true"
         className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
