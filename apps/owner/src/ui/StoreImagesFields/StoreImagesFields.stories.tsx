@@ -120,6 +120,7 @@ export const UploadStates: Story = {
       {
         status: 'attached',
         file: createFile('interior-3.svg', '#57534e'),
+        uploadKey: 'upload-interior-3',
       },
     ],
     onRetry: () => {},
