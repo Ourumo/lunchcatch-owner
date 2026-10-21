@@ -10,6 +10,9 @@ import type {
 // LOGO는 가게마다 1장이고 다시 올리면 바뀐다. INTERIOR는 최대 3장
 export type StoreImageType = 'LOGO' | 'INTERIOR';
 
+// 매장 사진 3장 초과(422). 확인하지 않은 업로드도 자리를 잡고 있어, 화면의 사진이 3장보다 적어도 올 수 있다
+export const STORE_IMAGE_LIMIT_CODE = 'STORE-007';
+
 interface StoreImagePrepareUploadResponse extends PrepareUploadResponse {
   // 매장 사진 중 몇 번째로 보이는지. 로고면 null
   sortOrder: number | null;

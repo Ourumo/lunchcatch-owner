@@ -40,6 +40,14 @@ export type UploadedImage = Extract<
   { status: 'attached' | 'failed' }
 >;
 
+// 고르자마자 올리는 화면에서 업로드가 끝나지 않은 사진 (차례를 기다리거나 올리는 중)
+export const isImageUploading = (image: ImageValue) =>
+  image.status === 'selected' || image.status === 'uploading';
+
+// 가게·메뉴에 붙은 사진
+export const isImageAttached = (image: ImageValue) =>
+  image.status === 'attached' || image.status === 'saved';
+
 export const toSavedImage = (url: string): ImageValue => ({
   status: 'saved',
   url,

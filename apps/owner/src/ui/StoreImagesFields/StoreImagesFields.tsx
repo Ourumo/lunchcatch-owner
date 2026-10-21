@@ -41,6 +41,10 @@ export interface StoreImagesFieldsProps {
   onInteriorImagesChange: (images: ImageValue[]) => void;
   // 넘기면 업로드에 실패한 칸에 다시 시도 버튼을 보여주고, 누르면 그 칸의 사진을 넘긴다
   onRetry?: (image: ImageValue) => void;
+  // 매장 이미지 추가와 다시 시도를 막는다 (예: 한 장씩 차례로 올리는 중)
+  interiorDisabled?: boolean;
+  // 매장 이미지 칸 아래에 보여줄 오류 안내 (예: 서버가 더 받지 않을 때)
+  interiorErrorMessage?: string;
 }
 
 // 대표 이미지와 매장 이미지 입력. 입점 등록과 가게 관리가 함께 쓴다.
@@ -49,6 +53,8 @@ export interface StoreImagesFieldsProps {
 // 올리지 못한 칸(가게에 붙지 않음)만 화면에서 뺄 수 있다. 대표 이미지는 다시 올리면 바뀌어 눌러서 바꿀 수 있다.
 // 최대 장수는 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const StoreImagesFields = ({
+  interiorDisabled = false,
+  interiorErrorMessage,
   interiorImages,
   logoImage,
   maxInteriorImages,
@@ -106,6 +112,7 @@ export const StoreImagesFields = ({
         <div className="grid grid-cols-3 gap-2">
           {interiorImages.map((image, index) => (
             <ImageUploadSlot
+              disabled={interiorDisabled}
               image={image}
               key={getImageKey(image)}
               label={`매장 이미지 ${index + 1}`}
@@ -125,6 +132,7 @@ export const StoreImagesFields = ({
           ))}
           {remainingCount > 0 && (
             <ImageUploadSlot
+              disabled={interiorDisabled}
               image={null}
               label="매장 이미지 추가"
               multiple
@@ -139,6 +147,14 @@ export const StoreImagesFields = ({
             role="status"
           >
             최대 {maxInteriorImages}장까지 등록할 수 있어요
+          </p>
+        )}
+        {interiorErrorMessage && (
+          <p
+            className="ml-1 text-caption-mobile break-keep text-status-danger-fg"
+            role="alert"
+          >
+            {interiorErrorMessage}
           </p>
         )}
       </section>

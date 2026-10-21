@@ -92,7 +92,14 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
     patch,
   ) => {
     setValues(
-      (prev) => prev && { ...prev, [stepId]: { ...prev[stepId], ...patch } },
+      (prev) =>
+        prev && {
+          ...prev,
+          [stepId]: {
+            ...prev[stepId],
+            ...(typeof patch === 'function' ? patch(prev[stepId]) : patch),
+          },
+        },
     );
   };
 
