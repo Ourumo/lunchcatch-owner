@@ -11,8 +11,9 @@ export interface ImageUploadSlotProps {
   label: string;
   // 새로 고른 사진은 파일로, 이미 올라간 사진(가게 정보 수정)은 주소로 보여준다
   image: ImageValue | null;
-  // 허용하는 파일만 넘긴다. multiple이 아니면 1장만 넘긴다
-  onSelect: (files: File[]) => void;
+  // 허용하는 파일만 넘긴다. multiple이 아니면 1장만 넘긴다.
+  // 없으면 사진을 고르거나 바꿀 수 없고 사진만 보여준다 (이미 올리기 시작한 사진)
+  onSelect?: (files: File[]) => void;
   // 없으면 삭제 버튼을 보여주지 않는다
   onRemove?: () => void;
   // 넘기면 업로드에 실패한 사진에 다시 시도 버튼을 보여준다
@@ -69,6 +70,7 @@ const getFileError = (file: File) => {
 };
 
 // 점주 화면용 사진 등록 칸. 빈 칸을 누르면 사진을 고르고, 사진이 있으면 미리보기를 보여주며 누르면 교체한다.
+// onSelect가 없으면 누를 수 없고 사진만 보여준다.
 // 올리는 중이면 진행률을, 올리지 못했으면 실패 안내와 다시 시도 버튼을 미리보기 위에 겹쳐 보여준다
 export const ImageUploadSlot = ({
   label,
@@ -86,6 +88,44 @@ export const ImageUploadSlot = ({
   const visibleError = errorMessage ?? fileError;
   const sizeClassName = sizeClassNames[size];
   const isFailed = image?.status === 'failed';
+  const isReadOnly = !onSelect;
+  // 고를 수 있으면 칸 이름은 선택 입력이 갖고, 사진만 보여줄 때는 사진이 갖는다
+  const imageAlt = isReadOnly ? label : '';
+  const boxClassName = [
+    'flex w-full items-center justify-center overflow-hidden rounded-xl',
+    isReadOnly
+      ? ''
+      : 'cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-action-primary has-disabled:cursor-not-allowed has-disabled:opacity-60',
+    image
+      ? 'border border-border-subtle bg-bg-surface'
+      : 'border border-dashed border-brand-200 bg-surface-brand',
+    visibleError || isFailed ? 'border-status-danger-border' : '',
+    sizeClassName.box,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const preview =
+    image?.status === 'saved' ? (
+      <img alt={imageAlt} className="size-full object-cover" src={image.url} />
+    ) : image ? (
+      <FilePreviewImage
+        alt={imageAlt}
+        className="size-full object-cover"
+        file={image.file}
+      />
+    ) : (
+      <span className="flex flex-col items-center gap-2 px-2 text-center">
+        <span
+          className={`flex items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary ${sizeClassName.iconCircle}`}
+        >
+          <Camera aria-hidden="true" className={sizeClassName.icon} />
+        </span>
+        <span className={`break-keep text-text-primary ${sizeClassName.label}`}>
+          {label}
+        </span>
+      </span>
+    );
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -101,57 +141,30 @@ export const ImageUploadSlot = ({
     setFileError(errors.find(Boolean));
 
     if (acceptedFiles.length > 0) {
-      onSelect(multiple ? acceptedFiles : acceptedFiles.slice(0, 1));
+      onSelect?.(multiple ? acceptedFiles : acceptedFiles.slice(0, 1));
     }
   };
 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="relative">
-        <label
-          className={[
-            'flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-action-primary has-disabled:cursor-not-allowed has-disabled:opacity-60',
-            image
-              ? 'border border-border-subtle bg-bg-surface'
-              : 'border border-dashed border-brand-200 bg-surface-brand',
-            visibleError || isFailed ? 'border-status-danger-border' : '',
-            sizeClassName.box,
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          <input
-            accept={ACCEPTED_TYPES.join(',')}
-            aria-describedby={visibleError ? errorId : undefined}
-            aria-label={image ? `${label} 변경` : `${label} 등록`}
-            className="sr-only"
-            disabled={disabled}
-            multiple={multiple}
-            onChange={handleChange}
-            type="file"
-          />
-          {image?.status === 'saved' ? (
-            <img alt="" className="size-full object-cover" src={image.url} />
-          ) : image ? (
-            <FilePreviewImage
-              className="size-full object-cover"
-              file={image.file}
+        {isReadOnly ? (
+          <div className={boxClassName}>{preview}</div>
+        ) : (
+          <label className={boxClassName}>
+            <input
+              accept={ACCEPTED_TYPES.join(',')}
+              aria-describedby={visibleError ? errorId : undefined}
+              aria-label={image ? `${label} 변경` : `${label} 등록`}
+              className="sr-only"
+              disabled={disabled}
+              multiple={multiple}
+              onChange={handleChange}
+              type="file"
             />
-          ) : (
-            <span className="flex flex-col items-center gap-2 px-2 text-center">
-              <span
-                className={`flex items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-action-primary ${sizeClassName.iconCircle}`}
-              >
-                <Camera aria-hidden="true" className={sizeClassName.icon} />
-              </span>
-              <span
-                className={`break-keep text-text-primary ${sizeClassName.label}`}
-              >
-                {label}
-              </span>
-            </span>
-          )}
-        </label>
+            {preview}
+          </label>
+        )}
         {/* 겹친 안내를 눌러도 아래 칸이 눌려 사진을 바꿀 수 있도록 다시 시도 버튼만 누를 수 있게 둔다 */}
         {image?.status === 'uploading' && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-bg-inverse/50 px-3">

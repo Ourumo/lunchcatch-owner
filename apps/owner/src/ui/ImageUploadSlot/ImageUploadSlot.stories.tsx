@@ -79,6 +79,24 @@ export const Uploaded: Story = {
   },
 };
 
+// 올리기 시작한 매장 사진처럼 바꾸거나 지울 수 없는 칸. onSelect 없이 사진만 보여준다
+export const ReadOnly: Story = {
+  args: {
+    image: uploadedImage,
+    label: '매장 이미지 1',
+    onSelect: undefined,
+    size: 'sm',
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 114 }}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: (args) => <ImageUploadSlot {...args} />,
+};
+
 // 사진을 고르자마자 S3에 올리는 중. 진행률을 보여준다
 export const Uploading: Story = {
   args: {

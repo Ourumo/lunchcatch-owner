@@ -37,7 +37,7 @@ export interface StoreImagesFieldsProps {
   onLogoSelect: (image: ImageValue) => void;
   // 넘기면 대표 이미지를 지울 수 있다. 가게 관리는 필수 1장이라 넘기지 않고 눌러서 바꾸기만 한다
   onLogoRemove?: () => void;
-  // 새로 고른 사진은 selected 상태로, 원래 있던 사진은 그대로 순서대로 넘긴다
+  // 새로 고른 사진은 selected 상태로 뒤에 붙이고, 원래 있던 사진은 그대로 순서대로 넘긴다
   onInteriorImagesChange: (images: ImageValue[]) => void;
   // 넘기면 업로드에 실패한 칸에 다시 시도 버튼을 보여주고, 누르면 그 칸의 사진을 넘긴다
   onRetry?: (image: ImageValue) => void;
@@ -45,6 +45,8 @@ export interface StoreImagesFieldsProps {
 
 // 대표 이미지와 매장 이미지 입력. 입점 등록과 가게 관리가 함께 쓴다.
 // 이미 올라간 사진과 새로 고른 사진이 섞여도 순서대로 보여준다.
+// 매장 사진은 삭제·교체 API가 없어 고르면 바로 올리므로, 한 번 고른 칸은 바꾸거나 지울 수 없고 사진만 보여준다.
+// 올리지 못한 칸(가게에 붙지 않음)만 화면에서 뺄 수 있다. 대표 이미지는 다시 올리면 바뀌어 눌러서 바꿀 수 있다.
 // 최대 장수는 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const StoreImagesFields = ({
   interiorImages,
@@ -98,27 +100,26 @@ export const StoreImagesFields = ({
             {interiorImages.length}/{maxInteriorImages}
           </span>
         </div>
+        <p className="text-caption-mobile break-keep text-text-secondary">
+          등록한 사진은 지금은 바꾸거나 지울 수 없어요
+        </p>
         <div className="grid grid-cols-3 gap-2">
           {interiorImages.map((image, index) => (
             <ImageUploadSlot
               image={image}
               key={getImageKey(image)}
               label={`매장 이미지 ${index + 1}`}
-              onRemove={() =>
-                updateInteriorImages(
-                  interiorImages.filter(
-                    (_, imageIndex) => imageIndex !== index,
-                  ),
-                )
+              onRemove={
+                image.status === 'failed'
+                  ? () =>
+                      updateInteriorImages(
+                        interiorImages.filter(
+                          (_, imageIndex) => imageIndex !== index,
+                        ),
+                      )
+                  : undefined
               }
               onRetry={onRetry && (() => onRetry(image))}
-              onSelect={([file]) =>
-                updateInteriorImages(
-                  interiorImages.map((current, imageIndex) =>
-                    imageIndex === index ? selectImage(file) : current,
-                  ),
-                )
-              }
               size="sm"
             />
           ))}
