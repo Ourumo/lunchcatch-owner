@@ -6,7 +6,7 @@ import type {
 import type { MenuItemValues } from './signupFlow';
 import type { ApiResult } from './types';
 
-// 가게 대표 메뉴 등록과 메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정").
+// 가게 대표 메뉴 등록과 메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록").
 // 입점 신청(ONBOARDING)에서만 쓸 수 있다. 메뉴 수정·삭제 API는 없다
 
 interface StoreMenuRegisterResponse {

@@ -5,7 +5,7 @@ interface StoreEditStatusProps {
   onRetry: () => void;
 }
 
-// 가게 정보 수정 화면에서 가게 정보를 불러오는 중이거나 불러오지 못했을 때의 화면
+// 가게 관리의 수정·보기 화면에서 가게 정보를 불러오는 중이거나 불러오지 못했을 때의 화면
 export const StoreEditStatus = ({ onRetry, status }: StoreEditStatusProps) => {
   if (status === 'loading') {
     return (

@@ -1,7 +1,7 @@
-import { StoreImagesEdit } from '@owner/features/store/StoreImagesEdit';
+import { StoreImagesView } from '@owner/features/store/StoreImagesView';
 
 const StoreImagesPage = () => {
-  return <StoreImagesEdit />;
+  return <StoreImagesView />;
 };
 
 export default StoreImagesPage;

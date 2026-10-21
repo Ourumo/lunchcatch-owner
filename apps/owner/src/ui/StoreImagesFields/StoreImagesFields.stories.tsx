@@ -89,7 +89,7 @@ export const WithFiles: Story = {
   },
 };
 
-// 가게 관리: 이미 올라간 사진이 다 찬 상태. 대표 이미지는 바꾸기만 한다
+// 입점 신청을 이어서 할 때: 이미 올라간 사진이 다 찬 상태. 대표 이미지는 바꾸기만 한다
 export const Uploaded: Story = {
   args: {
     logoImage: createUploadedImage('#f56b20'),
@@ -126,7 +126,7 @@ export const UploadStates: Story = {
   },
 };
 
-// 가게 관리: 이미 올라간 사진과 새로 고른 사진이 섞인 상태
+// 입점 신청을 이어서 할 때: 이미 올라간 사진과 새로 고른 사진이 섞인 상태
 export const Mixed: Story = {
   args: {
     logoImage: createUploadedImage('#f56b20'),

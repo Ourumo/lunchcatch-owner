@@ -379,7 +379,7 @@ export interface MenuDraft {
 // 검사하는 칸. 설명은 선택이고 길이는 입력칸에서 막는다
 export type MenuField = 'image' | 'name' | 'price';
 
-// 사진은 있는지만 본다. 가게 관리에서는 이미 올라간 사진도 넘긴다
+// 사진은 있는지만 본다. 입점 신청을 이어서 할 때는 이미 올라간 사진도 넘긴다
 export const getMenuErrors = ({
   image,
   name,
@@ -402,7 +402,7 @@ export const getMenuErrors = ({
   };
 };
 
-// 대표 메뉴 입력 화면(ui/MenuListFields)에 넘기는 규칙. 입점 등록과 가게 관리가 같은 값을 쓴다
+// 대표 메뉴 입력 화면(ui/MenuListFields)에 넘기는 규칙. 입점 등록에서 쓴다
 export const menuInputRules = {
   nameMaxLength: MENU_NAME_MAX_LENGTH,
   priceMax: MENU_PRICE_MAX,

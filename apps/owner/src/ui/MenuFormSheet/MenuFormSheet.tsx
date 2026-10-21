@@ -39,7 +39,7 @@ export interface MenuFormSheetProps {
   onSave: (menu: MenuFormValues) => void;
 }
 
-// 대표 메뉴 추가·수정 바텀시트. 입점 등록과 가게 관리가 함께 쓴다.
+// 대표 메뉴 추가·수정 바텀시트. 입점 등록에서 쓴다.
 // 열 때마다 새로 그려 입력값을 초기화하므로 열려 있을 때만 렌더링한다
 export const MenuFormSheet = ({
   initialMenu,
@@ -166,7 +166,7 @@ export const MenuFormSheet = ({
           </p>
         </div>
       </div>
-      {/* 입점 등록의 다음 버튼, 가게 관리의 저장 버튼과 헷갈리지 않도록 시트는 확인으로 둔다 */}
+      {/* 입점 등록의 다음 버튼과 헷갈리지 않도록 시트는 확인으로 둔다 */}
       <Button className="mt-5 w-full" onClick={handleConfirm}>
         확인
       </Button>

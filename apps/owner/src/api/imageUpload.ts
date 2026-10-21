@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { ApiError } from './client';
 
-// 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정")
+// 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록")
 
 // 업로드 주소를 받은 업로드. 실패한 뒤 다시 시도할 때 받은 주소와 줄인 사진을 그대로 쓴다
 export interface UploadTicket {
@@ -57,17 +57,6 @@ export const toSavedImage = (url: string): ImageValue => ({
   status: 'saved',
   url,
 });
-
-// 같은 사진인지. 새로 고른 사진은 업로드 상태가 바뀌어도 같은 파일이면 같은 사진으로 본다
-export const isSameImage = (a: ImageValue | null, b: ImageValue | null) => {
-  if (a === null || b === null) {
-    return a === b;
-  }
-
-  return a.status === 'saved'
-    ? b.status === 'saved' && a.url === b.url
-    : b.status !== 'saved' && a.file === b.file;
-};
 
 // 긴 변이 이보다 크면 줄여서 올린다
 const MAX_IMAGE_SIDE = 1600;
