@@ -12,9 +12,9 @@ import {
 } from '@owner/api/campaign';
 import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
-  getPosterTemplates,
+  getCampaignPoster,
   isPosterComplete,
-  type PosterTemplate,
+  type SavedPoster,
 } from '@owner/api/poster';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 import {
@@ -89,7 +89,9 @@ export const ReviewStep = () => {
   const { campaignId, platformSettings, values } = useCampaignForm();
   const { budget, coupon, poster, target } = values;
   const [menus, setMenus] = useState<StoreMenu[]>([]);
-  const [templates, setTemplates] = useState<PosterTemplate[]>([]);
+  // 서버가 만든 완성 포스터. 아직 만들지 않았으면 'none'
+  const [savedPoster, setSavedPoster] =
+    useState<Loadable<SavedPoster | 'none'>>();
   const [balance, setBalance] = useState<Loadable<PointBalance>>();
 
   useEffect(() => {
@@ -100,9 +102,9 @@ export const ReviewStep = () => {
         setMenus(result.data.menus);
       }
     });
-    getPosterTemplates().then((result) => {
-      if (!ignore && result.ok) {
-        setTemplates(result.data);
+    getCampaignPoster(campaignId).then((result) => {
+      if (!ignore) {
+        setSavedPoster(result.ok ? (result.data ?? 'none') : null);
       }
     });
     getPointBalance().then((result) => {
@@ -115,10 +117,9 @@ export const ReviewStep = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [campaignId]);
 
   const menu = menus.find(({ id }) => id === coupon.menuId);
-  const template = templates.find(({ id }) => id === poster?.templateId);
   const isBudgetComplete = isBudgetStepComplete(budget, platformSettings);
   const periodDays = isBudgetComplete
     ? getPeriodDays(budget.startDate, budget.endDate)
@@ -179,21 +180,23 @@ export const ReviewStep = () => {
         isComplete={isPosterComplete(poster)}
         step={findStep('poster')}
       >
-        {poster && template ? (
+        {/* 2단계에서 입력한 글이 아니라 서버가 만든 포스터를 보여준다. 서버가 아직 글을 받지 않아 글이 다를 수 있다 */}
+        {savedPoster && savedPoster !== 'none' ? (
           <div className="mt-3 flex justify-center">
             <div className="overflow-hidden rounded-lg border border-border-subtle">
               <PosterPreview
-                html={template.html}
-                slots={poster.slots}
+                html={savedPoster.html}
                 width={POSTER_PREVIEW_WIDTH}
               />
             </div>
           </div>
         ) : (
           <p className="mt-3 text-body-sm-mobile text-text-secondary">
-            {poster
+            {savedPoster === undefined
               ? '포스터를 불러오는 중이에요'
-              : '아직 포스터를 만들지 않았어요'}
+              : savedPoster === null
+                ? '포스터를 불러오지 못했어요'
+                : '아직 포스터를 만들지 않았어요'}
           </p>
         )}
       </ReviewSection>

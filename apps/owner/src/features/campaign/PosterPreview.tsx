@@ -6,15 +6,16 @@ const POSTER_BASE_WIDTH = 360;
 const POSTER_HEIGHT_RATIO = 297 / 210;
 
 export interface PosterPreviewProps {
-  // 슬롯 자리표시가 든 템플릿 HTML
+  // 템플릿 HTML, 또는 서버가 슬롯을 모두 채운 완성 HTML
   html: string;
-  slots: PosterSlotValues;
+  // 넘기면 템플릿의 슬롯 자리를 이 값으로 채운다. 완성 HTML은 넘기지 않고 그대로 그린다
+  slots?: PosterSlotValues;
   // 넘기면 이 폭(px)으로 줄여서 보여준다. 없으면 감싼 요소의 폭을 채운다
   width?: number;
   className?: string;
 }
 
-// 템플릿에 슬롯 값을 채운 포스터를 iframe으로 보여준다.
+// 포스터를 iframe으로 보여준다. 템플릿이면 슬롯 값을 채운다.
 // sandbox를 비워 두어 스크립트, 폼, 링크 이동을 모두 막고 이미지와 스타일만 그린다
 export const PosterPreview = ({
   className,
@@ -28,7 +29,7 @@ export const PosterPreview = ({
         .filter(Boolean)
         .join(' ')}
       sandbox=""
-      srcDoc={fillPosterTemplate(html, slots)}
+      srcDoc={slots ? fillPosterTemplate(html, slots) : html}
       tabIndex={-1}
       title="포스터 미리보기"
     />

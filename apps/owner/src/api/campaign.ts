@@ -2,7 +2,11 @@ import { ApiError, request } from './client';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
-import { type CampaignPoster, isPosterComplete } from './poster';
+import {
+  type CampaignPoster,
+  getCampaignPoster,
+  isPosterComplete,
+} from './poster';
 import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
@@ -304,10 +308,10 @@ export const createInitialCampaignValues = (): CampaignValues => ({
   budget: { dailyBudget: null, startDate: '', endDate: '' },
 });
 
-type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
+type ServerCampaignExtras = Pick<Campaign, 'reviewFailReasons'>;
 
-// 포스터 조회와 활성화 요청을 연동하기 전까지, 점주가 입력한 포스터 값과 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
-// 새로고침하면 사라진다. 포스터 조회·활성화 API를 연동하면 지운다
+// 활성화 요청을 연동하기 전까지, 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
+// 새로고침하면 사라진다. 활성화 API를 연동하면 지운다
 const mockServerCampaignExtras = new Map<string, ServerCampaignExtras>();
 
 const updateServerCampaignExtras = (
@@ -315,7 +319,6 @@ const updateServerCampaignExtras = (
   patch: Partial<ServerCampaignExtras>,
 ) => {
   mockServerCampaignExtras.set(id, {
-    poster: null,
     reviewFailReasons: [],
     ...mockServerCampaignExtras.get(id),
     ...patch,
@@ -344,14 +347,30 @@ interface CampaignListResponse {
 // 서버 목록 한 번에 받는 최대 개수
 const CAMPAIGN_LIST_PAGE_SIZE = 100;
 
-const fetchCampaignDetail = async (id: string): Promise<Campaign> => ({
-  ...toCampaign(
-    await request<CampaignDetailResponse>(
-      `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+// 작성 중이면 이어서 작성할 수 있게 저장된 포스터도 불러온다.
+// 다른 상태는 포스터를 고칠 수 없어, 캠페인 상세가 완성 HTML을 따로 불러온다
+const fetchCampaignDetail = async (id: string): Promise<Campaign> => {
+  const campaign: Campaign = {
+    ...toCampaign(
+      await request<CampaignDetailResponse>(
+        `/v1/owner/campaigns/${encodeURIComponent(id)}`,
+      ),
     ),
-  ),
-  ...structuredClone(mockServerCampaignExtras.get(id)),
-});
+    ...structuredClone(mockServerCampaignExtras.get(id)),
+  };
+
+  if (campaign.status !== 'DRAFT') {
+    return campaign;
+  }
+
+  const posterResult = await getCampaignPoster(id);
+
+  if (!posterResult.ok) {
+    throw new Error('포스터를 불러오지 못했습니다');
+  }
+
+  return { ...campaign, poster: posterResult.data?.poster ?? null };
+};
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
 // 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
@@ -746,15 +765,10 @@ export const savePosterStep = async (
   }
 
   try {
-    const { posterId } = await request<PosterCreateResponse>(
+    await request<PosterCreateResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
       { method: 'POST', body: toPosterCreateRequest(poster) },
     );
-
-    // 포스터 조회를 연동하기 전까지 이어서 작성할 때 쓰도록 점주가 입력한 값을 메모리에 둔다
-    updateServerCampaignExtras(id, {
-      poster: { ...structuredClone(poster), posterId: String(posterId) },
-    });
 
     return { ok: true, data: null };
   } catch (error) {

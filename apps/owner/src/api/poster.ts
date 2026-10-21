@@ -1,4 +1,4 @@
-import { request } from './client';
+import { ApiError, request } from './client';
 import type {
   PrepareObjectUploadResponse,
   PrepareUploadRequest,
@@ -85,10 +85,13 @@ const textSlots = {
   period: 'period',
 } as const satisfies Record<string, keyof PosterSlotValues>;
 
+const parsePosterHtml = (html: string) =>
+  new DOMParser().parseFromString(html, 'text/html');
+
 // 템플릿 HTML 구조는 그대로 두고 data-slot 자리의 글과 이미지만 바꾼다.
 // 글은 textContent로 넣어 점주가 입력한 값이 태그로 해석되지 않는다. 이미지를 고르기 전이면 템플릿 그대로 둔다
 export const fillPosterTemplate = (html: string, slots: PosterSlotValues) => {
-  const document = new DOMParser().parseFromString(html, 'text/html');
+  const document = parsePosterHtml(html);
 
   Object.entries(textSlots).forEach(([slot, key]) => {
     document.querySelectorAll(`[data-slot="${slot}"]`).forEach((element) => {
@@ -114,3 +117,84 @@ export const preparePosterImageUpload = (
     `/v1/owner/campaigns/${encodeURIComponent(campaignId)}/poster:prepareUpload`,
     { method: 'POST', body: { contentType, fileSize } },
   );
+
+// 저장된 포스터. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채운 값이다
+interface PosterResponse {
+  posterId: number;
+  campaignId: number;
+  templateId: number;
+  // "{가게명} - {템플릿 이름}"
+  title: string;
+  // 슬롯이 모두 채워진 완성 HTML
+  html: string;
+}
+
+export interface SavedPoster {
+  // 확인 단계와 캠페인 상세에 그대로 보여주는 완성 HTML
+  html: string;
+  // 이어서 작성할 때 2단계에 채우는 값. 완성 HTML에서 꺼낸다
+  poster: CampaignPoster;
+}
+
+// 서버 포스터의 이미지는 CDN 주소이고, 주소의 경로가 업로드 때 받은 objectKey다
+const toObjectKey = (imageUrl: string) => {
+  try {
+    return decodeURIComponent(new URL(imageUrl).pathname.slice(1)) || null;
+  } catch {
+    return null;
+  }
+};
+
+// 조회 응답에는 템플릿 ID와 완성 HTML만 있어, 글과 이미지는 HTML의 data-slot 자리에서 꺼낸다
+const toCampaignPoster = ({
+  html,
+  posterId,
+  templateId,
+}: PosterResponse): CampaignPoster => {
+  const document = parsePosterHtml(html);
+  const readText = (slot: string) =>
+    document.querySelector(`[data-slot="${slot}"]`)?.textContent?.trim() ?? '';
+  const imageUrl =
+    document.querySelector('img[data-slot="image"]')?.getAttribute('src') ||
+    null;
+
+  return {
+    posterId: String(posterId),
+    templateId: String(templateId),
+    imageObjectKey: imageUrl ? toObjectKey(imageUrl) : null,
+    slots: {
+      eventName: readText('eventName').slice(
+        0,
+        POSTER_TEXT_MAX_LENGTH.eventName,
+      ),
+      discountText: readText('discount').slice(
+        0,
+        POSTER_TEXT_MAX_LENGTH.discountText,
+      ),
+      period: readText('period'),
+      imageUrl,
+    },
+  };
+};
+
+// 캠페인에 저장된 포스터. 아직 만들지 않았으면(POSTER-021) null
+export const getCampaignPoster = async (
+  campaignId: string,
+): Promise<ApiResult<SavedPoster | null>> => {
+  try {
+    const data = await request<PosterResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(campaignId)}/poster`,
+    );
+
+    return {
+      ok: true,
+      data: { html: data.html, poster: toCampaignPoster(data) },
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'POSTER-021') {
+      return { ok: true, data: null };
+    }
+
+    return { ok: false };
+  }
+};
