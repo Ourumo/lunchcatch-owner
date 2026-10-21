@@ -43,7 +43,7 @@ const createFile = (name: string, color: string) =>
     { type: 'image/svg+xml' },
   );
 
-// 사진이 없는 메뉴(가게 관리, 입점 등록에서 사진을 올리기 전)도 보여준다
+// 사진이 없는 메뉴(입점 등록에서 사진을 올리기 전)도 보여준다
 type StoryImage = ImageValue | null;
 
 const uploadedMenus: MenuListItem<StoryImage>[] = [
@@ -158,17 +158,5 @@ export const UploadStates: Story = {
     onRetry: () => {},
     onImageSelect: () => {},
     disabled: true,
-  },
-};
-
-// 가게 관리: 할인 중인 캠페인이 쓰는 메뉴는 수정과 삭제 버튼 대신 안내를 보여준다
-export const Locked: Story = {
-  args: {
-    menus: uploadedMenus,
-    canEdit: (menu) => menu.id !== 'menu-1',
-    getLockNotice: (menu) =>
-      menu.id === 'menu-1'
-        ? '할인 중인 캠페인에 쓰이고 있어 수정하거나 삭제할 수 없어요'
-        : undefined,
   },
 };

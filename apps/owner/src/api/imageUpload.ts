@@ -58,17 +58,6 @@ export const toSavedImage = (url: string): ImageValue => ({
   url,
 });
 
-// 같은 사진인지. 새로 고른 사진은 업로드 상태가 바뀌어도 같은 파일이면 같은 사진으로 본다
-export const isSameImage = (a: ImageValue | null, b: ImageValue | null) => {
-  if (a === null || b === null) {
-    return a === b;
-  }
-
-  return a.status === 'saved'
-    ? b.status === 'saved' && a.url === b.url
-    : b.status !== 'saved' && a.file === b.file;
-};
-
 // 긴 변이 이보다 크면 줄여서 올린다
 const MAX_IMAGE_SIDE = 1600;
 const JPEG_QUALITY = 0.85;

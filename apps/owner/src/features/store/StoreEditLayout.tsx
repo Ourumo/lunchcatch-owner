@@ -36,7 +36,7 @@ interface StoreEditLayoutProps<T> {
   children: ReactNode;
 }
 
-// 영업시간, 매장 사진, 대표 메뉴 수정 화면의 틀. 상단 바, 입력 내용, 저장 실패 문구, 하단 저장 버튼으로 이루어진다
+// 영업시간 수정 화면의 틀. 상단 바, 입력 내용, 저장 실패 문구, 하단 저장 버튼으로 이루어진다
 export const StoreEditLayout = <T,>({
   children,
   edit,

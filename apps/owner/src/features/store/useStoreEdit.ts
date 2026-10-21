@@ -24,7 +24,7 @@ export interface UseStoreEditOptions<T> {
   save: (values: T) => Promise<ApiResult<unknown>>;
 }
 
-// 영업시간, 매장 사진, 대표 메뉴 수정 화면이 같이 쓰는 상태.
+// 영업시간 수정 화면의 상태.
 // 가게 정보를 불러와 처음 값과 지금 값을 비교하고, 저장하면 가게 관리로 돌아간다.
 // 바꾼 채로 나가려 하면 상단 뒤로 가기든 브라우저 뒤로 가기든 막고 확인을 받는다
 export const useStoreEdit = <T>({

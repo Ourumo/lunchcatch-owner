@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Camera,
   ImageOff,
-  Lock,
   Plus,
   RotateCw,
   SquarePen,
@@ -19,8 +18,8 @@ import {
 } from '@owner/ui/MenuFormSheet/MenuFormSheet';
 import { formatPriceDigits } from '@owner/ui/menuPrice';
 
-// 목록의 메뉴 한 개. 가게 관리는 고칠 때 메뉴 ID를 유지해야 해서 id를 함께 둔다.
-// 가게 관리에서 불러온 메뉴는 사진이 없을 수 있어, 쓰는 쪽이 TImage에 null을 넣는다
+// 목록의 메뉴 한 개. 서버에 이미 등록한 메뉴는 id로 구분한다.
+// 입점 신청을 이어서 할 때 불러온 메뉴는 사진이 없을 수 있어, 쓰는 쪽이 TImage에 null을 넣는다
 export interface MenuListItem<TImage extends ImageValue | null> extends Omit<
   MenuFormValues,
   'image'
@@ -38,8 +37,6 @@ export interface MenuListFieldsProps<TImage extends ImageValue | null> {
   rules: MenuFormRules;
   // 넘기면 메뉴마다 수정과 삭제 버튼을 보여줄지 정한다. 없으면 모두 고치고 지울 수 있다
   canEdit?: (menu: MenuListItem<TImage>) => boolean;
-  // 넘기면 고치거나 지울 수 없는 이유를 메뉴 아래에 보여준다
-  getLockNotice?: (menu: MenuListItem<TImage>) => string | undefined;
   // 목록 위에 보여줄 안내 (예: 등록한 메뉴는 바꿀 수 없음)
   notice?: string;
   // 넘기면 사진을 올리지 못한 메뉴에 다시 시도 버튼을 보여주고, 누르면 그 메뉴의 순서를 넘긴다
@@ -159,12 +156,11 @@ const MenuImageSelectButton = ({
   </label>
 );
 
-// 대표 메뉴 목록과 추가·수정·삭제. 입점 등록과 가게 관리가 함께 쓴다.
+// 대표 메뉴 목록과 추가·수정·삭제. 입점 등록에서 쓴다.
 // 개수 제한과 입력 규칙은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export const MenuListFields = <TImage extends ImageValue | null>({
   canEdit,
   disabled = false,
-  getLockNotice,
   maxMenus,
   menus,
   notice,
@@ -208,7 +204,6 @@ export const MenuListFields = <TImage extends ImageValue | null>({
       {menus.length > 0 && (
         <ul aria-label="등록한 대표 메뉴" className="flex flex-col gap-3">
           {menus.map((menu, index) => {
-            const lockNotice = getLockNotice?.(menu);
             const isEditable = canEdit?.(menu) ?? true;
             const isFailed = menu.image?.status === 'failed';
             const canSelectImage = !menu.image && onImageSelect !== undefined;
@@ -300,12 +295,6 @@ export const MenuListFields = <TImage extends ImageValue | null>({
                     </button>
                   )}
                 </div>
-                {lockNotice && (
-                  <p className="flex items-center gap-1.5 text-caption-mobile break-keep text-text-secondary">
-                    <Lock aria-hidden="true" className="size-3.5 shrink-0" />
-                    {lockNotice}
-                  </p>
-                )}
               </li>
             );
           })}
