@@ -286,7 +286,8 @@ const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
 const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
-const NOT_CANCELABLE_MESSAGE = '대기 중인 캠페인만 취소할 수 있습니다.';
+const NOT_CANCELABLE_MESSAGE =
+  '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
 const CAMPAIGN_LIMIT_MESSAGE =
@@ -309,9 +310,6 @@ export const createInitialCampaignValues = (): CampaignValues => ({
   target: { radius: 1000, gender: 'ALL', ageGroups: [] },
   budget: { dailyBudget: null, startDate: '', endDate: '' },
 });
-
-const findCampaign = (id: string) =>
-  mockCampaigns.find((campaign) => campaign.id === id);
 
 type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
 
@@ -830,25 +828,35 @@ export const deleteCampaignDraft = async (
   return { ok: true, data: null };
 };
 
-// 대기 중(SCHEDULED) 취소. 작성 중으로 되돌리고 입력값은 그대로 둔다
-// (docs/requirements-common.md "캠페인 상태 정의"의 SCHEDULED 점주 액션 "취소(DRAFT로)").
-// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
+// 취소 응답. 처리 뒤의 상태다
+interface CampaignStatusResponse {
+  campaignId: number;
+  status: CampaignStatus;
+}
+
+// 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
+// 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다.
+// 이미 작성 중이면 서버가 다시 성공으로 돌려준다
 export const cancelScheduledCampaign = async (
   id: string,
-): Promise<ApiResult<Campaign>> => {
-  await mockDelay();
+): Promise<ApiResult<CampaignStatus>> => {
+  try {
+    const { status } = await request<CampaignStatusResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}:cancel`,
+      { method: 'POST' },
+    );
 
-  const campaign = findCampaign(id);
+    return { ok: true, data: status };
+  } catch (error) {
+    // 그사이 집행이 시작됐거나 끝났다. 화면이 code를 보고 목록을 다시 불러온다
+    if (error instanceof ApiError && error.code === 'CAMPAIGN-006') {
+      return {
+        ok: false,
+        code: error.code,
+        message: NOT_CANCELABLE_MESSAGE,
+      };
+    }
 
-  if (!campaign) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
+    return toCampaignFailure(error);
   }
-
-  if (campaign.status !== 'SCHEDULED') {
-    return { ok: false, message: NOT_CANCELABLE_MESSAGE };
-  }
-
-  campaign.status = 'DRAFT';
-
-  return { ok: true, data: structuredClone(campaign) };
 };

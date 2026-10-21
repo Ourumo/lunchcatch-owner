@@ -8,6 +8,7 @@ import {
   cancelScheduledCampaign,
   deleteCampaignDraft,
 } from '@owner/api/campaign';
+import type { ApiResult } from '@owner/api/types';
 import {
   formatCreatedDate,
   formatPeriod,
@@ -16,10 +17,7 @@ import {
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 
-import {
-  type CampaignActionResult,
-  CampaignActionSheet,
-} from './CampaignActionSheet';
+import { CampaignActionSheet } from './CampaignActionSheet';
 
 export interface UpcomingCampaignCardProps {
   campaign: Campaign;
@@ -54,14 +52,26 @@ export const UpcomingCampaignCard = ({
   const { budget, id, reviewFailReasons, status } = campaign;
   const isReviewFailed = status === 'DRAFT' && reviewFailReasons.length > 0;
   const [openSheet, setOpenSheet] = useState<'delete' | 'cancel' | null>(null);
-  const closeSheet = () => setOpenSheet(null);
+  // 취소하려는 사이 집행이 시작돼 상태가 바뀌었다. 시트에서 안내를 읽고 닫으면 목록을 다시 불러온다
+  const [isStatusChanged, setIsStatusChanged] = useState(false);
+
+  const closeSheet = () => {
+    setOpenSheet(null);
+
+    if (isStatusChanged) {
+      setIsStatusChanged(false);
+      onChanged();
+    }
+  };
 
   // 처리가 끝나면 목록을 다시 불러와 바뀐 상태(빈 칸, 작성 중)를 보여준다
-  const runAction = async (action: () => Promise<CampaignActionResult>) => {
+  const runAction = async (action: () => Promise<ApiResult<unknown>>) => {
     const result = await action();
 
     if (result.ok) {
       onChanged();
+    } else if (result.code === 'CAMPAIGN-006') {
+      setIsStatusChanged(true);
     }
 
     return result;
