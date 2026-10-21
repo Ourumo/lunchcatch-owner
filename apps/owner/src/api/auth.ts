@@ -194,8 +194,8 @@ export const logout = async (): Promise<ApiResult<null>> => {
   return { ok: true, data: null };
 };
 
-// 개발용 로그인 상태(.env의 VITE_MOCK_OWNER_STATUS). 입점 신청 API가 없어 ACTIVE 계정을 만들 수 없고
-// 개발 서버가 꺼져 있으면 어느 화면도 볼 수 없어, 로컬 개발에서만 서버에 묻지 않고 이 상태를 쓴다. 배포 빌드에서는 무시한다
+// 개발용 로그인 상태(.env의 VITE_MOCK_OWNER_STATUS). 그 상태의 테스트 계정이 없거나
+// 개발 서버가 꺼져 있으면 화면을 볼 수 없어, 로컬 개발에서만 서버에 묻지 않고 이 상태를 쓴다. 배포 빌드에서는 무시한다
 const getMockOwnerStatus = (): LoginResponse['status'] | null => {
   if (!import.meta.env.DEV) {
     return null;
