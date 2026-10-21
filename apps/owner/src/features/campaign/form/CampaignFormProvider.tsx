@@ -106,6 +106,8 @@ export const CampaignFormProvider = ({
     setRequestId((value) => value + 1);
   };
 
+  const reload = () => setRequestId((value) => value + 1);
+
   if (loadState.status === 'loaded' && values) {
     // 작성 중인 캠페인만 수정할 수 있으므로 다른 상태면 상세 화면으로 보낸다
     if (loadState.campaignStatus !== 'DRAFT') {
@@ -138,6 +140,7 @@ export const CampaignFormProvider = ({
         value={{
           campaignId,
           platformSettings: loadState.platformSettings,
+          reload,
           setPoster,
           updateStepValues,
           values,

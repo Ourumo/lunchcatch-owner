@@ -20,6 +20,8 @@ export interface CampaignFormContextValue {
       | CampaignValues['poster']
       | ((prev: CampaignValues['poster']) => CampaignValues['poster']),
   ) => void;
+  // 서버에 저장된 캠페인을 지금 화면을 둔 채 다시 불러온다. 작성 중이 아니게 됐으면 상세 화면으로 간다
+  reload: () => void;
 }
 
 export const CampaignFormContext =

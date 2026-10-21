@@ -1,6 +1,4 @@
 import { ApiError, request } from './client';
-import { mockDelay } from './mocks/delay';
-import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
 import {
   type CampaignPoster,
@@ -283,6 +281,7 @@ const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인�
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
 const NOT_ACTIVE_OWNER_MESSAGE =
   '입점을 마친 점주만 캠페인을 만들 수 있습니다.';
+const POSTER_REQUIRED_MESSAGE = '포스터를 먼저 만들어 주세요.';
 const NOT_ACTIVE_OWNER_ACTION_MESSAGE =
   '입점을 마친 점주만 캠페인을 관리할 수 있습니다.';
 const CAMPAIGN_LIMIT_MESSAGE =
@@ -767,43 +766,8 @@ export const savePosterStep = async (
   }
 };
 
-const NOT_READY_MESSAGE =
-  '아직 채우지 않은 단계가 있어 활성화를 요청할 수 없습니다.';
-
-// 활성화 요청 시 포스터와 필수 입력값을 확인한다. 자동 검수는 실패하지 않는다(기능 축소).
-// 잔액은 검사하지 않는다. 잔액이 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다.
-// 활성화 API를 연동하기 전이라 서버 캠페인의 상태는 DRAFT로 남는다
-export const requestCampaignActivation = async (
-  id: string,
-): Promise<ApiResult<null>> => {
-  await mockDelay();
-
-  let campaign: Campaign;
-
-  try {
-    campaign = await fetchCampaignDetail(id);
-  } catch (error) {
-    return toCampaignFailure(error);
-  }
-
-  if (campaign.status !== 'DRAFT') {
-    return { ok: false, message: NOT_EDITABLE_MESSAGE };
-  }
-
-  if (
-    !isCouponStepComplete(campaign.coupon) ||
-    !isPosterComplete(campaign.poster) ||
-    !isValidTarget(campaign.target) ||
-    !isBudgetStepComplete(campaign.budget, mockPlatformSettings)
-  ) {
-    return { ok: false, message: NOT_READY_MESSAGE };
-  }
-
-  return { ok: true, data: null };
-};
-
 // 상태를 바꾸는 점주 처리. 요청 본문 없이 보내고, 이미 바뀐 상태면 서버가 다시 성공으로 돌려준다
-type CampaignAction = 'cancel' | 'pause' | 'resume' | 'end';
+type CampaignAction = 'activate' | 'cancel' | 'pause' | 'resume' | 'end';
 
 // 처리 응답. 처리 뒤의 상태다
 interface CampaignStatusResponse {
@@ -813,6 +777,8 @@ interface CampaignStatusResponse {
 
 // 409 CAMPAIGN-006. 그사이 상태가 바뀌어 지금 상태에서는 할 수 없다
 const STATUS_CHANGED_MESSAGES: Record<CampaignAction, string> = {
+  activate:
+    '캠페인 상태가 바뀌어 활성화할 수 없습니다. 작성 중인 캠페인만 활성화할 수 있습니다.',
   cancel:
     '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.',
   pause:
@@ -850,6 +816,13 @@ const requestCampaignAction = async (
         return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
       case 'CAMPAIGN-001':
         return { ok: false, message: NOT_ACTIVE_OWNER_ACTION_MESSAGE };
+      // 활성화할 때 저장된 포스터가 없다. 화면이 code를 보고 포스터 단계로 보낸다
+      case 'POSTER-021':
+        return {
+          ok: false,
+          code: error.code,
+          message: POSTER_REQUIRED_MESSAGE,
+        };
     }
 
     // 재개 거절(집행 기간이 끝남, 오늘 남은 예산이 노출 단가보다 적음)은 오류 코드가 정해지지 않아 서버 문구를 보여준다
@@ -860,6 +833,11 @@ const requestCampaignAction = async (
     return { ok: false };
   }
 };
+
+// 작성 중(DRAFT) 캠페인 활성화 요청. 자동 검수를 통과하면 대기 중(SCHEDULED)이 된다.
+// 자동 검수는 실제로 실패하지 않는다(기능 축소). 잔액은 검사하지 않고, 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다
+export const requestCampaignActivation = (id: string) =>
+  requestCampaignAction(id, 'activate');
 
 // 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
 // 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다

@@ -29,6 +29,8 @@ const SAVE_FAILED_MESSAGE = '잠시 후 다시 시도해 주세요.';
 interface ActionError {
   title: string;
   message: string;
+  // 넘기면 닫기 버튼을 두고, 닫을 때 부른다
+  onClose?: () => void;
 }
 
 // 현재 URL로 단계를 찾아 헤더, 단계 표시, 단계 화면, 하단 이전·다음 버튼을 조합한다.
@@ -37,7 +39,7 @@ interface ActionError {
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { campaignId, platformSettings, updateStepValues, values } =
+  const { campaignId, platformSettings, reload, updateStepValues, values } =
     useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<ActionError>();
@@ -126,9 +128,40 @@ export const CampaignFormLayout = () => {
     setIsSaving(false);
 
     if (!result.ok) {
+      const title = '활성화를 요청하지 못했습니다';
+      const message = result.message ?? SAVE_FAILED_MESSAGE;
+
+      // 저장된 포스터가 없으면 안내를 남긴 채 포스터 단계로 보낸다
+      const posterStep = campaignSteps.find(({ id }) => id === 'poster');
+
+      if (result.code === 'POSTER-021' && posterStep) {
+        setActionError({ title, message });
+        navigate(getCampaignEditPath(campaignId, posterStep));
+        return;
+      }
+
+      // 그사이 상태가 바뀌었거나 캠페인을 찾을 수 없다. 안내를 읽고 닫으면 캠페인을 다시 불러온다
+      if (result.code === 'CAMPAIGN-006' || result.code === 'CAMPAIGN-005') {
+        setActionError({
+          title,
+          message,
+          onClose: () => {
+            clearMessages();
+            reload();
+          },
+        });
+        return;
+      }
+
+      setActionError({ title, message });
+      return;
+    }
+
+    // 자동 검수는 실패하지 않지만, 대기 중이 되지 않았으면 완료 화면으로 가지 않는다
+    if (result.data !== 'SCHEDULED') {
       setActionError({
         title: '활성화를 요청하지 못했습니다',
-        message: result.message ?? SAVE_FAILED_MESSAGE,
+        message: SAVE_FAILED_MESSAGE,
       });
       return;
     }
@@ -204,6 +237,7 @@ export const CampaignFormLayout = () => {
           <div className="px-page">
             <Toast
               description={actionError.message}
+              onClose={actionError.onClose}
               style={{ maxWidth: 'none' }}
               title={actionError.title}
               variant="danger"
