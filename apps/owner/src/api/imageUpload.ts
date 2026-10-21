@@ -1,23 +1,44 @@
 import axios from 'axios';
 
 import { ApiError } from './client';
-import type { ApiResult } from './types';
 
 // 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정")
+
+// 업로드 주소를 받은 업로드. 실패한 뒤 다시 시도할 때 받은 주소와 줄인 사진을 그대로 쓴다
+export interface UploadTicket {
+  uploadId: string;
+  uploadUrl: string;
+  // 업로드 주소를 받은 시각(ms). 주소는 10분 동안만 쓸 수 있다
+  issuedAt: number;
+  // 줄인 사진. 서명에 크기가 들어가므로 다시 올릴 때도 이것을 그대로 올린다
+  blob: Blob;
+  // S3에 다 올렸는지. 올렸으면 다시 시도할 때 업로드 확인만 부른다
+  isUploaded: boolean;
+}
 
 // 사진 칸 하나의 값. 새로 고른 사진은 파일과 업로드 상태를 함께 들고,
 // 이미 가게·메뉴에 붙은 사진은 서버가 준 주소만 든다
 export type ImageValue =
   // 고르기만 하고 아직 올리지 않았다
   | { status: 'selected'; file: File }
-  // S3에 올리는 중. progress는 0~100
+  // 업로드 주소 발급부터 업로드 확인까지 하는 중. progress는 S3에 올린 정도(0~100)
   | { status: 'uploading'; file: File; progress: number }
-  // 올리지 못했다
-  | { status: 'failed'; file: File }
-  // S3에 올렸다. 업로드 확인을 불러야 가게·메뉴에 붙는다
-  | { status: 'uploaded'; file: File; uploadId: string }
+  // 올리지 못했다. upload가 있으면 다시 시도할 때 이어서 하고, code는 서버가 거절한 이유다
+  | { status: 'failed'; file: File; upload?: UploadTicket; code?: string }
+  // 업로드 확인까지 마쳐 가게·메뉴에 붙었다. 확인 응답에 주소가 없어 고른 파일로 보여준다
+  | { status: 'attached'; file: File }
   // 이미 가게·메뉴에 붙은 사진
   | { status: 'saved'; url: string };
+
+// 올릴 수 있는 칸(새로 고른 사진, 실패한 사진)과 다 올린 뒤의 칸
+export type UploadableImage = Extract<
+  ImageValue,
+  { status: 'selected' | 'failed' }
+>;
+export type UploadedImage = Extract<
+  ImageValue,
+  { status: 'attached' | 'failed' }
+>;
 
 export const toSavedImage = (url: string): ImageValue => ({
   status: 'saved',
@@ -41,6 +62,9 @@ const JPEG_QUALITY = 0.85;
 
 // 서버가 받는 크기만큼 올리는 데 시간이 걸려 API 요청(10초)보다 길게 기다린다
 const UPLOAD_TIMEOUT_MS = 120_000;
+
+// 업로드 주소는 10분 동안 쓸 수 있다. 다시 올리는 동안 만료되지 않게 1분 여유를 두고, 지나면 주소부터 새로 받는다
+const UPLOAD_URL_REUSE_MS = 9 * 60_000;
 
 // 긴 변을 MAX_IMAGE_SIDE로 줄인다. 형식(jpg, png)은 그대로 두고 jpg는 JPEG_QUALITY로 저장한다.
 // 이미 작으면 다시 저장하지 않고 원본을 그대로 쓴다. 회전 정보(EXIF)는 그릴 때 반영된다
@@ -103,40 +127,78 @@ export interface PrepareUploadResponse {
 export interface UploadImageOptions {
   // 이미지 종류별 업로드 주소 발급 API. 서버가 거절하면 ApiError를 던진다
   prepare: (request: PrepareUploadRequest) => Promise<PrepareUploadResponse>;
+  // 이미지 종류별 업로드 확인 API. 서버가 S3에 올라간 것을 확인해야 가게·메뉴에 붙는다. 거절하면 ApiError를 던진다
+  confirm: (uploadId: string) => Promise<void>;
   // 0~100
   onProgress?: (progress: number) => void;
 }
 
-// 사진 한 장을 줄여 S3에 올리고 uploadId를 돌려준다. jpg·png, 10MB 이하인지는 사진 칸에서 먼저 거른다.
-// 업로드 확인(confirmUpload)은 부르지 않는다. 확인해야 가게·메뉴에 붙으므로 저장할 때 이미지 종류별로 부른다.
-// 실패하면 서버가 거절한 이유(code)를 함께 돌려준다. 다시 시도할 때는 업로드 주소부터 새로 받는다
+// 지난 업로드를 이어서 쓸 수 있는지. 업로드 주소가 만료되기 전이거나, S3에 다 올려 확인만 남았으면 쓴다
+const canReuseUpload = (upload: UploadTicket | undefined) =>
+  upload !== undefined &&
+  (upload.isUploaded || Date.now() - upload.issuedAt < UPLOAD_URL_REUSE_MS);
+
+// 사진 한 장을 줄여 S3에 올리고 업로드 확인까지 한 뒤, 끝난 칸의 값(attached 또는 failed)을 돌려준다.
+// jpg·png, 10MB 이하인지는 사진 칸에서 먼저 거른다.
+// 실패한 칸을 다시 넘기면 실패한 곳부터 다시 한다. 업로드 주소를 새로 받을 때마다 서버가 자리를 잡아
+// (매장 사진은 3장) 받은 주소를 되도록 다시 쓴다:
+// S3에 다 올렸으면 확인만, 주소를 받은 지 10분이 안 됐으면 그 주소로 다시 올리고, 아니면 주소부터 새로 받는다
 export const uploadImage = async (
-  file: File,
-  { onProgress, prepare }: UploadImageOptions,
-): Promise<ApiResult<string>> => {
+  image: UploadableImage,
+  { confirm, onProgress, prepare }: UploadImageOptions,
+): Promise<UploadedImage> => {
+  const { file } = image;
+  let upload =
+    image.status === 'failed' && canReuseUpload(image.upload)
+      ? image.upload
+      : undefined;
+
   try {
-    const image = await resizeImage(file);
-    const { uploadId, uploadUrl } = await prepare({
-      originalFilename: file.name,
-      contentType: file.type,
-      fileSize: image.size,
-    });
+    if (!upload) {
+      const blob = await resizeImage(file);
+      const { uploadId, uploadUrl } = await prepare({
+        originalFilename: file.name,
+        contentType: file.type,
+        fileSize: blob.size,
+      });
 
-    // 서명에 Content-Type과 크기가 들어가므로 발급 요청에 보낸 값 그대로 올린다
-    await axios.put(toUploadRequestUrl(uploadUrl), image, {
-      headers: { 'Content-Type': file.type },
-      timeout: UPLOAD_TIMEOUT_MS,
-      onUploadProgress: ({ loaded, total }) => {
-        if (total) {
-          onProgress?.((loaded / total) * 100);
-        }
-      },
-    });
+      upload = {
+        uploadId,
+        uploadUrl,
+        issuedAt: Date.now(),
+        blob,
+        isUploaded: false,
+      };
+    }
 
-    return { ok: true, data: uploadId };
+    if (!upload.isUploaded) {
+      // 서명에 Content-Type과 크기가 들어가므로 발급 요청에 보낸 값 그대로 올린다
+      await axios.put(toUploadRequestUrl(upload.uploadUrl), upload.blob, {
+        headers: { 'Content-Type': file.type },
+        timeout: UPLOAD_TIMEOUT_MS,
+        onUploadProgress: ({ loaded, total }) => {
+          if (total) {
+            onProgress?.((loaded / total) * 100);
+          }
+        },
+      });
+
+      upload = { ...upload, isUploaded: true };
+    }
+
+    await confirm(upload.uploadId);
+
+    return { status: 'attached', file };
   } catch (error) {
-    return error instanceof ApiError
-      ? { ok: false, code: error.code ?? undefined }
-      : { ok: false };
+    // S3가 주소를 거절하면(403, 만료 등) 그 주소로는 다시 올릴 수 없어 다음 시도에서 주소부터 새로 받는다
+    const isUploadUrlRejected =
+      axios.isAxiosError(error) && error.response?.status === 403;
+
+    return {
+      status: 'failed',
+      file,
+      upload: isUploadUrlRejected ? undefined : upload,
+      code: error instanceof ApiError ? (error.code ?? undefined) : undefined,
+    };
   }
 };

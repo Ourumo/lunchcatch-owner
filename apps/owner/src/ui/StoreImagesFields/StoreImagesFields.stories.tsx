@@ -102,7 +102,7 @@ export const Uploaded: Story = {
   },
 };
 
-// 사진마다 업로드 상태가 다른 상태: 올리는 중, 실패, 올림
+// 사진마다 업로드 상태가 다른 상태: 올리는 중, 실패, 가게에 붙음
 export const UploadStates: Story = {
   args: {
     logoImage: {
@@ -118,9 +118,8 @@ export const UploadStates: Story = {
         progress: 20,
       },
       {
-        status: 'uploaded',
+        status: 'attached',
         file: createFile('interior-3.svg', '#57534e'),
-        uploadId: 'upload-3',
       },
     ],
     onRetry: () => {},
