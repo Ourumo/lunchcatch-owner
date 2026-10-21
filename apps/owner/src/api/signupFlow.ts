@@ -48,8 +48,29 @@ const toSaveFailure = (error: unknown) => ({
   code: error instanceof ApiError ? (error.code ?? undefined) : undefined,
 });
 
+// 그 단계를 이미 마쳤으면 지금 입점 진행 버전을, 아니면(불러오지 못한 경우 포함) null을 돌려준다
+const getCompletedStepVersion = async (step: string) => {
+  try {
+    const { onboarding } =
+      await request<Pick<SignupStoreResponse, 'onboarding'>>('/v1/owner/store');
+
+    return onboarding.steps.some(
+      (current) => current.step === step && current.completed,
+    )
+      ? onboarding.version
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+// 이미 약관에 동의함 (409). 동의는 한 번만 받는다
+const TERMS_ALREADY_AGREED_CODE = 'TERMS-001';
+
 // 약관 동의 저장. 약관은 모두 필수라 화면에서 모두 동의해야 부를 수 있고,
-// 서버가 동의 시점과 약관 버전을 남기므로 본문은 비워 보낸다. 성공하면 입점 진행 버전을 돌려준다
+// 서버가 동의 시점과 약관 버전을 남기므로 본문은 비워 보낸다. 성공하면 입점 진행 버전을 돌려준다.
+// 다시 보내면 덮어쓰는 다른 단계와 달리 한 번만 받아, 약관 단계로 돌아와 "다음"을 누르면 409 TERMS-001로 거절한다.
+// 이미 동의했으면 지금 버전으로 그대로 넘어간다
 export const saveTermsStep = async (): Promise<ApiResult<number>> => {
   try {
     const data = await request<OnboardingSaveResponse>(
@@ -59,6 +80,14 @@ export const saveTermsStep = async (): Promise<ApiResult<number>> => {
 
     return { ok: true, data: data.version };
   } catch (error) {
+    if (error instanceof ApiError && error.code === TERMS_ALREADY_AGREED_CODE) {
+      const completedVersion = await getCompletedStepVersion('TERMS');
+
+      if (completedVersion !== null) {
+        return { ok: true, data: completedVersion };
+      }
+    }
+
     return toSaveFailure(error);
   }
 };
@@ -385,22 +414,6 @@ export interface ImagesStepValues {
 
 // 서버의 현재 진행 단계와 완료를 요청한 단계가 다름 (409)
 const STEP_MISMATCH_CODE = 'STORE-002';
-
-// 그 단계를 이미 마쳤으면 지금 입점 진행 버전을, 아니면(불러오지 못한 경우 포함) null을 돌려준다
-const getCompletedStepVersion = async (step: string) => {
-  try {
-    const { onboarding } =
-      await request<Pick<SignupStoreResponse, 'onboarding'>>('/v1/owner/store');
-
-    return onboarding.steps.some(
-      (current) => current.step === step && current.completed,
-    )
-      ? onboarding.version
-      : null;
-  } catch {
-    return null;
-  }
-};
 
 // 사진·메뉴 단계 완료. 다시 보내면 덮어쓰는 다른 단계와 달리, 서버의 현재 단계가 그 단계일 때만 받는다.
 // 이미 마친 단계로 돌아와 "다음"을 누르면 409 STORE-002로 거절하므로, 마친 단계면 지금 버전으로 그대로 넘어간다
