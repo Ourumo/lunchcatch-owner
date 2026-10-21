@@ -72,20 +72,6 @@ const mockCurrentCampaigns: Record<
       startDate: daysFromToday(-3),
       endDate: daysFromToday(4),
     },
-    performance: {
-      today: {
-        issuedCount: 24,
-        redeemedCount: 12,
-        reservedPoints: 10000,
-        spentPoints: 2800,
-      },
-      total: {
-        savedCount: 312,
-        issuedCount: 158,
-        redeemedCount: 96,
-        spentPoints: 31200,
-      },
-    },
   },
   SCHEDULED: {
     id: 'campaign-scheduled',
@@ -120,7 +106,6 @@ const mockCurrentCampaigns: Record<
       startDate: daysFromToday(5),
       endDate: daysFromToday(11),
     },
-    performance: null,
   },
   DRAFT: {
     // 쿠폰 조건만 일부 채우고 나간 캠페인. 이어서 작성할 때 확인한다.
@@ -143,7 +128,6 @@ const mockCurrentCampaigns: Record<
     poster: null,
     target: { radius: 1000, gender: 'ALL', ageGroups: [] },
     budget: { dailyBudget: null, startDate: '', endDate: '' },
-    performance: null,
   },
 };
 
@@ -188,7 +172,6 @@ const createArchivedCampaign = (index: number): Campaign => {
       : `${coupon.discountValue.toLocaleString('ko-KR')}원`;
   // 9일 간격으로 7일씩 집행한다. 5건마다 앞 캠페인과 종료일을 같게 두어 같은 종료일의 정렬(ID순)을 확인한다
   const endDaysAgo = 80 + (index - Math.floor(index / 5)) * 9;
-  const issuedCount = 60 + ((index * 37) % 90);
   const dailyBudget = 5000 + (index % 4) * 1000;
   const number = String(index + 1).padStart(2, '0');
 
@@ -224,15 +207,6 @@ const createArchivedCampaign = (index: number): Campaign => {
       dailyBudget,
       startDate: daysFromToday(-endDaysAgo - 6),
       endDate: daysFromToday(-endDaysAgo),
-    },
-    performance: {
-      today: null,
-      total: {
-        savedCount: issuedCount * 2,
-        issuedCount,
-        redeemedCount: Math.round(issuedCount * 0.6),
-        spentPoints: dailyBudget * 6,
-      },
     },
   };
 };
@@ -276,15 +250,6 @@ export const mockCampaigns: Campaign[] = [
       startDate: daysFromToday(-20),
       endDate: daysFromToday(-14),
     },
-    performance: {
-      today: null,
-      total: {
-        savedCount: 420,
-        issuedCount: 290,
-        redeemedCount: 201,
-        spentPoints: 70400,
-      },
-    },
   },
   {
     id: 'campaign-ended-2',
@@ -318,15 +283,6 @@ export const mockCampaigns: Campaign[] = [
       dailyBudget: 5000,
       startDate: daysFromToday(-35),
       endDate: daysFromToday(-29),
-    },
-    performance: {
-      today: null,
-      total: {
-        savedCount: 188,
-        issuedCount: 125,
-        redeemedCount: 69,
-        spentPoints: 33100,
-      },
     },
   },
   {
@@ -366,15 +322,6 @@ export const mockCampaigns: Campaign[] = [
       startDate: daysFromToday(-56),
       endDate: daysFromToday(-50),
     },
-    performance: {
-      today: null,
-      total: {
-        savedCount: 260,
-        issuedCount: 180,
-        redeemedCount: 131,
-        spentPoints: 44800,
-      },
-    },
   },
   {
     id: 'campaign-ended-4',
@@ -408,15 +355,6 @@ export const mockCampaigns: Campaign[] = [
       dailyBudget: 6000,
       startDate: daysFromToday(-77),
       endDate: daysFromToday(-71),
-    },
-    performance: {
-      today: null,
-      total: {
-        savedCount: 150,
-        issuedCount: 98,
-        redeemedCount: 52,
-        spentPoints: 27300,
-      },
     },
   },
   ...Array.from({ length: ARCHIVED_CAMPAIGN_COUNT }, (_, index) =>

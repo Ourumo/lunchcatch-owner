@@ -48,20 +48,13 @@ const activeCampaign: Campaign = {
     startDate: daysFromToday(-3),
     endDate: daysFromToday(4),
   },
-  performance: {
-    today: {
-      issuedCount: 24,
-      redeemedCount: 12,
-      reservedPoints: 10000,
-      spentPoints: 2800,
-    },
-    total: {
-      savedCount: 312,
-      issuedCount: 158,
-      redeemedCount: 96,
-      spentPoints: 31200,
-    },
-  },
+};
+
+const activeToday: CampaignTodayPerformance = {
+  issuedCount: 24,
+  redeemedCount: 12,
+  reservedPoints: 10000,
+  spentPoints: 2800,
 };
 
 // 카드를 쓰는 화면이 따로 불러와 넘기는 오늘 실적
@@ -75,7 +68,7 @@ const meta = {
   args: {
     campaign: activeCampaign,
     title: '전 메뉴 2,000원 할인',
-    todayPerformance: withToday(activeCampaign.performance?.today ?? null),
+    todayPerformance: withToday(activeToday),
   },
   decorators: [
     (Story) => (
@@ -205,7 +198,6 @@ const scheduledCampaign: Campaign = {
     startDate: daysFromToday(3),
     endDate: daysFromToday(9),
   },
-  performance: null,
 };
 
 export const Scheduled: Story = {
@@ -228,7 +220,6 @@ export const Draft: Story = {
       ...activeCampaign,
       status: 'DRAFT',
       budget: { dailyBudget: null, startDate: '', endDate: '' },
-      performance: null,
     },
     todayPerformance: withToday(null),
   },

@@ -138,8 +138,6 @@ export interface Campaign extends CampaignValues {
   pausedReason: PausedReason | null;
   // ISO 8601
   createdAt: string;
-  // 한 번도 집행되지 않은 DRAFT, SCHEDULED는 null
-  performance: CampaignPerformance | null;
 }
 
 // 지금 집행 중인 캠페인(진행 중 또는 일시중지). 실적이 쌓이는 캠페인이다
@@ -357,7 +355,6 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   status: item.status,
   pausedReason: null,
   createdAt: item.createdAt,
-  performance: null,
   poster: null,
   coupon: {
     discountTarget: item.discountTargetType,
@@ -507,7 +504,6 @@ const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   status: data.status,
   pausedReason: data.pausedReason,
   createdAt: data.createdAt,
-  performance: null,
   poster: null,
   coupon: {
     discountTarget: data.discountTargetType,
