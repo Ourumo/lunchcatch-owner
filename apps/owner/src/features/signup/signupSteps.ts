@@ -85,6 +85,27 @@ const getImagesProgressHint = ({ images }: SignupFlowValues) => {
   return logoImage ? '대표 이미지를 등록했어요' : '대표 이미지를 등록해주세요';
 };
 
+// 메뉴는 추가하자마자 등록하고 사진을 올리므로, 끝나지 않은 메뉴가 있으면 먼저 알린다
+const getMenuProgressHint = ({ menu }: SignupFlowValues) => {
+  const images = menu.menus.map(({ image }) => image);
+
+  if (images.some((image) => image !== null && isImageUploading(image))) {
+    return '대표 메뉴를 등록하고 있어요';
+  }
+
+  if (images.some((image) => image?.status === 'failed')) {
+    return '등록하지 못한 메뉴를 다시 시도해주세요';
+  }
+
+  if (images.includes(null)) {
+    return '사진이 없는 메뉴에 사진을 등록해주세요';
+  }
+
+  return menu.menus.length > 0
+    ? `대표 메뉴 ${menu.menus.length}개를 등록했어요`
+    : '대표 메뉴는 나중에 등록해도 돼요';
+};
+
 // 배열 순서대로 진행한다. 단계를 추가할 때는 이 배열, SignupFlowValues, 라우터의 단계 화면에 함께 추가한다
 export const signupSteps: SignupStep[] = [
   {
@@ -137,11 +158,13 @@ export const signupSteps: SignupStep[] = [
     id: 'menu',
     path: 'menu',
     title: '대표 메뉴 등록',
-    // 선택 단계라 다음 버튼 조건을 두지 않는다
-    progressHint: ({ menu }) =>
-      menu.menus.length > 0
-        ? `대표 메뉴 ${menu.menus.length}개를 등록했어요`
-        : '대표 메뉴는 나중에 등록해도 돼요',
+    // 메뉴는 선택이지만, 추가한 메뉴는 모두 등록되고 사진이 붙어야 넘어간다 (사진 없는 메뉴는 서버가 STORE-013으로 거절)
+    canProceed: ({ menu }) =>
+      menu.menus.every(
+        ({ id, image }) =>
+          Boolean(id) && image !== null && isImageAttached(image),
+      ),
+    progressHint: getMenuProgressHint,
   },
 ];
 
