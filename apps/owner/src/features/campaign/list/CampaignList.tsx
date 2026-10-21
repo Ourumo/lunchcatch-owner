@@ -5,7 +5,7 @@ import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
 import {
   type Campaign,
-  isCurrentCampaign,
+  isUnfinishedCampaign,
   isUpcomingCampaign,
 } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
@@ -13,6 +13,7 @@ import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { CurrentCampaignActions } from './CurrentCampaignActions';
 import { EndedCampaignCard } from './EndedCampaignCard';
 import {
   ENDED_CAMPAIGNS_PATH,
@@ -20,16 +21,14 @@ import {
   getEndedCampaigns,
 } from './endedCampaigns';
 import { NewCampaignLimitSheet } from './NewCampaignLimitSheet';
-import { UpcomingCampaignCard } from './UpcomingCampaignCard';
 import { useCampaignList } from './useCampaignList';
 
 const NEW_CAMPAIGN_PATH = '/campaigns/new';
 
-// 진행 중과 준비 중(작성 중 + 대기 중)은 가게당 1건씩이라 "지금 1개 + 다음 1개 + 끝난 것"으로 나눠 보여준다
+// 끝나지 않은 캠페인은 가게당 1건이라 "현재 1개 + 끝난 것"으로 나눠 보여준다
 const groupCampaigns = (campaigns: Campaign[]) => {
   return {
-    current: campaigns.find(isCurrentCampaign),
-    next: campaigns.find(isUpcomingCampaign),
+    current: campaigns.find(isUnfinishedCampaign),
     ended: getEndedCampaigns(campaigns),
   };
 };
@@ -108,42 +107,24 @@ const ViewAllLink = ({ to }: { to: string }) => (
 const createLinkClassName =
   'mt-3 flex h-10 items-center rounded-full bg-surface-brand px-4 text-body-sm-mobile font-bold text-text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
 
-interface EmptySlotProps {
-  title: string;
-  description: string;
-  // 다음 캠페인 자리가 차 있으면 만들 수 없으므로 링크를 두지 않는다
-  createLabel?: string;
-}
-
-const EmptySlot = ({ createLabel, description, title }: EmptySlotProps) => (
+// 지난 캠페인만 있고 끝나지 않은 캠페인이 없을 때
+const EmptyCurrent = () => (
   <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-border-subtle bg-bg-surface px-4 py-6 text-center">
     <CalendarClock
       aria-hidden="true"
       className="mb-1 size-6 text-text-tertiary"
     />
-    <p className="text-body-sm-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-caption-mobile break-keep text-text-secondary">
-      {description}
+    <p className="text-body-sm-mobile font-bold text-text-primary">
+      지금 운영 중인 캠페인이 없어요
     </p>
-    {createLabel && (
-      <Link className={createLinkClassName} to={NEW_CAMPAIGN_PATH}>
-        {createLabel}
-      </Link>
-    )}
+    <p className="text-caption-mobile break-keep text-text-secondary">
+      새 캠페인을 만들어 주변 직장인에게 가게를 알려 보세요
+    </p>
+    <Link className={createLinkClassName} to={NEW_CAMPAIGN_PATH}>
+      캠페인 만들기
+    </Link>
   </div>
 );
-
-const getNoCurrentDescription = (next?: Campaign) => {
-  if (next?.status === 'SCHEDULED') {
-    return '대기 중인 캠페인은 집행 시작일 00:00부터 노출돼요';
-  }
-
-  if (next?.status === 'DRAFT') {
-    return '작성 중인 캠페인을 마치고 활성화를 요청하면 대기 중 상태가 돼요';
-  }
-
-  return '새 캠페인을 만들어 주변 직장인에게 가게를 알려 보세요';
-};
 
 const EmptyCampaigns = () => (
   <div className="flex flex-1 flex-col items-center justify-center gap-2 px-page pb-16 text-center">
@@ -206,41 +187,29 @@ const CampaignSections = ({
   menus,
   onChanged,
 }: CampaignSectionsProps) => {
-  const { current, ended, next } = groupCampaigns(campaigns);
+  const { current, ended } = groupCampaigns(campaigns);
   const getTitle = (campaign: Campaign) =>
     getCampaignTitle(campaign.coupon, menus);
 
   return (
     <div className="flex flex-col gap-8 px-page py-5">
-      <CampaignSection title="진행 중인 캠페인">
+      <CampaignSection title="현재 캠페인">
         {current ? (
-          <CurrentCampaignCard campaign={current} title={getTitle(current)} />
-        ) : (
-          <EmptySlot
-            createLabel={next ? undefined : '캠페인 만들기'}
-            description={getNoCurrentDescription(next)}
-            title="지금 진행 중인 캠페인이 없어요"
+          <CurrentCampaignCard
+            campaign={current}
+            footer={
+              <CurrentCampaignActions
+                campaign={current}
+                onChanged={onChanged}
+                title={getTitle(current)}
+              />
+            }
+            title={getTitle(current)}
           />
+        ) : (
+          <EmptyCurrent />
         )}
       </CampaignSection>
-      {/* 진행 중도 다음 캠페인도 없으면 위 칸에서 만들기를 권하므로 이 섹션은 숨긴다 */}
-      {(next || current) && (
-        <CampaignSection title="다음 캠페인">
-          {next ? (
-            <UpcomingCampaignCard
-              campaign={next}
-              onChanged={onChanged}
-              title={getTitle(next)}
-            />
-          ) : (
-            <EmptySlot
-              createLabel="다음 캠페인 만들기"
-              description="진행 중인 캠페인이 끝나면 이어서 노출할 캠페인을 미리 준비해 두세요"
-              title="준비 중인 캠페인이 없어요"
-            />
-          )}
-        </CampaignSection>
-      )}
       {ended.length > 0 && (
         // 숫자는 숨긴 것까지 포함한 전체 개수다
         <CampaignSection

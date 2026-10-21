@@ -151,9 +151,13 @@ export const MAX_UPCOMING_CAMPAIGNS = 1;
 export const isUpcomingCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'DRAFT' || status === 'SCHEDULED';
 
-// 지금 집행 중인 캠페인(진행 중 또는 일시중지). 가게당 1건이고, 다음 캠페인이 시작되는 날 종료된다
+// 지금 집행 중인 캠페인(진행 중 또는 일시중지). 실적이 쌓이는 캠페인이다
 export const isCurrentCampaign = ({ status }: Pick<Campaign, 'status'>) =>
   status === 'ACTIVE' || status === 'PAUSED';
+
+// 끝나지 않은 캠페인(작성 중, 대기 중, 진행 중, 일시중지). 가게당 1건만 있을 수 있다
+export const isUnfinishedCampaign = ({ status }: Pick<Campaign, 'status'>) =>
+  status !== 'ENDED';
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
