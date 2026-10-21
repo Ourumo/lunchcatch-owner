@@ -1,5 +1,4 @@
 import { ApiError, request } from './client';
-import { mockCampaigns } from './mocks/campaigns';
 import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { PlatformSettings } from './platform';
@@ -280,7 +279,6 @@ const INVALID_COUPON_MESSAGE = '쿠폰 조건을 다시 확인해 주세요.';
 const INVALID_TARGET_MESSAGE = '노출 대상을 다시 확인해 주세요.';
 const INVALID_BUDGET_MESSAGE = '하루 예산과 집행 기간을 다시 확인해 주세요.';
 const INVALID_POSTER_MESSAGE = '포스터 내용을 다시 확인해 주세요.';
-const NOT_DELETABLE_MESSAGE = '작성 중인 캠페인만 삭제할 수 있습니다.';
 const NOT_CANCELABLE_MESSAGE =
   '캠페인 상태가 바뀌어 취소할 수 없습니다. 집행이 시작됐거나 끝났습니다.';
 const NOT_ACTIVE_OWNER_MESSAGE =
@@ -799,28 +797,6 @@ export const requestCampaignActivation = async (
     ok: true,
     data: { result: 'PASS', campaign: structuredClone(campaign) },
   };
-};
-
-// 작성 중(DRAFT) 캠페인 삭제.
-// 명세에 없는 기능이라 API 추가 요청이 필요하다
-export const deleteCampaignDraft = async (
-  id: string,
-): Promise<ApiResult<null>> => {
-  await mockDelay();
-
-  const index = mockCampaigns.findIndex((campaign) => campaign.id === id);
-
-  if (index === -1) {
-    return { ok: false, message: NOT_FOUND_MESSAGE };
-  }
-
-  if (mockCampaigns[index].status !== 'DRAFT') {
-    return { ok: false, message: NOT_DELETABLE_MESSAGE };
-  }
-
-  mockCampaigns.splice(index, 1);
-
-  return { ok: true, data: null };
 };
 
 // 취소 응답. 처리 뒤의 상태다

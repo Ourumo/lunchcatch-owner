@@ -197,7 +197,6 @@ const CampaignSections = ({
               <CurrentCampaignActions
                 campaign={current}
                 onChanged={onChanged}
-                title={getTitle(current)}
               />
             }
             title={getTitle(current)}
