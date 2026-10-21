@@ -2,8 +2,9 @@ import { type FormEvent, useRef, useState } from 'react';
 import { Input } from '@repo/ui';
 import { MapPin, RotateCcw, Search } from 'lucide-react';
 
-import { searchStorePlaces, type StorePlace } from '@owner/api/signupFlow';
+import type { StorePlace } from '@owner/api/signupFlow';
 
+import { searchStorePlaces } from '../searchStorePlaces';
 import { useSignupFlow } from '../useSignupFlow';
 
 type SearchState =
