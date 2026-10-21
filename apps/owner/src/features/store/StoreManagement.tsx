@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 import { ChartNoAxesColumn, ChevronRight, Store } from 'lucide-react';
 
-import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
 import { useAuth } from '@owner/auth/useAuth';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -181,20 +181,11 @@ const StoreManagementError = ({ onRetry }: { onRetry: () => void }) => (
 export const StoreManagement = () => {
   const navigate = useNavigate();
   const { clearOwner } = useAuth();
-  const { retry, state, updateBalance } = useStoreManagement();
+  const { retry, state } = useStoreManagement();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const chargePolicy = useChargePolicy();
+  const startCharge = usePointCharge();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-
-  const handleCharge = async (amount: number) => {
-    const result = await chargePoints(amount);
-
-    if (result.ok) {
-      updateBalance(result.data.balance);
-    }
-
-    return result;
-  };
 
   const renderContent = () => {
     if (state.status === 'loading') {
@@ -251,7 +242,7 @@ export const StoreManagement = () => {
           <PointChargeSheet
             balance={balance}
             policy={chargePolicy}
-            onCharge={handleCharge}
+            onCharge={startCharge}
             onClose={() => setIsChargeOpen(false)}
           />
         )}

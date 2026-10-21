@@ -6,6 +6,7 @@ import {
   type PointHistoryPeriod,
 } from '@owner/api/points';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
@@ -223,12 +224,12 @@ interface PointHistoryProps {
 // 소진은 캠페인별·일별 합계 한 줄로 보여주고, 그날의 예약과 예약 해제는 그 줄 아래 보조 줄로 보여준다
 export const PointHistory = ({ onBack }: PointHistoryProps) => {
   const chargePolicy = useChargePolicy();
+  const startCharge = usePointCharge();
   const {
     balanceState,
     campaignOptions,
     campaignTitles,
     changeFilter,
-    charge,
     filter,
     historyState,
     loadMoreHistory,
@@ -352,7 +353,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
               : undefined
           }
           policy={chargePolicy}
-          onCharge={charge}
+          onCharge={startCharge}
           onClose={() => setIsChargeOpen(false)}
         />
       )}

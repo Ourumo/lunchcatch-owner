@@ -9,9 +9,9 @@ import {
   Wallet,
 } from 'lucide-react';
 
-import { chargePoints } from '@owner/api/points';
 import type { MyStore } from '@owner/api/store';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
+import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 
@@ -136,20 +136,11 @@ const HomeError = ({ onRetry }: { onRetry: () => void }) => (
 
 // 홈 탭. 점심에 앱을 열면 가장 먼저 보는 화면이라 QR 스캔과 오늘 캠페인 상황을 위에 둔다
 export const HomeDashboard = () => {
-  const { retry, state, updateBalance } = useHome();
+  const { retry, state } = useHome();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const chargePolicy = useChargePolicy();
-
-  const handleCharge = async (amount: number) => {
-    const result = await chargePoints(amount);
-
-    if (result.ok) {
-      updateBalance(result.data.balance);
-    }
-
-    return result;
-  };
+  const startCharge = usePointCharge();
 
   const renderContent = () => {
     if (state.status === 'loading') {
@@ -185,7 +176,7 @@ export const HomeDashboard = () => {
           <PointChargeSheet
             balance={state.balance}
             policy={chargePolicy}
-            onCharge={handleCharge}
+            onCharge={startCharge}
             onClose={() => setIsChargeOpen(false)}
           />
         )}

@@ -2,57 +2,31 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import {
-  type PointChargeResult,
   PointChargeSheet,
   type PointChargeSheetProps,
 } from './PointChargeSheet';
 
-const wait = () => new Promise((resolve) => setTimeout(resolve, 800));
-
-const chargeSuccess = async (): Promise<PointChargeResult> => {
-  await wait();
-
-  return { ok: true };
-};
-
-const chargeFailure = async (): Promise<PointChargeResult> => {
-  await wait();
-
-  return { ok: false, message: '결제가 취소되었습니다.' };
-};
-
-// 결제에 성공하면 시트가 닫히고 부른 쪽 잔액과 부족분이 바뀌도록 상태를 붙여 보여준다
+// 충전하기를 누르면 결제 화면으로 가므로, 고른 금액만 보여주고 시트를 닫는다
 const ChargeSheetExample = (props: PointChargeSheetProps) => {
   const [isOpen, setIsOpen] = useState(true);
-  const [balance, setBalance] = useState(props.balance);
-  const [shortage, setShortage] = useState(props.shortage);
-
-  const handleCharge = async (amount: number) => {
-    const result = await props.onCharge(amount);
-
-    if (result.ok) {
-      setBalance((prev) => (prev === undefined ? prev : prev + amount));
-      setShortage((prev) =>
-        prev === undefined ? prev : Math.max(0, prev - amount),
-      );
-    }
-
-    return result;
-  };
+  const [chargedAmount, setChargedAmount] = useState<number>();
 
   return (
     <div className="p-4">
       <button onClick={() => setIsOpen(true)} type="button">
         충전 시트 열기
       </button>
-      {balance !== undefined && <p>잔액 {balance.toLocaleString('ko-KR')}P</p>}
+      {chargedAmount !== undefined && (
+        <p>{chargedAmount.toLocaleString('ko-KR')}원 결제 화면으로 이동</p>
+      )}
       {isOpen && (
         <PointChargeSheet
           {...props}
-          balance={balance}
-          onCharge={handleCharge}
+          onCharge={(amount) => {
+            setChargedAmount(amount);
+            setIsOpen(false);
+          }}
           onClose={() => setIsOpen(false)}
-          shortage={shortage}
         />
       )}
     </div>
@@ -64,7 +38,7 @@ const meta = {
   component: PointChargeSheet,
   args: {
     balance: 50000,
-    onCharge: chargeSuccess,
+    onCharge: () => undefined,
     onClose: () => undefined,
     policy: {
       status: 'success',
@@ -104,21 +78,14 @@ export const WithoutBalance: Story = {
   },
 };
 
-// 결제에 실패하면 시트를 연 채로 오류 문구를 보여준다
-export const ChargeFailed: Story = {
-  args: {
-    onCharge: chargeFailure,
-  },
-};
-
-// 충전 정책을 불러오는 동안. 금액을 고를 수 없어 결제 버튼을 막는다
+// 충전 정책을 불러오는 동안. 금액을 고를 수 없어 충전 버튼을 막는다
 export const PolicyLoading: Story = {
   args: {
     policy: { status: 'loading' },
   },
 };
 
-// 충전 정책을 불러오지 못했을 때. 다시 시도할 수 있고 결제 버튼은 막는다
+// 충전 정책을 불러오지 못했을 때. 다시 시도할 수 있고 충전 버튼은 막는다
 export const PolicyFailed: Story = {
   args: {
     policy: { status: 'error', onRetry: () => undefined },

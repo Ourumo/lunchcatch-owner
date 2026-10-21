@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { BottomSheet, Button, ChoiceChip } from '@repo/ui';
 
-// 결제 결과. 잔액은 부른 쪽이 결제 함수 안에서 받아 갱신한다
-export type PointChargeResult = { ok: true } | { ok: false; message?: string };
-
 // 충전 정책. 금액 선택지는 충전 상품 금액이고 칩으로 보여준다. 최소 충전 금액(원)은 안내 문구에 쓰고, 그보다 적은 상품은 뺀다.
 // 정책 값은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export type ChargePolicy =
@@ -14,16 +11,14 @@ export type ChargePolicy =
 export interface PointChargeSheetProps {
   // 충전 전 잔액. 없으면 현재 잔액과 충전 후 잔액을 숨긴다
   balance?: number;
-  // 불러오는 중이거나 불러오지 못했으면 금액을 고를 수 없어 결제 버튼을 막는다
+  // 불러오는 중이거나 불러오지 못했으면 금액을 고를 수 없어 충전 버튼을 막는다
   policy: ChargePolicy;
   // 부족한 포인트. 넘겨받으면 부족분을 채우는 가장 작은 충전 상품을 미리 선택한다 (캠페인 등록)
   shortage?: number;
-  // 결제 함수. 성공하면 시트를 닫고, 실패하면 시트 안에 오류 문구를 보여준다
-  onCharge: (amount: number) => Promise<PointChargeResult>;
+  // 고른 금액으로 결제를 시작한다. 결제는 결제 화면이 맡고, 결과는 돌아온 화면이 잔액을 다시 불러와 반영한다
+  onCharge: (amount: number) => void;
   onClose: () => void;
 }
-
-const DEFAULT_ERROR_MESSAGE = '결제하지 못했어요. 다시 시도해 주세요.';
 
 const formatNumber = (value: number) => value.toLocaleString('ko-KR');
 
@@ -44,9 +39,9 @@ const getDefaultAmount = (amounts: number[], shortage?: number) => {
   return amounts.find((amount) => amount >= shortage) ?? amounts.at(-1);
 };
 
-// 포인트 충전 바텀시트. 홈, 가게 관리, 캠페인 등록에서 함께 쓴다.
-// 실제 결제는 결제대행사 화면을 거칠 수 있어 시트는 금액 선택까지 맡고 결제는 넘겨받은 함수에 맡긴다.
-// 열 때마다 새로 그려 선택값과 오류 문구를 초기화하므로 열려 있을 때만 렌더링한다
+// 포인트 충전 바텀시트. 홈, 가게 관리, 포인트 내역, 캠페인 등록에서 함께 쓴다.
+// 결제는 결제 화면에서 결제위젯으로 하므로 시트는 금액 선택까지 맡는다. 결제 화면에도 결제하기가 있어 여기서는 충전하기로 부른다.
+// 열 때마다 새로 그려 선택값을 초기화하므로 열려 있을 때만 렌더링한다
 export const PointChargeSheet = ({
   balance,
   onCharge,
@@ -62,41 +57,9 @@ export const PointChargeSheet = ({
   const [selectedAmount, setSelectedAmount] = useState<number>();
   const amount = selectedAmount ?? getDefaultAmount(amounts, shortage);
   const hasShortage = shortage !== undefined && shortage > 0;
-  const [isCharging, setIsCharging] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>();
-
-  const handleCharge = async () => {
-    if (amount === undefined) {
-      return;
-    }
-
-    setIsCharging(true);
-    setErrorMessage(undefined);
-
-    const result = await onCharge(amount);
-
-    setIsCharging(false);
-
-    if (result.ok) {
-      onClose();
-      return;
-    }
-
-    setErrorMessage(result.message ?? DEFAULT_ERROR_MESSAGE);
-  };
 
   return (
-    // 결제 중에는 배경, 드래그, Esc로 닫지 않는다
-    <BottomSheet
-      closeOnBackdrop={!isCharging}
-      isOpen
-      onClose={() => {
-        if (!isCharging) {
-          onClose();
-        }
-      }}
-      title="포인트 충전"
-    >
+    <BottomSheet isOpen onClose={onClose} title="포인트 충전">
       {policy.status === 'loading' && (
         <p
           className="py-6 text-center type-body-sm text-text-secondary"
@@ -137,13 +100,9 @@ export const PointChargeSheet = ({
               {amounts.map((option) => (
                 <ChoiceChip
                   checked={amount === option}
-                  disabled={isCharging}
                   key={option}
                   name="point-charge-amount"
-                  onChange={() => {
-                    setSelectedAmount(option);
-                    setErrorMessage(undefined);
-                  }}
+                  onChange={() => setSelectedAmount(option)}
                   value={option}
                 >
                   {formatNumber(option)}P
@@ -177,21 +136,18 @@ export const PointChargeSheet = ({
         </>
       )}
 
-      {errorMessage && (
-        <p className="mt-3 type-body-sm text-status-danger-fg" role="alert">
-          {errorMessage}
-        </p>
-      )}
-
       <Button
         className="mt-5 h-12 w-full"
         disabled={amount === undefined}
-        isLoading={isCharging}
-        onClick={handleCharge}
+        onClick={() => {
+          if (amount !== undefined) {
+            onCharge(amount);
+          }
+        }}
       >
         {amount === undefined
-          ? '결제하기'
-          : `${formatNumber(amount)}원 결제하기`}
+          ? '충전하기'
+          : `${formatNumber(amount)}원 충전하기`}
       </Button>
     </BottomSheet>
   );
