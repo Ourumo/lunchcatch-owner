@@ -1,5 +1,5 @@
 import { MemoryRouter } from 'react-router';
-import { Button } from '@repo/ui';
+import { Button, type ButtonVariant } from '@repo/ui';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { Campaign, CampaignTodayPerformance } from '@owner/api/campaign';
@@ -95,23 +95,64 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// 캠페인 탭이 카드 아래에 붙이는 버튼 영역과 같은 모양. 버튼이 여러 개면 나란히 같은 폭으로 둔다
+const actionFooter = (buttons: { label: string; variant: ButtonVariant }[]) => (
+  <div className="flex gap-2 border-t border-border-subtle p-3">
+    {buttons.map(({ label, variant }) => (
+      <Button className="h-11 flex-1" key={label} variant={variant}>
+        {label}
+      </Button>
+    ))}
+  </div>
+);
+
 export const Active: Story = {};
+
+// 캠페인 탭에서는 진행 중 캠페인 카드 아래에 중단 버튼을 붙인다
+export const ActiveWithFooter: Story = {
+  args: {
+    footer: actionFooter([{ label: '캠페인 중단', variant: 'neutral' }]),
+  },
+};
+
+const pausedByOwnerCampaign: Campaign = {
+  ...activeCampaign,
+  status: 'PAUSED',
+  pausedReason: 'OWNER',
+};
 
 // 점주가 직접 일시중지한 캠페인
 export const PausedByOwner: Story = {
+  args: { campaign: pausedByOwnerCampaign },
+};
+
+// 직접 일시중지했으면 다시 시작하거나 종료할 수 있다
+export const PausedByOwnerWithFooter: Story = {
   args: {
-    campaign: { ...activeCampaign, status: 'PAUSED', pausedReason: 'OWNER' },
+    campaign: pausedByOwnerCampaign,
+    footer: actionFooter([
+      { label: '캠페인 종료', variant: 'neutral' },
+      { label: '다시 시작', variant: 'secondary' },
+    ]),
   },
+};
+
+const pausedNoPointsCampaign: Campaign = {
+  ...activeCampaign,
+  status: 'PAUSED',
+  pausedReason: 'NO_POINTS',
 };
 
 // 잔액이 모자라 시스템이 중단한 캠페인
 export const PausedNoPoints: Story = {
+  args: { campaign: pausedNoPointsCampaign },
+};
+
+// 잔액 부족은 충전하면 자동으로 다시 시작되므로 종료만 둔다
+export const PausedNoPointsWithFooter: Story = {
   args: {
-    campaign: {
-      ...activeCampaign,
-      status: 'PAUSED',
-      pausedReason: 'NO_POINTS',
-    },
+    campaign: pausedNoPointsCampaign,
+    footer: actionFooter([{ label: '캠페인 종료', variant: 'neutral' }]),
   },
 };
 
@@ -166,13 +207,7 @@ export const Scheduled: Story = {
 export const ScheduledWithFooter: Story = {
   args: {
     campaign: scheduledCampaign,
-    footer: (
-      <div className="border-t border-border-subtle p-3">
-        <Button className="h-11 w-full" variant="neutral">
-          대기 중 취소
-        </Button>
-      </div>
-    ),
+    footer: actionFooter([{ label: '대기 중 취소', variant: 'neutral' }]),
   },
 };
 
