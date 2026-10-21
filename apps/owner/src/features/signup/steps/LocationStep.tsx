@@ -102,25 +102,38 @@ export const LocationStep = () => {
                 </p>
               ) : (
                 <ul aria-label="검색 결과" className="flex flex-col">
-                  {search.places.map((item) => (
-                    <li
-                      className="border-b border-border-subtle last:border-b-0"
-                      key={item.kakaoPlaceId}
-                    >
-                      <button
-                        className="flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-action-primary"
-                        onClick={() => selectPlace(item)}
-                        type="button"
+                  {search.places.map((item) => {
+                    // 위치 저장에 도로명 주소가 필수라, 도로명 주소가 없는 장소는 지번 주소만 보여주고 고를 수 없다
+                    const hasRoadAddress = item.roadAddress !== '';
+
+                    return (
+                      <li
+                        className="border-b border-border-subtle last:border-b-0"
+                        key={item.kakaoPlaceId}
                       >
-                        <span className="text-body-sm-mobile font-semibold text-text-primary">
-                          {item.placeName}
-                        </span>
-                        <span className="text-caption-mobile text-text-secondary">
-                          {item.roadAddress}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                        <button
+                          className="flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          disabled={!hasRoadAddress}
+                          onClick={() => selectPlace(item)}
+                          type="button"
+                        >
+                          <span
+                            className={`text-body-sm-mobile font-semibold ${hasRoadAddress ? 'text-text-primary' : 'text-text-disabled'}`}
+                          >
+                            {item.placeName}
+                          </span>
+                          <span className="text-caption-mobile text-text-secondary">
+                            {hasRoadAddress ? item.roadAddress : item.address}
+                          </span>
+                          {!hasRoadAddress && (
+                            <span className="text-caption-mobile break-keep text-text-secondary">
+                              도로명 주소가 없는 장소라 선택할 수 없어요
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ))}
           </div>
