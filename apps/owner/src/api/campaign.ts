@@ -7,7 +7,7 @@ import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
 // 점주 캠페인 등록과 조회 (docs/requirements-owner.md "캠페인 관리", docs/requirements-common.md "캠페인 상태")
-// 목록·상세 조회, 쿠폰 조건·노출 대상·하루 예산과 집행 기간 저장, 상태 변경(취소·중단·재개·종료)은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 목록·상세 조회, 쿠폰 조건·포스터·노출 대상·하루 예산과 집행 기간 저장, 상태 변경(취소·중단·재개·종료)은 서버 API를 쓰고, 나머지는 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export type CampaignStatus =
   'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'PAUSED' | 'ENDED';
@@ -306,8 +306,8 @@ export const createInitialCampaignValues = (): CampaignValues => ({
 
 type ServerCampaignExtras = Pick<Campaign, 'poster' | 'reviewFailReasons'>;
 
-// 포스터 생성과 활성화 요청은 API가 없어, 서버 캠페인의 포스터와 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
-// 새로고침하면 사라진다. 포스터·활성화 API를 연동하면 지운다
+// 포스터 조회와 활성화 요청을 연동하기 전까지, 점주가 입력한 포스터 값과 마지막 자동 검수 실패 사유를 캠페인 ID별로 메모리에 둔다.
+// 새로고침하면 사라진다. 포스터 조회·활성화 API를 연동하면 지운다
 const mockServerCampaignExtras = new Map<string, ServerCampaignExtras>();
 
 const updateServerCampaignExtras = (
@@ -714,29 +714,68 @@ export const saveBudgetStep = async (
   }
 };
 
-// 등록 2단계 포스터 저장. 포스터 생성 API를 연동하기 전까지 캠페인 ID별로 메모리에 둔다.
+// 포스터 생성 응답. 슬롯이 모두 채워진 완성 HTML이다
+interface PosterCreateResponse {
+  posterId: number;
+  campaignId: number;
+  templateId: number;
+  // "{가게명} - {템플릿 이름}"
+  title: string;
+  html: string;
+}
+
+// 포스터 생성 요청 본문. 서버가 아직 글을 받지 않아 템플릿과 이미지만 보낸다.
+// 서버가 점주가 고친 글을 받게 되면 여기에 slots의 글만 더한다
+const toPosterCreateRequest = ({
+  imageObjectKey,
+  templateId,
+}: CampaignPoster) => ({
+  templateId: Number(templateId),
+  objectKey: imageObjectKey,
+});
+
+// 등록 2단계 포스터 저장. 캠페인당 포스터는 1건이라, 이미 있으면 서버가 덮어쓴다.
 // 등록 화면이 DRAFT인지 확인한 뒤에 부른다
 export const savePosterStep = async (
   id: string,
   poster: CampaignPoster | null,
 ): Promise<ApiResult<null>> => {
-  await mockDelay();
-
-  // 템플릿과 할인 내용, 기간, 가게명이 없으면 포스터를 만들지 않는다
-  if (!isPosterComplete(poster)) {
+  // 템플릿, 이미지, 할인 내용, 기간이 없으면 포스터를 만들지 않는다
+  if (!poster || !isPosterComplete(poster)) {
     return { ok: false, message: INVALID_POSTER_MESSAGE };
   }
 
-  // 캠페인당 포스터는 1건이라, 이미 있으면 같은 포스터를 수정한 것으로 본다
-  updateServerCampaignExtras(id, {
-    poster: {
-      ...structuredClone(poster as CampaignPoster),
-      posterId:
-        mockServerCampaignExtras.get(id)?.poster?.posterId ?? `poster-${id}`,
-    },
-  });
+  try {
+    const { posterId } = await request<PosterCreateResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
+      { method: 'POST', body: toPosterCreateRequest(poster) },
+    );
 
-  return { ok: true, data: null };
+    // 포스터 조회를 연동하기 전까지 이어서 작성할 때 쓰도록 점주가 입력한 값을 메모리에 둔다
+    updateServerCampaignExtras(id, {
+      poster: { ...structuredClone(poster), posterId: String(posterId) },
+    });
+
+    return { ok: true, data: null };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
+
+    switch (error.code) {
+      case 'CAMPAIGN-001':
+        return { ok: false, message: NOT_ACTIVE_OWNER_MESSAGE };
+      case 'CAMPAIGN-005':
+        return { ok: false, message: NOT_FOUND_MESSAGE };
+      case 'CAMPAIGN-006':
+        return { ok: false, message: NOT_EDITABLE_MESSAGE };
+    }
+
+    // 템플릿이 그사이 내려갔거나 이미지를 찾을 수 없는 등은 오류 코드가 정해지지 않아 서버 문구를 보여준다
+    return error.code && error.status >= 400 && error.status < 500
+      ? { ok: false, message: error.message }
+      : { ok: false };
+  }
 };
 
 // 활성화 요청 결과. 자동 검수를 통과하면 SCHEDULED가 되고, 통과하지 못하면 DRAFT로 남고 사유를 돌려준다
