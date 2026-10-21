@@ -50,6 +50,17 @@ export interface MenuListFieldsProps<TImage extends ImageValue | null> {
   disabled?: boolean;
 }
 
+// 시트에서는 업로드 상태(올리지 못함 등) 없이 고른 사진으로 보여주고, 고친 메뉴도 고른 사진(selected)으로 넘긴다
+const toSheetMenu = <TImage extends ImageValue | null>(
+  menu: MenuListItem<TImage>,
+) => ({
+  ...menu,
+  image:
+    menu.image && menu.image.status !== 'saved'
+      ? { status: 'selected' as const, file: menu.image.file }
+      : menu.image,
+});
+
 // 바텀시트로 새 메뉴를 추가하는지, 몇 번째 메뉴를 수정하는지
 type SheetState = { mode: 'add' } | { mode: 'edit'; index: number } | null;
 
@@ -309,7 +320,9 @@ export const MenuListFields = <TImage extends ImageValue | null>({
 
       {sheet && (
         <MenuFormSheet
-          initialMenu={sheet.mode === 'edit' ? menus[sheet.index] : undefined}
+          initialMenu={
+            sheet.mode === 'edit' ? toSheetMenu(menus[sheet.index]) : undefined
+          }
           onClose={() => setSheet(null)}
           onSave={handleSave}
           rules={rules}

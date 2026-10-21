@@ -21,7 +21,8 @@ import { useSignupFlow } from '../useSignupFlow';
 
 // 대표 메뉴 목록과 추가. 선택 단계라 메뉴 없이도 등록 신청을 완료할 수 있다.
 // 시트에서 확인하면 바로 메뉴를 등록하고 그 메뉴 사진을 올린다 ("다음"에서는 등록하지 않는다).
-// 메뉴 수정·삭제 API가 없어 등록한 메뉴는 바꾸거나 지울 수 없다
+// 메뉴 수정·삭제 API가 없어 등록한 메뉴는 바꾸거나 지울 수 없다.
+// 등록하지 못한 메뉴는 서버에 없어 고치거나 지울 수 있다 (서버가 계속 거절해도 빼고 넘어갈 수 있게)
 export const MenuStep = () => {
   const { updateStepValues, values } = useSignupFlow();
   const { menus } = values.menu;
@@ -84,7 +85,8 @@ export const MenuStep = () => {
     }
   };
 
-  // 시트에서 확인한 메뉴는 사진을 selected로 담아 뒤에 붙어 온다
+  // 시트에서 확인한 메뉴는 사진을 selected로 담아 뒤에 붙어 오고, 고친 메뉴는 새 값으로 그 자리에 온다.
+  // 둘 다 목록에 없던 값이라 등록을 시작한다. 지운 메뉴는 등록할 것이 없다
   const handleMenusChange = (nextMenus: MenuItemValues[]) => {
     const addedMenus = nextMenus.filter((menu) => !menus.includes(menu));
 
@@ -112,7 +114,8 @@ export const MenuStep = () => {
   return (
     <div className="px-page pt-6 pb-8">
       <MenuListFields<ImageValue | null>
-        canEdit={() => false}
+        // 등록하지 못한 메뉴만 고치거나 지울 수 있다. 다른 메뉴를 처리하는 중에는 한 번에 하나만 돌도록 막는다
+        canEdit={({ id }) => !id && !isUploading}
         disabled={isUploading}
         maxMenus={MAX_MENUS}
         menus={menus}
