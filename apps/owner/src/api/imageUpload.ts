@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { ApiError } from './client';
 
-// 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정")
+// 가게·메뉴 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록")
 
 // 업로드 주소를 받은 업로드. 실패한 뒤 다시 시도할 때 받은 주소와 줄인 사진을 그대로 쓴다
 export interface UploadTicket {

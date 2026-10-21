@@ -4,7 +4,7 @@ import type {
   PrepareUploadResponse,
 } from './imageUpload';
 
-// 가게 대표 이미지(로고)와 매장 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록/수정").
+// 가게 대표 이미지(로고)와 매장 사진 업로드 (docs/requirements-owner.md "가게 이미지 및 대표 메뉴 등록").
 // 입점 신청(ONBOARDING)에서만 쓸 수 있다. 공통 업로드 함수(uploadImage)의 prepare, confirm에 넘긴다
 
 // LOGO는 가게마다 1장이고 다시 올리면 바뀐다. INTERIOR는 최대 3장
