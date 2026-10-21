@@ -43,6 +43,7 @@ apps/<앱>/src/
 ├── pages/        # 주소 하나에 대응하는 화면
 ├── features/     # 기능 단위 UI, 상태, 로직 묶음
 ├── ui/           # 이 앱 안에서 여러 기능이 함께 쓰는 컴포넌트
+├── hooks/        # 이 앱 안에서 여러 기능이 함께 쓰는 훅
 ├── layout/       # 여러 페이지를 감싸는 틀
 ├── api/          # 서버 요청 함수와 mock 데이터
 ├── auth/         # 로그인 상태와 접근 제어
@@ -55,7 +56,8 @@ apps/<앱>/src/
 | `app` | 앱 전체에 한 번만 설정하는 것 | `App.tsx`, `router.tsx`, `providers.tsx` |
 | `pages` | 라우터에 연결되는 화면. 직접 로직을 갖지 않고 `layout`과 `features`를 조합 | `LoginPage.tsx`, `SignupPage.tsx` |
 | `features` | 특정 기능에 필요한 UI, 상태, 로직 | `features/signup/steps/BusinessHoursStep.tsx` |
-| `ui` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트 | 점주 헤더, 이미지 업로더, DataTable |
+| `ui` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트와 표시용 함수 | 점주 헤더, 이미지 업로더, DataTable, `campaignFormat.ts` |
+| `hooks` | 여러 기능이 함께 쓰는 훅. `api`의 요청 함수를 불러도 된다 | `useCountdown.ts`, `useWishCount.ts` |
 | `layout` | 페이지마다 반복되는 바깥 구조 | 사이드바 레이아웃, 하단 탭바 레이아웃 |
 | `api` | 서버 요청 함수와 mock 데이터 | `store.ts`, `mocks/` |
 | `auth` | 로그인 상태 제공과 비로그인 접근 차단 | `AuthProvider.tsx`, `RequireAuth.tsx` |
@@ -65,6 +67,7 @@ apps/<앱>/src/
 ```
 app → pages → features → ui
                   │
+                  ├──→ hooks ──→ api
                   └──→ api, auth
 
 apps/* ──→ @repo/ui, @repo/utils
@@ -73,7 +76,8 @@ apps/* ──→ @repo/ui, @repo/utils
 - 화살표 방향으로만 import합니다. `ui`에서 `features`를 import하지 않습니다.
 - 예외로 `ui`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
 - `ui`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
-- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 그 코드를 `ui`나 `@repo/ui`로 옮깁니다.
+- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 컴포넌트와 표시용 함수는 `ui`나 `@repo/ui`로, 훅은 `hooks`로 옮깁니다.
+- `hooks`는 `features`, `pages`, `app`을 import하지 않습니다. `ui`와 달리 `api`의 요청 함수를 불러도 됩니다.
 - 앱끼리는 서로 import하지 않습니다.
 - `packages`는 `apps`를 import하지 않습니다.
 
