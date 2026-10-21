@@ -83,10 +83,17 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-// 캠페인 등록 중 포인트가 부족할 때. 부족분 11,500P를 1,000원 단위로 올려 첫 선택지로 미리 선택한다
+// 캠페인 등록 중 포인트가 부족할 때. 부족분 18,500P 이상인 가장 작은 충전 상품 30,000P를 미리 선택한다
 export const WithShortage: Story = {
   args: {
-    shortage: 11500,
+    shortage: 18500,
+  },
+};
+
+// 부족분이 가장 큰 충전 상품보다 클 때. 가장 큰 금액을 미리 선택하고 한 번 더 충전해야 한다고 알린다
+export const ShortageOverMaxProduct: Story = {
+  args: {
+    shortage: 130000,
   },
 };
 

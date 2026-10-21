@@ -4,7 +4,7 @@ import { BottomSheet, Button, ChoiceChip } from '@repo/ui';
 // 결제 결과. 잔액은 부른 쪽이 결제 함수 안에서 받아 갱신한다
 export type PointChargeResult = { ok: true } | { ok: false; message?: string };
 
-// 충전 정책. 최소 충전 금액(원)은 안내 문구와 부족분 선택지 금액에, 금액 선택지는 충전 금액 칩에 쓴다.
+// 충전 정책. 금액 선택지는 충전 상품 금액이고 칩으로 보여준다. 최소 충전 금액(원)은 안내 문구에 쓰고, 그보다 적은 상품은 뺀다.
 // 정책 값은 api의 값을 쓰는 쪽에서 넘긴다 (ui는 api의 값을 가져오지 않는다)
 export type ChargePolicy =
   | { status: 'loading' }
@@ -16,50 +16,32 @@ export interface PointChargeSheetProps {
   balance?: number;
   // 불러오는 중이거나 불러오지 못했으면 금액을 고를 수 없어 결제 버튼을 막는다
   policy: ChargePolicy;
-  // 부족한 포인트. 넘겨받으면 부족분을 첫 선택지로 두고 미리 선택한다 (캠페인 등록)
+  // 부족한 포인트. 넘겨받으면 부족분을 채우는 가장 작은 충전 상품을 미리 선택한다 (캠페인 등록)
   shortage?: number;
   // 결제 함수. 성공하면 시트를 닫고, 실패하면 시트 안에 오류 문구를 보여준다
   onCharge: (amount: number) => Promise<PointChargeResult>;
   onClose: () => void;
 }
 
-interface ChargeOption {
-  amount: number;
-  isShortage: boolean;
-}
-
-// 부족분은 1,000원 단위로 올림한다
-const SHORTAGE_UNIT = 1000;
-
 const DEFAULT_ERROR_MESSAGE = '결제하지 못했어요. 다시 시도해 주세요.';
 
 const formatNumber = (value: number) => value.toLocaleString('ko-KR');
 
-// 부족분이 있으면 맨 앞에 둔다. 최소 충전 금액보다 작으면 최소 금액으로 맞추고,
-// 기본 선택지와 금액이 같으면 같은 금액이 두 번 보이지 않도록 기본 선택지를 뺀다
-const getChargeOptions = (
-  minChargeAmount: number,
-  chargeAmounts: number[],
-  shortage?: number,
-): ChargeOption[] => {
-  const presets = chargeAmounts.map((amount) => ({
-    amount,
-    isShortage: false,
-  }));
+// 서버는 충전 상품에 없는 금액(400 BILLING-002)과 최소 충전 금액보다 적은 금액(400 BILLING-001)을 거절한다.
+// 결제창을 열기 전에 막도록 충전 상품 중 최소 충전 금액 이상인 금액만 작은 순으로 고르게 한다
+const getChargeAmounts = (minChargeAmount: number, chargeAmounts: number[]) =>
+  [...new Set(chargeAmounts)]
+    .filter((amount) => amount >= minChargeAmount)
+    .sort((a, b) => a - b);
 
+// 미리 선택할 금액. 부족분이 있으면 부족분 이상인 가장 작은 금액(예: 부족분 18,500 → 30,000),
+// 가장 큰 금액으로도 모자라면 가장 큰 금액. 부족분이 없으면 가장 작은 금액
+const getDefaultAmount = (amounts: number[], shortage?: number) => {
   if (!shortage || shortage <= 0) {
-    return presets;
+    return amounts.at(0);
   }
 
-  const shortageAmount = Math.max(
-    minChargeAmount,
-    Math.ceil(shortage / SHORTAGE_UNIT) * SHORTAGE_UNIT,
-  );
-
-  return [
-    { amount: shortageAmount, isShortage: true },
-    ...presets.filter((option) => option.amount !== shortageAmount),
-  ];
+  return amounts.find((amount) => amount >= shortage) ?? amounts.at(-1);
 };
 
 // 포인트 충전 바텀시트. 홈, 가게 관리, 캠페인 등록에서 함께 쓴다.
@@ -72,13 +54,14 @@ export const PointChargeSheet = ({
   policy,
   shortage,
 }: PointChargeSheetProps) => {
-  const options =
+  const amounts =
     policy.status === 'success'
-      ? getChargeOptions(policy.minChargeAmount, policy.chargeAmounts, shortage)
+      ? getChargeAmounts(policy.minChargeAmount, policy.chargeAmounts)
       : [];
-  // 고르기 전에는 첫 선택지. 정책을 불러오기 전에 열어도 불러온 뒤 첫 선택지가 선택된다
+  // 고르기 전에는 미리 선택할 금액. 정책을 불러오기 전에 열어도 불러온 뒤 그 금액이 선택된다
   const [selectedAmount, setSelectedAmount] = useState<number>();
-  const amount = selectedAmount ?? options.at(0)?.amount;
+  const amount = selectedAmount ?? getDefaultAmount(amounts, shortage);
+  const hasShortage = shortage !== undefined && shortage > 0;
   const [isCharging, setIsCharging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -142,23 +125,28 @@ export const PointChargeSheet = ({
         <>
           <fieldset>
             <legend className="sr-only">충전 금액</legend>
-            {/* 360px 폭에서도 금액이 잘리지 않도록 두 줄로 나누고, 부족분은 한 줄을 다 쓴다 */}
+            {hasShortage && (
+              <p className="mb-3 type-body-sm break-keep text-text-primary">
+                {(amounts.at(-1) ?? 0) >= shortage
+                  ? `부족한 ${formatNumber(shortage)}P를 채울 수 있는 금액을 골라 두었어요.`
+                  : `한 번에 충전할 수 있는 금액으로는 부족한 ${formatNumber(shortage)}P를 다 채우지 못해요. 충전한 뒤 한 번 더 충전해 주세요.`}
+              </p>
+            )}
+            {/* 360px 폭에서도 금액이 잘리지 않도록 두 줄로 나눈다 */}
             <div className="grid grid-cols-2 gap-2">
-              {options.map((option) => (
+              {amounts.map((option) => (
                 <ChoiceChip
-                  checked={amount === option.amount}
-                  className={option.isShortage ? 'col-span-2' : undefined}
+                  checked={amount === option}
                   disabled={isCharging}
-                  key={option.amount}
+                  key={option}
                   name="point-charge-amount"
                   onChange={() => {
-                    setSelectedAmount(option.amount);
+                    setSelectedAmount(option);
                     setErrorMessage(undefined);
                   }}
-                  value={option.amount}
+                  value={option}
                 >
-                  {option.isShortage && '부족분 '}
-                  {formatNumber(option.amount)}P
+                  {formatNumber(option)}P
                 </ChoiceChip>
               ))}
             </div>
