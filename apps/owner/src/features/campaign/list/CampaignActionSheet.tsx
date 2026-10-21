@@ -64,7 +64,7 @@ export const CampaignActionSheet = ({
 
       {errorMessage && (
         <p
-          className="mt-3 text-center text-body-sm-mobile text-status-danger-fg"
+          className="mt-3 text-center text-body-sm-mobile break-keep text-status-danger-fg"
           role="alert"
         >
           {errorMessage}
