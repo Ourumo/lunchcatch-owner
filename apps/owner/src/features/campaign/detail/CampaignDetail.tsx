@@ -10,6 +10,7 @@ import {
   SERVING_TIME_START,
 } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useCampaignPerformance } from '@owner/hooks/useCampaignPerformance';
 import { useGoBack } from '@owner/hooks/useGoBack';
 import {
   formatCreatedDate,
@@ -23,12 +24,11 @@ import {
   pausedNotices,
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
-import { PerformanceError } from '../PerformanceError';
 import { PosterPreview } from '../PosterPreview';
-import { useCampaignPerformance } from '../useCampaignPerformance';
 import { DetailNote, DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
 

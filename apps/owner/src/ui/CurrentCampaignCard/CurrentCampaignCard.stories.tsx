@@ -4,7 +4,10 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { Campaign, CampaignTodayPerformance } from '@owner/api/campaign';
 
-import { CurrentCampaignCard } from './CurrentCampaignCard';
+import {
+  CurrentCampaignCard,
+  type TodayPerformanceState,
+} from './CurrentCampaignCard';
 
 // 남은 일수 문구가 날짜와 상관없이 같게 보이도록 오늘 기준으로 날짜를 만든다
 const daysFromToday = (days: number) => {
@@ -61,14 +64,10 @@ const activeCampaign: Campaign = {
   },
 };
 
-// 오늘 실적만 바꾼 캠페인
-const withToday = (today: CampaignTodayPerformance | null): Campaign => ({
-  ...activeCampaign,
-  performance: activeCampaign.performance && {
-    ...activeCampaign.performance,
-    today,
-  },
-});
+// 카드를 쓰는 화면이 따로 불러와 넘기는 오늘 실적
+const withToday = (
+  today: CampaignTodayPerformance | null,
+): TodayPerformanceState => ({ status: 'success', data: today });
 
 const meta = {
   title: 'Owner/CurrentCampaignCard',
@@ -76,6 +75,7 @@ const meta = {
   args: {
     campaign: activeCampaign,
     title: '전 메뉴 2,000원 할인',
+    todayPerformance: withToday(activeCampaign.performance?.today ?? null),
   },
   decorators: [
     (Story) => (
@@ -158,14 +158,14 @@ export const PausedNoPointsWithFooter: Story = {
 // 오늘이 집행 대상이 아니면 오늘 실적 영역 없이 보여준다
 export const WithoutTodayPerformance: Story = {
   args: {
-    campaign: withToday(null),
+    todayPerformance: withToday(null),
   },
 };
 
 // 오늘 막 열려 아직 발급이 없으면 바탕 막대만 보이고 남은 쿠폰은 전체 수량이다
 export const NothingIssued: Story = {
   args: {
-    campaign: withToday({
+    todayPerformance: withToday({
       issuedCount: 0,
       redeemedCount: 0,
       reservedPoints: 10000,
@@ -177,13 +177,23 @@ export const NothingIssued: Story = {
 // 발급이 전체 수량을 넘는 데이터가 와도 막대는 카드 밖으로 넘치지 않고, 남은 쿠폰은 0장이다
 export const OverIssued: Story = {
   args: {
-    campaign: withToday({
+    todayPerformance: withToday({
       issuedCount: 55,
       redeemedCount: 30,
       reservedPoints: 10000,
       spentPoints: 9800,
     }),
   },
+};
+
+// 오늘 실적을 불러오는 동안 그 자리를 잡아 둔다
+export const TodayLoading: Story = {
+  args: { todayPerformance: { status: 'loading' } },
+};
+
+// 오늘 실적을 못 받으면 카드는 그대로 두고 실적 자리에만 안내와 다시 시도를 보여준다
+export const TodayError: Story = {
+  args: { todayPerformance: { status: 'error', retry: () => {} } },
 };
 
 // 집행 전이라 실적 없이 시작일을 보여준다
@@ -199,13 +209,14 @@ const scheduledCampaign: Campaign = {
 };
 
 export const Scheduled: Story = {
-  args: { campaign: scheduledCampaign },
+  args: { campaign: scheduledCampaign, todayPerformance: withToday(null) },
 };
 
 // 캠페인 탭에서는 카드 아래에 대기 중 취소 버튼을 붙인다
 export const ScheduledWithFooter: Story = {
   args: {
     campaign: scheduledCampaign,
+    todayPerformance: withToday(null),
     footer: actionFooter([{ label: '대기 중 취소', variant: 'neutral' }]),
   },
 };
@@ -219,5 +230,6 @@ export const Draft: Story = {
       budget: { dailyBudget: null, startDate: '', endDate: '' },
       performance: null,
     },
+    todayPerformance: withToday(null),
   },
 };

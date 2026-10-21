@@ -7,6 +7,7 @@ import {
   getCampaignTotalPerformance,
 } from '@owner/api/campaign';
 import type { ApiResult } from '@owner/api/types';
+import type { TodayPerformanceState } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
 
 type PerformanceTarget = Pick<Campaign, 'id' | 'status' | 'budget'>;
 
@@ -63,9 +64,17 @@ const usePerformance = <T>(
 export const useCampaignPerformance = (campaign: PerformanceTarget) =>
   usePerformance(getCampaignPerformance, campaign);
 
-// 현재 캠페인 카드: 오늘
-export const useTodayPerformance = (campaign: PerformanceTarget) =>
-  usePerformance(getCampaignTodayPerformance, campaign);
+// 현재 캠페인 카드: 오늘. 카드가 받는 형태로 돌려준다
+export const useTodayPerformance = (
+  campaign: PerformanceTarget,
+): TodayPerformanceState => {
+  const { retry, state } = usePerformance(
+    getCampaignTodayPerformance,
+    campaign,
+  );
+
+  return state.status === 'error' ? { status: 'error', retry } : state;
+};
 
 // 지난 캠페인 카드: 누적
 export const useTotalPerformance = (campaign: PerformanceTarget) =>
