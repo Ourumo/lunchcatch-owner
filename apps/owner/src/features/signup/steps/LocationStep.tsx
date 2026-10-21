@@ -3,6 +3,7 @@ import { Input } from '@repo/ui';
 import { MapPin, RotateCcw, Search } from 'lucide-react';
 
 import type { StorePlace } from '@owner/api/signupFlow';
+import { LocationPreviewMap } from '@owner/ui/KakaoMap/LocationPreviewMap';
 
 import { searchStorePlaces } from '../searchStorePlaces';
 import { useSignupFlow } from '../useSignupFlow';
@@ -140,16 +141,21 @@ export const LocationStep = () => {
         )}
       </div>
 
-      {/* 카카오 지도 연동 전까지 위치 표시 자리만 둔다 */}
-      <div
-        aria-hidden="true"
-        className="flex aspect-4/3 items-center justify-center rounded-xl border border-border-subtle bg-surface-subtle"
-      >
-        <MapPin
-          className={`size-10 ${place ? 'text-action-primary' : 'text-text-disabled'}`}
-          strokeWidth={1.5}
+      {/* 위치를 고르면 지도에 핀으로 보여주고, 고르기 전에는 지도 자리만 둔다.
+          서버에서 불러온 위치도 좌표가 있어 지도에 보여준다 */}
+      {place ? (
+        <LocationPreviewMap
+          latitude={place.latitude}
+          longitude={place.longitude}
         />
-      </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="flex aspect-4/3 items-center justify-center rounded-xl border border-border-subtle bg-surface-subtle"
+        >
+          <MapPin className="size-10 text-text-disabled" strokeWidth={1.5} />
+        </div>
+      )}
 
       <section
         aria-label="선택한 가게 위치"
