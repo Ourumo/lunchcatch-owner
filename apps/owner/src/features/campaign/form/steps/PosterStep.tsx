@@ -113,7 +113,7 @@ const TemplateOptions = ({
               />
             </span>
           </span>
-          {/* 선택 표시를 썸네일 위에 올리면 광고 라벨을 가리므로 이름 옆에 둔다 */}
+          {/* 선택 표시를 썸네일 위에 올리면 포스터를 가리므로 이름 옆에 둔다 */}
           <span className="mt-1.5 flex items-center justify-center gap-1 text-caption-mobile font-medium text-text-primary peer-checked:font-bold peer-checked:text-text-brand peer-checked:[&>svg]:block">
             <Check aria-hidden="true" className="hidden size-3.5" />
             {template.name}
@@ -125,7 +125,7 @@ const TemplateOptions = ({
 };
 
 // 등록 2단계: 관리자가 게시한 템플릿을 고르고, 포스터 이미지를 올리고, 할인 내용·이벤트명을 슬롯에 채운다.
-// 템플릿 HTML 구조와 광고 라벨은 바꿀 수 없고, 슬롯 값만 바뀐다
+// 템플릿 HTML 구조는 바꿀 수 없고, 슬롯 값만 바뀐다
 export const PosterStep = () => {
   const { campaignId, setPoster, values } = useCampaignForm();
   const { coupon, poster } = values;
@@ -284,7 +284,7 @@ export const PosterStep = () => {
           </div>
           <p className="flex items-center gap-1 text-caption-mobile text-text-secondary">
             <Info aria-hidden="true" className="size-3.5 shrink-0" />
-            광고 표시와 배치는 템플릿에 고정되어 바꿀 수 없어요.
+            배치는 템플릿에 고정되어 바꿀 수 없어요.
           </p>
         </section>
       ) : (

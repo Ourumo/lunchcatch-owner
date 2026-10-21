@@ -10,12 +10,12 @@ import type { ApiResult } from './types';
 export interface PosterTemplate {
   id: string;
   name: string;
-  // 슬롯 자리를 data-slot 속성(eventName, discount, period, image, adLabel)으로 표시한 HTML.
+  // 슬롯 자리를 data-slot 속성(eventName, discount, period, image)으로 표시한 HTML.
   // 관리자 템플릿 관리의 검증기를 통과해 스크립트와 외부 리소스가 없는 것만 내려온다
   html: string;
 }
 
-// 템플릿 슬롯에 채우는 값. 광고 라벨은 점주가 지우거나 바꿀 수 없어 템플릿 안에 고정하고 여기에 두지 않는다
+// 템플릿 슬롯에 채우는 값
 export interface PosterSlotValues {
   eventName: string;
   discountText: string;
@@ -92,6 +92,11 @@ const parsePosterHtml = (html: string) =>
 // 글은 textContent로 넣어 점주가 입력한 값이 태그로 해석되지 않는다. 이미지를 고르기 전이면 템플릿 그대로 둔다
 export const fillPosterTemplate = (html: string, slots: PosterSlotValues) => {
   const document = parsePosterHtml(html);
+
+  // 광고 표시는 없어져 서버가 만든 포스터에도 없다. 템플릿에 남은 광고 라벨 자리는 미리보기에서도 지운다
+  document
+    .querySelectorAll('[data-slot="adLabel"]')
+    .forEach((element) => element.remove());
 
   Object.entries(textSlots).forEach(([slot, key]) => {
     document.querySelectorAll(`[data-slot="${slot}"]`).forEach((element) => {
