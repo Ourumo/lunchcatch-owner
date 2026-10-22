@@ -209,6 +209,21 @@ export const CampaignFormLayout = () => {
         return;
       }
 
+      // 자동 검수에 실패해 작성 중으로 남았다. 사진을 바꿔야 통과하면 사유를 남긴 채 포스터 단계로 보내고,
+      // 검수 도구 장애처럼 다시 요청하면 되는 실패는 확인 단계에 남긴다
+      const moderationTitle = '포스터가 검수를 통과하지 못했습니다';
+
+      if (result.code === 'MODERATION_FIX_POSTER' && posterStep) {
+        setActionError({ title: moderationTitle, message });
+        navigate(getCampaignEditPath(campaignId, posterStep));
+        return;
+      }
+
+      if (result.code === 'MODERATION_RETRY') {
+        setActionError({ title: moderationTitle, message });
+        return;
+      }
+
       // 그사이 상태가 바뀌었거나 캠페인을 찾을 수 없다. 안내를 읽고 닫으면 캠페인을 다시 불러온다
       if (result.code === 'CAMPAIGN-006' || result.code === 'CAMPAIGN-005') {
         setActionError({
@@ -223,15 +238,6 @@ export const CampaignFormLayout = () => {
       }
 
       setActionError({ title, message });
-      return;
-    }
-
-    // 자동 검수는 실패하지 않지만, 대기 중이 되지 않았으면 완료 화면으로 가지 않는다
-    if (result.data !== 'SCHEDULED') {
-      setActionError({
-        title: '활성화를 요청하지 못했습니다',
-        message: SAVE_FAILED_MESSAGE,
-      });
       return;
     }
 
