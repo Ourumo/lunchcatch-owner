@@ -19,10 +19,17 @@ export interface StoreMenu {
   imageUrl: string | null;
 }
 
+export interface StoreLocation {
+  latitude: number;
+  longitude: number;
+}
+
 export interface MyStore {
   id: string;
   name: string;
   roadAddress: string;
+  // 입점 신청 때 고른 가게 위치. 쿠폰 사용 처리에 매장 스캔 기기 위치로 보낸다. 서버에 좌표가 없으면 null
+  location: StoreLocation | null;
   // 가게 대표 이미지(로고). 올리기 전이면 null
   logoImageUrl: string | null;
   // 매장 이미지. 0~3장 (입점 등록 MAX_INTERIOR_IMAGES)
@@ -44,6 +51,8 @@ interface StoreResponse {
   storeId: number | null;
   name: string | null;
   roadAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
   businessHours: ServerBusinessHour[];
   logoImage: StoreImageResponse | null;
   interiorImages: StoreImageResponse[];
@@ -75,6 +84,10 @@ export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
         id: String(data.storeId),
         name: data.name ?? '',
         roadAddress: data.roadAddress ?? '',
+        location:
+          data.latitude !== null && data.longitude !== null
+            ? { latitude: data.latitude, longitude: data.longitude }
+            : null,
         logoImageUrl: data.logoImage?.url ?? null,
         interiorImageUrls: [...data.interiorImages]
           .sort(bySortOrder)
