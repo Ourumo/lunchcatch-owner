@@ -115,7 +115,17 @@ export const getPeriodStartDate = (period: PointHistoryPeriod) => {
   const start = new Date(Date.now() + KST_OFFSET_MS);
 
   if (period === '3M') {
+    // 그 달에 없는 날(5월 31일의 3개월 전인 2월 31일 등)이 다음 달로 넘어가지 않게 그 달 말일로 맞춘다
+    const day = start.getUTCDate();
+
+    start.setUTCDate(1);
     start.setUTCMonth(start.getUTCMonth() - 3);
+
+    const lastDay = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+
+    start.setUTCDate(Math.min(day, lastDay));
   } else {
     start.setUTCDate(start.getUTCDate() - (period === '7D' ? 6 : 29));
   }
