@@ -6,10 +6,10 @@ import type {
   PaymentHistoryItem,
 } from '@owner/api/payments';
 import { formatNumber } from '@owner/ui/campaignFormat';
+import { formatHistoryDateTime } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { formatHistoryDateTime } from './pointHistoryFormat';
 import { usePaymentHistory } from './usePaymentHistory';
 import type { LoadMoreStatus } from './usePointHistory';
 

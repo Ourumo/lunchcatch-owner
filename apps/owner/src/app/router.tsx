@@ -15,6 +15,7 @@ import {
   signupSteps,
 } from '@owner/features/signup/signupSteps';
 import {
+  COUPON_USAGE_PATH,
   PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
   STORE_ANALYTICS_PATH,
@@ -42,6 +43,7 @@ import CampaignNewPage from '@owner/pages/CampaignNewPage';
 import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
 import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
+import CouponUsagePage from '@owner/pages/CouponUsagePage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
 import PaymentHistoryPage from '@owner/pages/PaymentHistoryPage';
@@ -148,6 +150,7 @@ export const router = createBrowserRouter([
           { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
           { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
+          { path: COUPON_USAGE_PATH, element: <CouponUsagePage /> },
           { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
           { path: PAYMENT_HISTORY_PATH, element: <PaymentHistoryPage /> },

@@ -8,18 +8,20 @@ import {
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
+import {
+  formatHistoryDate,
+  formatHistoryTime,
+  historyPeriodItems,
+} from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
-  formatHistoryDate,
-  formatHistoryTime,
   formatServingSummary,
   formatSignedPoints,
   groupPointHistory,
   type PointHistoryItem,
-  pointHistoryPeriodItems,
   pointHistoryTypeLabels,
 } from './pointHistoryFormat';
 import { type LoadMoreStatus, usePointHistory } from './usePointHistory';
@@ -322,7 +324,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
           <div className="flex flex-col gap-2">
             <SegmentedControl<PointHistoryPeriod>
               ariaLabel="조회 기간"
-              items={pointHistoryPeriodItems}
+              items={historyPeriodItems}
               onValueChange={(period) => changeFilter({ period })}
               value={filter.period}
             />

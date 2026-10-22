@@ -107,15 +107,25 @@ export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 // 한국 날짜(YYYY-MM-DD). UTC 시각에 9시간을 더한 뒤 UTC 날짜를 읽는다
-const toKstDate = (date: Date) =>
+export const toKstDate = (date: Date) =>
   new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 
 // 조회 기간 첫날의 한국 날짜. 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다
-const getPeriodStartDate = (period: PointHistoryPeriod) => {
+export const getPeriodStartDate = (period: PointHistoryPeriod) => {
   const start = new Date(Date.now() + KST_OFFSET_MS);
 
   if (period === '3M') {
+    // 그 달에 없는 날(5월 31일의 3개월 전인 2월 31일 등)이 다음 달로 넘어가지 않게 그 달 말일로 맞춘다
+    const day = start.getUTCDate();
+
+    start.setUTCDate(1);
     start.setUTCMonth(start.getUTCMonth() - 3);
+
+    const lastDay = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+
+    start.setUTCDate(Math.min(day, lastDay));
   } else {
     start.setUTCDate(start.getUTCDate() - (period === '7D' ? 6 : 29));
   }
