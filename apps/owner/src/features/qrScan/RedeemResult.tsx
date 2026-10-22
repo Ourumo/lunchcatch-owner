@@ -20,14 +20,18 @@ const failureContents: Record<
   },
   INVALID_LOCATION: {
     title: '가게 위치를 확인하지 못했어요',
-    description: '잠시 후 다시 스캔해 주세요.',
+    description: '가게 위치를 다시 불러와 시도해 주세요.',
   },
   NETWORK: {
     title: '사용 처리 결과를 받지 못했어요',
     description:
-      '잠시 후 다시 스캔해 주세요. 이미 처리됐다면 이미 사용한 쿠폰으로 나와요.',
+      '다시 시도해 주세요. 이미 처리됐다면 이미 사용한 쿠폰으로 나와요.',
   },
 };
+
+// 손님이 QR을 다시 띄우지 않아도 같은 QR로 다시 보낼 수 있는 실패. 위치 오류는 가게 위치를 다시 불러와 보낸다
+const isRetryable = (code?: string) =>
+  code === 'NETWORK' || code === 'INVALID_LOCATION';
 
 // 서버가 사유 코드 없이 거절하면(이미 사용한 쿠폰, 다른 가게 쿠폰 등) 서버 문구를 보여준다
 const getFailureContent = (code?: string, message?: string) => {
@@ -53,10 +57,17 @@ interface RedeemResultProps {
   result: ApiResult<RedeemedCoupon>;
   // 다음 손님 스캔, 다시 스캔. 화면을 나가지 않고 바로 다시 읽는다
   onScanAgain: () => void;
+  // 같은 QR로 다시 보낸다
+  onRetry: () => void;
 }
 
 // 사용 처리 결과. 계산대에서 한눈에 알 수 있게 크게 보여준다
-export const RedeemResult = ({ onScanAgain, result }: RedeemResultProps) => {
+export const RedeemResult = ({
+  onRetry,
+  onScanAgain,
+  result,
+}: RedeemResultProps) => {
+  const canRetry = !result.ok && isRetryable(result.code);
   const content = result.ok
     ? {
         title: '사용 처리했어요',
@@ -107,10 +118,25 @@ export const RedeemResult = ({ onScanAgain, result }: RedeemResultProps) => {
             </p>
           )}
         </div>
-        {/* 다음 손님을 바로 받도록 버튼에 초점을 둔다 */}
-        <Button autoFocus className="mt-8 h-12 w-full" onClick={onScanAgain}>
-          {result.ok ? '다음 손님 스캔' : '다시 스캔'}
-        </Button>
+        {/* 다음 손님을 바로 받거나 바로 다시 시도하도록 주 버튼에 초점을 둔다 */}
+        {canRetry ? (
+          <div className="mt-8 flex w-full gap-2">
+            <Button
+              className="h-12 flex-1"
+              onClick={onScanAgain}
+              variant="neutral"
+            >
+              다시 스캔
+            </Button>
+            <Button autoFocus className="h-12 flex-1" onClick={onRetry}>
+              다시 시도
+            </Button>
+          </div>
+        ) : (
+          <Button autoFocus className="mt-8 h-12 w-full" onClick={onScanAgain}>
+            {result.ok ? '다음 손님 스캔' : '다시 스캔'}
+          </Button>
+        )}
       </section>
     </div>
   );

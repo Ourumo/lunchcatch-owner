@@ -13,7 +13,8 @@ import { useQrDetector } from './useQrDetector';
 type ScanState =
   | { status: 'scanning' }
   | { status: 'processing' }
-  | { status: 'done'; result: ApiResult<RedeemedCoupon> };
+  // 응답을 받지 못했을 때 같은 QR로 다시 보내도록 읽은 토큰을 둔다
+  | { status: 'done'; result: ApiResult<RedeemedCoupon>; qrToken: string };
 
 const cameraErrorContents: Record<
   CameraErrorStatus,
@@ -140,13 +141,9 @@ export const QrScan = ({ onClose }: QrScanProps) => {
     return result;
   };
 
-  const handleDetect = (token: string) => {
-    if (scan.status !== 'scanning') {
-      return;
-    }
-
+  const submitQr = (qrToken: string) => {
     setScan({ status: 'processing' });
-    redeem(token).then((result) => {
+    redeem(qrToken).then((result) => {
       if (ignoreResultRef.current) {
         return;
       }
@@ -156,8 +153,14 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         navigator.vibrate(200);
       }
 
-      setScan({ status: 'done', result });
+      setScan({ status: 'done', result, qrToken });
     });
+  };
+
+  const handleDetect = (qrToken: string) => {
+    if (scan.status === 'scanning') {
+      submitQr(qrToken);
+    }
   };
 
   const detector = useQrDetector({
@@ -170,6 +173,7 @@ export const QrScan = ({ onClose }: QrScanProps) => {
     if (scan.status === 'done') {
       return (
         <RedeemResult
+          onRetry={() => submitQr(scan.qrToken)}
           onScanAgain={() => setScan({ status: 'scanning' })}
           result={scan.result}
         />
