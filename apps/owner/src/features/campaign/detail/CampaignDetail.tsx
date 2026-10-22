@@ -20,6 +20,7 @@ import {
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
@@ -189,12 +190,7 @@ const CampaignContent = ({
       </DetailSection>
 
       {canHavePerformance && performanceState.status === 'loading' && (
-        <div
-          aria-busy="true"
-          className="h-40 animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        >
-          <span className="sr-only">실적을 불러오는 중</span>
-        </div>
+        <SkeletonBlock className="h-40" label="실적을 불러오는 중" />
       )}
 
       {canHavePerformance && performanceState.status === 'error' && (
@@ -255,12 +251,7 @@ const CampaignDetailSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-3 px-page pt-5">
     <span className="sr-only">캠페인을 불러오는 중</span>
     {[64, 420, 200, 160].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
   </div>
 );

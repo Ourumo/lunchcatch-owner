@@ -5,6 +5,7 @@ import { Button } from '@repo/ui';
 import { useGoBack } from '@owner/hooks/useGoBack';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
@@ -21,11 +22,7 @@ const EndedListSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-2 px-page py-5">
     <span className="sr-only">지난 캠페인을 불러오는 중</span>
     {[0, 1, 2].map((index) => (
-      <div
-        aria-hidden="true"
-        className="h-40 animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-      />
+      <SkeletonBlock className="h-40" key={index} />
     ))}
   </div>
 );

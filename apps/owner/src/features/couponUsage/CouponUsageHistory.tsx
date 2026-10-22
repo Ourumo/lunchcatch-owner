@@ -10,6 +10,7 @@ import {
   toKstDateKey,
 } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
@@ -19,9 +20,6 @@ import {
 
 // 처음에는 최근 30일을 보여준다
 const DEFAULT_PERIOD: PointHistoryPeriod = '30D';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 interface CouponUsageDay {
   // YYYY-MM-DD
@@ -92,10 +90,7 @@ const UsageFooter = ({ hasMore, loadMore, onLoadMore }: UsageFooterProps) => {
 };
 
 const UsageSkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">쿠폰 사용 이력을 불러오는 중</span>
-    <div aria-hidden="true" className={`h-48 ${skeletonClassName}`} />
-  </div>
+  <SkeletonBlock className="h-48" label="쿠폰 사용 이력을 불러오는 중" />
 );
 
 const UsageMessage = ({

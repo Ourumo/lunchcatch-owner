@@ -24,6 +24,7 @@ import {
 } from '@owner/api/poster';
 import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
 import { ACCEPTED_IMAGE_TYPES, getImageFileError } from '@owner/ui/imageFile';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
@@ -331,12 +332,7 @@ export const PosterStep = () => {
       <div aria-busy="true" className="flex flex-col gap-3 px-page">
         <span className="sr-only">포스터 템플릿을 불러오는 중</span>
         {[160, 420].map((height, index) => (
-          <div
-            aria-hidden="true"
-            className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-            key={index}
-            style={{ height }}
-          />
+          <SkeletonBlock height={height} key={index} />
         ))}
       </div>
     );

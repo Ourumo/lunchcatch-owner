@@ -9,6 +9,7 @@ import {
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 export interface EndedCampaignCardProps {
   campaign: Campaign;
@@ -45,12 +46,11 @@ export const EndedCampaignCard = ({
           {title}
         </h3>
         {state.status === 'loading' && (
-          <div
-            aria-busy="true"
-            className="mt-3 h-14 animate-pulse rounded-lg bg-surface-subtle motion-reduce:animate-none"
-          >
-            <span className="sr-only">누적 실적을 불러오는 중</span>
-          </div>
+          <SkeletonBlock
+            className="mt-3 h-14"
+            label="누적 실적을 불러오는 중"
+            rounded="lg"
+          />
         )}
         {total && (
           <dl className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-bg-page px-3 py-2.5">

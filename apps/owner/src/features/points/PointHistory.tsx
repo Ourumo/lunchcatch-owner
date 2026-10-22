@@ -15,6 +15,7 @@ import {
 } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
@@ -29,9 +30,6 @@ import { type LoadMoreStatus, usePointHistory } from './usePointHistory';
 // 처음에는 최근 30일 전체 내역을 보여준다
 const DEFAULT_FILTER: PointHistoryFilter = { period: '30D', campaignId: null };
 
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
-
 interface BalanceSummaryProps {
   state: ReturnType<typeof usePointHistory>['balanceState'];
   onCharge: () => void;
@@ -45,8 +43,8 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
       return (
         <div aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">잔액을 불러오는 중</span>
-          <div aria-hidden="true" className={`h-4 w-10 ${skeletonClassName}`} />
-          <div aria-hidden="true" className={`h-8 w-32 ${skeletonClassName}`} />
+          <SkeletonBlock className="h-4 w-10" />
+          <SkeletonBlock className="h-8 w-32" />
         </div>
       );
     }
@@ -187,11 +185,7 @@ const HistorySkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-3">
     <span className="sr-only">포인트 내역을 불러오는 중</span>
     {[0, 1].map((index) => (
-      <div
-        aria-hidden="true"
-        className={`h-40 ${skeletonClassName}`}
-        key={index}
-      />
+      <SkeletonBlock className="h-40" key={index} />
     ))}
   </div>
 );

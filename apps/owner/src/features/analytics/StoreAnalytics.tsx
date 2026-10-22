@@ -7,6 +7,7 @@ import type { Campaign } from '@owner/api/campaign';
 import type { CampaignDayReport } from '@owner/api/report';
 import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { AnalyticsSummary } from './AnalyticsSummary';
@@ -19,9 +20,6 @@ const CAMPAIGNS_PATH = '/campaigns';
 // 주소에 두는 선택한 캠페인 ID
 const CAMPAIGN_ID_PARAM = 'campaignId';
 
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
-
 const notices = [
   '노출 수는 보장되지 않아요. 주변 직장인 수와 다른 캠페인 상황에 따라 달라져요.',
   '찜·발급·사용 수는 정산에 반영되지 않아요.',
@@ -32,12 +30,7 @@ const AnalyticsSkeleton = ({ label }: { label: string }) => (
   <div aria-busy="true" className="flex flex-col gap-5">
     <span className="sr-only">{label}</span>
     {[80, 176].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className={skeletonClassName}
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
   </div>
 );

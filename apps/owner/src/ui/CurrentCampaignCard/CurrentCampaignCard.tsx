@@ -14,6 +14,7 @@ import {
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 // 오늘 실적을 불러온 상태. 오늘이 집행 대상이 아니면 data가 null이다
 export type TodayPerformanceState =
@@ -104,12 +105,11 @@ export const CurrentCampaignCard = ({
         )}
 
         {isTodayLoading && (
-          <div
-            aria-busy="true"
-            className="mt-4 h-36 animate-pulse rounded-lg bg-surface-subtle motion-reduce:animate-none"
-          >
-            <span className="sr-only">오늘 실적을 불러오는 중</span>
-          </div>
+          <SkeletonBlock
+            className="mt-4 h-36"
+            label="오늘 실적을 불러오는 중"
+            rounded="lg"
+          />
         )}
 
         {today && (

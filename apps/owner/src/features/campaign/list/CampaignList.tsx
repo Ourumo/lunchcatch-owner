@@ -8,6 +8,7 @@ import type { StoreMenu } from '@owner/api/store';
 import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { CurrentCampaignActions } from './CurrentCampaignActions';
@@ -149,12 +150,7 @@ const CampaignListSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-8 px-page py-5">
     <span className="sr-only">캠페인 목록을 불러오는 중</span>
     {[176, 96, 96].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
   </div>
 );

@@ -9,15 +9,13 @@ import {
   requestRefund,
 } from '@owner/api/refund';
 import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { RefundRequestList } from './RefundRequestList';
 import { useRefundPreview } from './useRefundPreview';
 import { useRefundRequests } from './useRefundRequests';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 // 지금 환불을 요청할 수 없는 이유. 요청이 같은 이유로 거절됐을 때도 쓴다
 const refundBlockedMessages: Record<RefundBlockedReason, string> = {
@@ -176,10 +174,7 @@ const ConfirmRefundSheet = ({
 );
 
 const PreviewSkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">환불 미리보기를 불러오는 중</span>
-    <div aria-hidden="true" className={`h-36 ${skeletonClassName}`} />
-  </div>
+  <SkeletonBlock className="h-36" label="환불 미리보기를 불러오는 중" />
 );
 
 const PreviewError = ({ onRetry }: { onRetry: () => void }) => (

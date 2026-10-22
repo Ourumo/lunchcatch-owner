@@ -8,13 +8,11 @@ import type {
 import { formatNumber } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { usePaymentHistory } from './usePaymentHistory';
 import type { LoadMoreStatus } from './usePointHistory';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 const statusBadges: Record<
   PaymentDisplayStatus,
@@ -114,10 +112,7 @@ const PaymentHistoryFooter = ({
 };
 
 const PaymentHistorySkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">결제 내역을 불러오는 중</span>
-    <div aria-hidden="true" className={`h-60 ${skeletonClassName}`} />
-  </div>
+  <SkeletonBlock className="h-60" label="결제 내역을 불러오는 중" />
 );
 
 const PaymentHistoryMessage = ({

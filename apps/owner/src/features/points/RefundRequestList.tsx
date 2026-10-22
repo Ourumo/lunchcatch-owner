@@ -4,12 +4,10 @@ import type { RefundRequestItem, RefundRequestStatus } from '@owner/api/refund';
 import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import type { LoadMoreStatus } from './usePointHistory';
 import type { RefundRequestsState } from './useRefundRequests';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 const statusBadges: Record<
   RefundRequestStatus,
@@ -126,10 +124,7 @@ export const RefundRequestList = ({
   const renderContent = () => {
     if (state.status === 'loading') {
       return (
-        <div aria-busy="true">
-          <span className="sr-only">환불 요청 내역을 불러오는 중</span>
-          <div aria-hidden="true" className={`h-32 ${skeletonClassName}`} />
-        </div>
+        <SkeletonBlock className="h-32" label="환불 요청 내역을 불러오는 중" />
       );
     }
 

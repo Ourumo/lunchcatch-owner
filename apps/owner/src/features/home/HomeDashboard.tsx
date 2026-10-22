@@ -14,6 +14,7 @@ import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
@@ -110,12 +111,7 @@ const HomeSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-5 px-page py-5">
     <span className="sr-only">홈 화면을 불러오는 중</span>
     {[64, 52, 176].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
   </div>
 );
