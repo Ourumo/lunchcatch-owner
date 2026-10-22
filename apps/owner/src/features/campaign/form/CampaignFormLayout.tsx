@@ -28,7 +28,7 @@ import { useCampaignForm } from './useCampaignForm';
 
 const SAVE_FAILED_MESSAGE = '잠시 후 다시 시도해 주세요.';
 const POSTER_REFRESH_FAILED_MESSAGE =
-  '집행 기간을 포스터에 반영하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  '바꾼 내용을 포스터에 반영하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
 interface ActionError {
   title: string;
@@ -138,12 +138,34 @@ export const CampaignFormLayout = () => {
     return { ok: true, data: campaignId };
   };
 
+  // 서버는 포스터를 만들 때 할인 내용을 쿠폰 조건으로, 기간을 집행 기간으로 채운다. 그 값을 저장한 뒤
+  // 같은 템플릿과 이미지로 포스터를 다시 만들어 덮어써야 포스터에 반영된다. 아직 포스터가 없으면 건너뛴다
+  const refreshPoster = async (
+    saved: ApiResult<string>,
+  ): Promise<ApiResult<string>> => {
+    if (!saved.ok || !isPosterComplete(values.poster)) {
+      return saved;
+    }
+
+    const posterResult = await savePosterStep(saved.data, values.poster);
+
+    return posterResult.ok
+      ? saved
+      : {
+          ok: false,
+          message: posterResult.message ?? POSTER_REFRESH_FAILED_MESSAGE,
+        };
+  };
+
   // 단계 값을 저장하고 이어 갈 캠페인 ID를 돌려준다. 1단계는 서버가 DRAFT의 ID를 정한다
   const saveCurrentStep = async (
     stepKey: CampaignStepKey,
   ): Promise<ApiResult<string>> => {
     if (stepKey === 'coupon') {
-      return saveCouponStep(values.coupon);
+      const saved = await saveCouponStep(values.coupon);
+
+      // 차례로 밟아 갈 때는 바로 다음 2단계에서 포스터를 저장하므로, 확인 단계에서 들어왔을 때만 다시 만든다
+      return isEditingFromReview ? refreshPoster(saved) : saved;
     }
 
     if (stepKey === 'target') {
@@ -154,25 +176,13 @@ export const CampaignFormLayout = () => {
     }
 
     if (stepKey === 'budget') {
-      const saved = applySavedValues(
-        'budget',
-        await saveBudgetStep(campaignId, values.budget),
+      // 포스터(2단계)는 집행 기간보다 먼저 만들어 기간이 비어 있으므로, 집행 기간을 저장할 때마다 다시 만든다
+      return refreshPoster(
+        applySavedValues(
+          'budget',
+          await saveBudgetStep(campaignId, values.budget),
+        ),
       );
-
-      if (!saved.ok || !isPosterComplete(values.poster)) {
-        return saved;
-      }
-
-      // 서버는 포스터를 만들 때 포스터의 기간을 집행 기간으로 채운다. 포스터(2단계)는 집행 기간보다 먼저 만들어
-      // 기간이 비어 있으므로, 집행 기간을 저장한 뒤 같은 템플릿과 이미지로 다시 만들어 덮어쓴다
-      const posterResult = await savePosterStep(campaignId, values.poster);
-
-      return posterResult.ok
-        ? saved
-        : {
-            ok: false,
-            message: posterResult.message ?? POSTER_REFRESH_FAILED_MESSAGE,
-          };
     }
 
     // 남은 단계는 2단계 포스터다
