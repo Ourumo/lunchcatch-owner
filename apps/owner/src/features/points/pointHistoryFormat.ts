@@ -42,8 +42,13 @@ const SERVING_TYPES: PointHistoryType[] = ['RESERVE', 'DEDUCT', 'RELEASE'];
 const isServingEntry = (entry: PointHistoryEntry) =>
   entry.campaignId !== null && SERVING_TYPES.includes(entry.type);
 
+// 예약과 예약 해제는 어느 날 몫인지(businessDate)로, 나머지는 기록한 날로 날짜를 정한다.
+// 전날 몫의 예약 해제는 다음 날 00:00에 기록되어 기록한 날로 보면 다음 날에 들어간다
+const getEntryDate = (entry: PointHistoryEntry) =>
+  entry.businessDate ?? toKstDateKey(new Date(entry.occurredAt));
+
 const getServingKey = (entry: PointHistoryEntry) =>
-  `${toKstDateKey(new Date(entry.occurredAt))}:${entry.campaignId}`;
+  `${getEntryDate(entry)}:${entry.campaignId}`;
 
 const toItem = (entry: PointHistoryEntry): PointHistoryItem => ({
   key: entry.id,
@@ -68,8 +73,7 @@ const toServingItem = (
   const isReleased = anchor.type === 'RELEASE';
   const released = isReleased ? anchor.amount : null;
   // 소진 집계는 오늘 것만 받으므로 오늘 묶음에만 쓴다
-  const isToday =
-    toKstDateKey(new Date(anchor.occurredAt)) === toKstDateKey(new Date());
+  const isToday = getEntryDate(anchor) === toKstDateKey(new Date());
   // 소진 집계에 없는 캠페인은 아직 노출되지 않아 소진이 0이다
   const unreleasedSpent =
     !isToday || todaySpent === null
@@ -85,9 +89,9 @@ const toServingItem = (
   };
 };
 
-// 최신순 내역을 날짜별로 묶는다. 같은 날 같은 캠페인의 예약, 소진, 예약 해제는 한 줄로 묶고
+// 최신순 내역을 날짜별로 묶는다. 같은 날 몫인 같은 캠페인의 예약, 소진, 예약 해제는 한 줄로 묶고
 // 예약 해제가 있으면 예약 해제 자리에, 없으면 예약 자리에 둔다.
-// 예약이 없는 묶음(전날 해제가 실패해 다음 날 되돌린 예약 해제 등)은 묶지 않고 한 줄씩 보여준다
+// 예약이 없는 묶음(조회 기간 첫날에 기록된 전날 몫의 예약 해제 등)은 묶지 않고 한 줄씩 보여준다
 export const groupPointHistory = (
   entries: PointHistoryEntry[],
   todaySpent: Record<string, number> | null,
@@ -100,7 +104,7 @@ export const groupPointHistory = (
     servingGroups.set(key, [...(servingGroups.get(key) ?? []), entry]);
   });
 
-  const days: PointHistoryDay[] = [];
+  const itemsByDate = new Map<string, PointHistoryItem[]>();
 
   entries.forEach((entry) => {
     const group = isServingEntry(entry)
@@ -121,17 +125,15 @@ export const groupPointHistory = (
       item = toServingItem(entry, group, todaySpent);
     }
 
-    const date = toKstDateKey(new Date(entry.occurredAt));
-    const lastDay = days.at(-1);
+    const date = getEntryDate(entry);
 
-    if (lastDay?.date === date) {
-      lastDay.items.push(item);
-    } else {
-      days.push({ date, items: [item] });
-    }
+    itemsByDate.set(date, [...(itemsByDate.get(date) ?? []), item]);
   });
 
-  return days;
+  // 예약 해제는 다음 날 00:00에 기록되어 목록 순서와 날짜가 어긋날 수 있어, 날짜별로 모은 뒤 최신 날짜부터 둔다
+  return [...itemsByDate]
+    .map(([date, items]) => ({ date, items }))
+    .sort((a, b) => b.date.localeCompare(a.date));
 };
 
 // +30,000P, −2,800P. 빼기는 하이픈보다 잘 보이는 마이너스 기호를 쓴다
