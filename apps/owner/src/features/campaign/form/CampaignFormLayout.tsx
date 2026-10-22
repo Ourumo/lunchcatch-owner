@@ -11,6 +11,7 @@ import {
   savePosterStep,
   saveTargetStep,
 } from '@owner/api/campaign';
+import { isPosterComplete } from '@owner/api/poster';
 import type { ApiResult } from '@owner/api/types';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
@@ -25,6 +26,8 @@ import {
 import { useCampaignForm } from './useCampaignForm';
 
 const SAVE_FAILED_MESSAGE = '잠시 후 다시 시도해 주세요.';
+const POSTER_REFRESH_FAILED_MESSAGE =
+  '집행 기간을 포스터에 반영하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
 interface ActionError {
   title: string;
@@ -110,10 +113,25 @@ export const CampaignFormLayout = () => {
     }
 
     if (stepKey === 'budget') {
-      return applySavedValues(
+      const saved = applySavedValues(
         'budget',
         await saveBudgetStep(campaignId, values.budget),
       );
+
+      if (!saved.ok || !isPosterComplete(values.poster)) {
+        return saved;
+      }
+
+      // 서버는 포스터를 만들 때 포스터의 기간을 집행 기간으로 채운다. 포스터(2단계)는 집행 기간보다 먼저 만들어
+      // 기간이 비어 있으므로, 집행 기간을 저장한 뒤 같은 템플릿과 이미지로 다시 만들어 덮어쓴다
+      const posterResult = await savePosterStep(campaignId, values.poster);
+
+      return posterResult.ok
+        ? saved
+        : {
+            ok: false,
+            message: posterResult.message ?? POSTER_REFRESH_FAILED_MESSAGE,
+          };
     }
 
     // 남은 단계는 2단계 포스터다

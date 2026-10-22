@@ -25,9 +25,6 @@ export const USABLE_TIME_STEP_MINUTES = 30;
 export const MIN_USABLE_MINUTES = 60;
 // 선착순 오픈 시각. 플랫폼 고정이라 점주가 입력하지 않고 안내만 한다
 export const ISSUE_OPEN_TIME = '11:00';
-// 피드에 캠페인이 노출되는 서빙 시간대. 노출 대상의 시간대는 점심으로 고정이라 고르지 않는다
-export const SERVING_TIME_START = '10:00';
-export const SERVING_TIME_END = '12:59';
 
 export type DiscountTarget = 'ALL' | 'MENU';
 export type DiscountType = 'PERCENT' | 'AMOUNT';
@@ -883,8 +880,7 @@ interface PosterCreateResponse {
   html: string;
 }
 
-// 포스터 생성 요청 본문. 서버가 아직 글을 받지 않아 템플릿과 이미지만 보낸다.
-// 서버가 점주가 고친 글을 받게 되면 여기에 slots의 글만 더한다
+// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 템플릿과 이미지만 보낸다
 const toPosterCreateRequest = ({
   imageObjectKey,
   templateId,
@@ -899,7 +895,7 @@ export const savePosterStep = async (
   id: string,
   poster: CampaignPoster | null,
 ): Promise<ApiResult<null>> => {
-  // 템플릿, 이미지, 할인 내용, 기간이 없으면 포스터를 만들지 않는다
+  // 템플릿이나 이미지가 없으면 포스터를 만들지 않는다
   if (!poster || !isPosterComplete(poster)) {
     return { ok: false, message: INVALID_POSTER_MESSAGE };
   }

@@ -3,12 +3,7 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { Info } from 'lucide-react';
 
-import {
-  type Campaign,
-  ISSUE_OPEN_TIME,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
-} from '@owner/api/campaign';
+import { type Campaign, ISSUE_OPEN_TIME } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
 import { useCampaignPerformance } from '@owner/hooks/useCampaignPerformance';
 import { useGoBack } from '@owner/hooks/useGoBack';
@@ -39,7 +34,7 @@ const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
 
   const message =
     status === 'DRAFT'
-      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 자동 검수를 거쳐 대기 중 상태가 돼요.'
+      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 대기 중 상태가 돼요.'
       : status === 'SCHEDULED' && budget.startDate
         ? `${formatShortDate(budget.startDate)} 00:00부터 피드에 노출돼요.`
         : status === 'PAUSED' && pausedReason
@@ -165,10 +160,6 @@ const CampaignContent = ({
         <DetailRow
           label="연령대"
           value={formatAgeGroups(campaign.target.ageGroups)}
-        />
-        <DetailRow
-          label="노출 시간대"
-          value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
         />
       </DetailSection>
 

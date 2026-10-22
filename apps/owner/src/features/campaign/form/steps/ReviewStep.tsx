@@ -7,8 +7,6 @@ import {
   isCouponStepComplete,
   ISSUE_OPEN_TIME,
   isValidTarget,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
 } from '@owner/api/campaign';
 import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
@@ -128,8 +126,7 @@ export const ReviewStep = () => {
   return (
     <div className="flex flex-col gap-3 px-page">
       <p className="mb-2 text-body-sm-mobile break-keep text-text-secondary">
-        입력한 내용을 확인하고 활성화를 요청해 주세요. 요청하면 포스터 자동
-        검수를 거쳐요.
+        입력한 내용을 확인하고 활성화를 요청해 주세요.
       </p>
 
       <ReviewSection
@@ -213,10 +210,6 @@ export const ReviewStep = () => {
           />
           <DetailRow label="성별" value={formatGender(target.gender)} />
           <DetailRow label="연령대" value={formatAgeGroups(target.ageGroups)} />
-          <DetailRow
-            label="노출 시간대"
-            value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
-          />
         </dl>
       </ReviewSection>
 

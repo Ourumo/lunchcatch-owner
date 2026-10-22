@@ -63,7 +63,7 @@ export const campaignSteps: CampaignStep[] = [
         ? '템플릿을 골라 주세요'
         : isPosterComplete(poster)
           ? '포스터를 모두 채웠어요'
-          : '할인 내용과 가게명을 입력해 주세요',
+          : '포스터 이미지를 올려 주세요',
   },
   { id: 'target', path: 'target', title: '노출 대상' },
   {
