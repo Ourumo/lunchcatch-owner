@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { Toast } from '@repo/ui';
 
@@ -43,15 +43,48 @@ interface ActionError {
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
-  const { campaignId, platformSettings, reload, updateStepValues, values } =
-    useCampaignForm();
+  const {
+    campaignId,
+    platformSettings,
+    reload,
+    setPoster,
+    updateStepValues,
+    values,
+  } = useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<ActionError>();
+  // 확인 단계에서 수정하러 들어갈 때의 값. 저장하지 않고 확인 단계로 돌아오면 이 값으로 되돌린다
+  const valuesBeforeEditRef = useRef<CampaignValues | null>(null);
 
   const currentIndex = campaignSteps.findIndex(
     (step) => getCampaignEditPath(campaignId, step) === pathname,
   );
   const currentStep = campaignSteps.at(currentIndex);
+  // 확인 단계에서 수정을 눌러 들어온 단계. 저장하면 확인 단계로 바로 돌아간다
+  const isEditingFromReview =
+    currentStep !== undefined &&
+    isFromReview(state) &&
+    isValueStep(currentStep.id);
+  const isReview = currentStep?.id === 'review';
+
+  // 이전 버튼, 상단 뒤로 가기, 브라우저 뒤로 가기 어느 쪽으로 돌아와도 고친 값을 버린다.
+  // 확인 단계가 고친 값으로 한 번 그려지지 않도록 그리기 전에 되돌린다
+  useLayoutEffect(() => {
+    if (isEditingFromReview) {
+      valuesBeforeEditRef.current ??= values;
+      return;
+    }
+
+    const valuesBeforeEdit = valuesBeforeEditRef.current;
+
+    if (isReview && valuesBeforeEdit) {
+      valuesBeforeEditRef.current = null;
+      updateStepValues('coupon', valuesBeforeEdit.coupon);
+      updateStepValues('target', valuesBeforeEdit.target);
+      updateStepValues('budget', valuesBeforeEdit.budget);
+      setPoster(valuesBeforeEdit.poster);
+    }
+  }, [isEditingFromReview, isReview, setPoster, updateStepValues, values]);
 
   // 새 캠페인은 1단계를 저장해야 DRAFT가 생겨 다음 단계를 저장할 수 있다
   if (
@@ -71,14 +104,18 @@ export const CampaignFormLayout = () => {
     currentIndex > 0 ? campaignSteps.at(currentIndex - 1) : undefined;
   const nextStep = campaignSteps.at(currentIndex + 1);
   const canProceed = currentStep.canProceed?.(values, platformSettings) ?? true;
-  // 확인 단계에서 수정을 눌러 들어온 단계. 저장하면 확인 단계로 바로 돌아간다
-  const isEditingFromReview =
-    isFromReview(state) && isValueStep(currentStep.id);
 
   const clearMessages = () => setActionError(undefined);
 
   const goPrevious = () => {
     clearMessages();
+
+    // 확인 단계에서 들어왔으면 저장하지 않고 그 확인 단계 기록으로 돌아간다
+    if (isEditingFromReview) {
+      navigate(-1);
+      return;
+    }
+
     // 첫 단계에서 뒤로 가면 저장하지 않고 목록으로 돌아간다. 이미 저장한 단계는 DRAFT에 남는다
     navigate(
       previousStep
@@ -223,6 +260,8 @@ export const CampaignFormLayout = () => {
 
     // 확인 단계에서 들어왔으면 그 확인 단계 기록으로 돌아가, 뒤로 가기로 수정 화면에 다시 오지 않게 한다
     if (isEditingFromReview) {
+      // 저장한 값이라 확인 단계로 돌아가도 되돌리지 않는다
+      valuesBeforeEditRef.current = null;
       navigate(-1);
       return;
     }
@@ -281,7 +320,10 @@ export const CampaignFormLayout = () => {
           isEditingFromReview ? '저장' : nextStep ? '다음' : '활성화 요청'
         }
         onNext={handleNext}
-        onPrevious={previousStep ? goPrevious : undefined}
+        // 확인 단계에서 들어온 1단계는 이전 버튼으로 확인 단계에 돌아갈 수 있게 둔다
+        onPrevious={
+          previousStep || isEditingFromReview ? goPrevious : undefined
+        }
       />
     </>
   );
