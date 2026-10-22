@@ -23,25 +23,32 @@ const usePerformance = <T>(
   load: (campaign: PerformanceTarget) => Promise<ApiResult<T>>,
   campaign: PerformanceTarget,
 ) => {
-  const [state, setState] = useState<PerformanceState<T>>({
-    status: 'loading',
-  });
+  // 받은 결과를 어느 요청의 것인지와 함께 둔다
+  const [result, setResult] = useState<{
+    requestKey: string;
+    state: PerformanceState<T>;
+  }>();
   // 값이 바뀌면 다시 불러온다
   const [requestId, setRequestId] = useState(0);
   const { id, status } = campaign;
   const { dailyBudget, endDate, startDate } = campaign.budget;
+  // 캠페인 값이 바뀌거나 다시 시도하면 달라진다
+  const requestKey = [id, status, dailyBudget, startDate, endDate, requestId]
+    .map(String)
+    .join('|');
 
   useEffect(() => {
     let ignore = false;
 
     load({ id, status, budget: { dailyBudget, endDate, startDate } }).then(
-      (result) => {
+      (response) => {
         if (!ignore) {
-          setState(
-            result.ok
-              ? { status: 'success', data: result.data }
+          setResult({
+            requestKey,
+            state: response.ok
+              ? { status: 'success', data: response.data }
               : { status: 'error' },
-          );
+          });
         }
       },
     );
@@ -50,12 +57,13 @@ const usePerformance = <T>(
     return () => {
       ignore = true;
     };
-  }, [load, id, status, dailyBudget, endDate, startDate, requestId]);
+  }, [load, id, status, dailyBudget, endDate, startDate, requestKey]);
 
-  const retry = () => {
-    setState({ status: 'loading' });
-    setRequestId((value) => value + 1);
-  };
+  // 지금 요청의 결과가 오기 전에는 이전 캠페인이나 이전 시도의 결과를 보여주지 않는다
+  const state: PerformanceState<T> =
+    result?.requestKey === requestKey ? result.state : { status: 'loading' };
+
+  const retry = () => setRequestId((value) => value + 1);
 
   return { retry, state };
 };
