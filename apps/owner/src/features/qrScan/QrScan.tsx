@@ -3,6 +3,7 @@ import { Button } from '@repo/ui';
 import { X } from 'lucide-react';
 
 import { redeemCoupon, type RedeemedCoupon } from '@owner/api/redeem';
+import { getMyStore, type StoreLocation } from '@owner/api/store';
 import type { ApiResult } from '@owner/api/types';
 
 import { RedeemResult } from './RedeemResult';
@@ -72,6 +73,13 @@ const CameraError = ({ onRetry, status }: CameraErrorProps) => {
   );
 };
 
+// 사용 처리 요청에 보낼 가게 위치. 불러오지 못했거나 가게에 좌표가 없으면 null
+const loadStoreLocation = async () => {
+  const result = await getMyStore();
+
+  return result.ok ? result.data.location : null;
+};
+
 interface QrScanProps {
   onClose: () => void;
 }
@@ -84,10 +92,14 @@ export const QrScan = ({ onClose }: QrScanProps) => {
   const [scan, setScan] = useState<ScanState>({ status: 'scanning' });
   // 처리 중에 화면을 나가면 결과를 버린다
   const ignoreResultRef = useRef(false);
+  // 스캔할 때 기다리지 않도록 화면을 열 때 가게 위치를 불러와 둔다.
+  // 불러오지 못했거나 서버가 위치를 거절하면 비워 두어 다음 스캔에서 다시 불러온다
+  const storeLocationRef = useRef<Promise<StoreLocation | null> | null>(null);
   const stream = camera.state.status === 'active' ? camera.state.stream : null;
 
   useEffect(() => {
     ignoreResultRef.current = false;
+    storeLocationRef.current = loadStoreLocation();
 
     return () => {
       ignoreResultRef.current = true;
@@ -108,13 +120,33 @@ export const QrScan = ({ onClose }: QrScanProps) => {
     };
   }, [stream]);
 
+  const redeem = async (
+    qrToken: string,
+  ): Promise<ApiResult<RedeemedCoupon>> => {
+    storeLocationRef.current ??= loadStoreLocation();
+    const location = await storeLocationRef.current;
+
+    if (!location) {
+      storeLocationRef.current = null;
+      return { ok: false, code: 'INVALID_LOCATION' };
+    }
+
+    const result = await redeemCoupon({ location, qrToken });
+
+    if (!result.ok && result.code === 'INVALID_LOCATION') {
+      storeLocationRef.current = null;
+    }
+
+    return result;
+  };
+
   const handleDetect = (token: string) => {
     if (scan.status !== 'scanning') {
       return;
     }
 
     setScan({ status: 'processing' });
-    redeemCoupon(token).then((result) => {
+    redeem(token).then((result) => {
       if (ignoreResultRef.current) {
         return;
       }

@@ -1,124 +1,84 @@
-import { mockDelay } from './mocks/delay';
-import {
-  createMockIssuedCoupon,
-  mockIssuedCoupons,
-  mockUsedQrTokens,
-} from './mocks/redeem';
-import { mockStore } from './mocks/store';
+import { ApiError, request } from './client';
+import type { StoreLocation } from './store';
 import type { ApiResult } from './types';
 
-// 쿠폰 QR 스캔 사용 처리 (docs/requirements-owner.md "QR 스캔 사용 처리")
-// API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
+// 쿠폰 QR 스캔 사용 처리 (docs/requirements-owner.md "QR 스캔 사용 처리", POST /v1/owner/coupon-usages)
 
-// 사용 처리를 거절한 사유. 백엔드 사유 코드 목록이 정해지기 전까지 명세의 예외를 따라 둔다
+// 사용 처리를 거절한 사유. 서버 오류 코드가 있는 거절만 두고, 코드가 없는 거절(이미 사용한 쿠폰, 다른 가게 쿠폰,
+// 사용 가능 시간이 아님, 가게에서 먼 위치)은 서버 문구(message)를 그대로 보여준다
 export type RedeemFailureCode =
-  // 만료된 QR (발급 후 60초)
+  // 만료되었거나 없는 QR. 서버가 둘을 같은 코드로 준다
   | 'QR_EXPIRED'
-  // 이미 사용 처리에 쓴 QR
-  | 'QR_ALREADY_USED'
-  // 이미 사용 완료된 쿠폰
-  | 'COUPON_ALREADY_REDEEMED'
-  // 다른 가게 쿠폰
-  | 'OTHER_STORE_COUPON'
-  // 캠페인 사용 가능 시간이 아님
-  | 'OUTSIDE_USABLE_TIME'
-  // 쿠폰 QR이 아니거나 서명이 맞지 않음
-  | 'INVALID_QR';
+  // 쿠폰 QR 토큰(UUID)이 아님
+  | 'INVALID_QR'
+  // 가게 위치를 불러오지 못했거나 서버가 위치 값을 거절함
+  | 'INVALID_LOCATION'
+  // 응답을 받지 못했거나 서버 오류. 처리됐는데 응답만 받지 못했을 수 있다
+  | 'NETWORK';
 
 export interface RedeemedCoupon {
-  // 쿠폰 이름(할인 내용). 성공 응답에 포함되는지 백엔드 확인이 필요하다
-  couponTitle: string;
+  // 서버가 쿠폰 조건으로 계산한 할인 금액(원)
+  discountAmount: number;
   // 사용 처리 시각 (ISO 8601)
-  redeemedAt: string;
+  usedAt: string;
 }
 
-// 사용자 앱 QR의 유효 시간 (apps/user QR_TOKEN_LIFETIME_MS와 같다)
-const QR_TOKEN_LIFETIME_MS = 60_000;
+interface CouponUseResponse {
+  memberCouponId: number;
+  usageHistoryId: number;
+  discountAmount: number;
+  useTime: string;
+}
 
-const QR_TOKEN_PREFIX = 'lunch-catch';
-
-const fail = (code: RedeemFailureCode): ApiResult<RedeemedCoupon> => ({
-  ok: false,
-  code,
-});
-
-// mock QR은 사용자 앱과 같은 "lunch-catch:{발급 ID}:{발급 시각}" 형식이다.
-// 실제 토큰은 issue_id, 만료 시각, jti, 서명을 담은 서명 토큰이고 서버가 검증한다
-const parseMockToken = (token: string) => {
-  const [prefix, issueId, issuedAtText, ...rest] = token.split(':');
-  const issuedAt = Number(issuedAtText);
-
-  if (
-    prefix !== QR_TOKEN_PREFIX ||
-    !issueId ||
-    !Number.isFinite(issuedAt) ||
-    rest.length > 0
-  ) {
-    return null;
-  }
-
-  return { issueId, issuedAt };
+const failureCodesByServerCode: Record<string, RedeemFailureCode> = {
+  'COUPON-010': 'QR_EXPIRED',
+  'COMMON-003': 'INVALID_QR',
+  'COMMON-002': 'INVALID_LOCATION',
 };
 
-const toMinutes = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number);
+const QR_TOKEN_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  return hours * 60 + minutes;
-};
-
-const isWithinUsableTime = (
-  now: Date,
-  usableFrom: string,
-  usableUntil: string,
-) => {
-  const minutes = now.getHours() * 60 + now.getMinutes();
-
-  return toMinutes(usableFrom) <= minutes && minutes < toMinutes(usableUntil);
-};
-
-// 서버와 같은 순서로 검증한다. 서명(형식) → 만료 → QR 재사용 → 가게 → 쿠폰 상태 → 사용 가능 시간
-export const redeemCoupon = async (
-  token: string,
-): Promise<ApiResult<RedeemedCoupon>> => {
-  await mockDelay();
-
-  const parsed = parseMockToken(token);
-
-  if (!parsed) {
-    return fail('INVALID_QR');
+// 매장 스캔 기기로 읽는 방식이라 기기 위치 대신 입점 신청 때 저장한 가게 위치를 보낸다.
+// 쿠폰 QR 토큰은 UUID라, 다른 QR은 서버에 보내지 않고 잘못된 QR로 본다
+export const redeemCoupon = async ({
+  location,
+  qrToken,
+}: {
+  location: StoreLocation;
+  qrToken: string;
+}): Promise<ApiResult<RedeemedCoupon>> => {
+  if (!QR_TOKEN_PATTERN.test(qrToken)) {
+    return { ok: false, code: 'INVALID_QR' };
   }
 
-  const now = new Date();
+  try {
+    const data = await request<CouponUseResponse>('/v1/owner/coupon-usages', {
+      method: 'POST',
+      body: {
+        qrToken,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      },
+    });
 
-  if (now.getTime() - parsed.issuedAt > QR_TOKEN_LIFETIME_MS) {
-    return fail('QR_EXPIRED');
+    return {
+      ok: true,
+      data: { discountAmount: data.discountAmount, usedAt: data.useTime },
+    };
+  } catch (error) {
+    if (
+      !(error instanceof ApiError) ||
+      error.code === null ||
+      error.status >= 500
+    ) {
+      return { ok: false, code: 'NETWORK' };
+    }
+
+    return {
+      ok: false,
+      code: failureCodesByServerCode[error.code],
+      message: error.message,
+    };
   }
-
-  if (mockUsedQrTokens.has(token)) {
-    return fail('QR_ALREADY_USED');
-  }
-
-  const coupon =
-    mockIssuedCoupons.find(({ issueId }) => issueId === parsed.issueId) ??
-    createMockIssuedCoupon(parsed.issueId);
-
-  if (coupon.storeId !== mockStore.id) {
-    return fail('OTHER_STORE_COUPON');
-  }
-
-  if (coupon.status === 'REDEEMED') {
-    return fail('COUPON_ALREADY_REDEEMED');
-  }
-
-  if (!isWithinUsableTime(now, coupon.usableFrom, coupon.usableUntil)) {
-    return fail('OUTSIDE_USABLE_TIME');
-  }
-
-  coupon.status = 'REDEEMED';
-  mockUsedQrTokens.add(token);
-
-  return {
-    ok: true,
-    data: { couponTitle: coupon.couponTitle, redeemedAt: now.toISOString() },
-  };
 };
