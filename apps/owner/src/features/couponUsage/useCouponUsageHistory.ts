@@ -124,6 +124,11 @@ export const useCouponUsageHistory = (initialPeriod: PointHistoryPeriod) => {
             return prev;
           }
 
+          // 그 사이 조회 권한이 없어졌으면 다시 시도해도 같아 처음 불러오기와 같은 안내로 바꾼다
+          if (!result.ok && result.code === 'FORBIDDEN') {
+            return { status: 'error', isForbidden: true };
+          }
+
           // 요청한 커서가 그대로 돌아오면 같은 구간을 계속 부르게 되므로 실패로 보고 멈춘다
           if (!result.ok || result.data.nextCursor === cursor) {
             return { ...prev, loadMore: 'error' };
