@@ -12,6 +12,8 @@ export interface DatePickerProps {
   maxDate?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
+  /** 오늘로 취급할 기준 날짜(YYYY-MM-DD). 미지정 시 브라우저 현지 날짜를 사용한다. */
+  todayDate?: string;
   value?: string;
 }
 
@@ -41,6 +43,7 @@ export function DatePicker({
   maxDate,
   onValueChange,
   placeholder = '날짜 선택',
+  todayDate,
   value,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,12 +51,12 @@ export function DatePicker({
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedValue = value ?? uncontrolledValue;
   const selectedDate = selectedValue ? createDate(selectedValue) : undefined;
+  const today = todayDate ? createDate(todayDate) : new Date();
   const [visibleMonth, setVisibleMonth] = useState(
     selectedDate
       ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-      : new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      : new Date(today.getFullYear(), today.getMonth(), 1),
   );
-  const today = new Date();
   const monthStartDay = visibleMonth.getDay();
   const daysInMonth = new Date(
     visibleMonth.getFullYear(),

@@ -23,6 +23,8 @@ export interface DateRangePickerProps {
   maxDate?: string;
   onValueChange?: (value: DateRangeValue) => void;
   placeholder?: string;
+  /** 오늘로 취급할 기준 날짜(YYYY-MM-DD). 미지정 시 브라우저 현지 날짜를 사용한다. */
+  todayDate?: string;
   value?: DateRangeValue;
 }
 
@@ -50,6 +52,7 @@ export function DateRangePicker({
   maxDate,
   onValueChange,
   placeholder = '가입일 범위 선택',
+  todayDate,
   value,
   selectionMode = 'day',
 }: DateRangePickerProps) {
@@ -58,13 +61,13 @@ export function DateRangePicker({
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(true);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedRange = value ?? uncontrolledValue;
+  const today = todayDate ? createDate(todayDate) : new Date();
   const referenceDate = selectedRange.startDate
     ? createDate(selectedRange.startDate)
-    : new Date();
+    : today;
   const [visibleMonth, setVisibleMonth] = useState(
     new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1),
   );
-  const today = new Date();
   const unitLabel =
     selectionMode === 'week' ? '주' : selectionMode === 'month' ? '월' : '일';
   const startLabel = selectionMode === 'day' ? '시작일' : `시작 ${unitLabel}`;
