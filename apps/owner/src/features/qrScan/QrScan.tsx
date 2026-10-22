@@ -5,7 +5,6 @@ import { X } from 'lucide-react';
 import { redeemCoupon, type RedeemedCoupon } from '@owner/api/redeem';
 import type { ApiResult } from '@owner/api/types';
 
-import { DevTestQrButtons } from './DevTestQrButtons';
 import { RedeemResult } from './RedeemResult';
 import { type CameraErrorStatus, useCamera } from './useCamera';
 import { useQrDetector } from './useQrDetector';
@@ -136,21 +135,12 @@ export const QrScan = ({ onClose }: QrScanProps) => {
   });
 
   const renderContent = () => {
-    // 개발용 테스트 QR은 카메라 없이도 누를 수 있어 결과를 카메라 상태보다 먼저 본다
     if (scan.status === 'done') {
       return (
         <RedeemResult
           onScanAgain={() => setScan({ status: 'scanning' })}
           result={scan.result}
         />
-      );
-    }
-
-    if (scan.status === 'processing' && camera.state.status !== 'active') {
-      return (
-        <p className="m-auto text-body-mobile" role="status">
-          쿠폰을 확인하는 중이에요
-        </p>
       );
     }
 
@@ -226,9 +216,6 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         </button>
       </header>
       {renderContent()}
-      {import.meta.env.DEV && scan.status === 'scanning' && (
-        <DevTestQrButtons onScan={handleDetect} />
-      )}
     </main>
   );
 };
