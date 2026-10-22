@@ -47,6 +47,7 @@ import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import CouponUsagePage from '@owner/pages/CouponUsagePage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
+import NotFoundPage from '@owner/pages/NotFoundPage';
 import PaymentHistoryPage from '@owner/pages/PaymentHistoryPage';
 import PointChargeFailPage from '@owner/pages/PointChargeFailPage';
 import PointChargePage from '@owner/pages/PointChargePage';
@@ -182,4 +183,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  // 없는 주소. 상태별 경로(RequireAuth) 밖에 두어 로그인 전, 입점 신청 중, 입점 완료 모두 같은 화면을 보여준다
+  { path: '*', element: <NotFoundPage /> },
 ]);
