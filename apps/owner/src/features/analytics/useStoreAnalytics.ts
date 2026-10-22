@@ -134,7 +134,6 @@ export const useStoreAnalytics = (campaignId: string | null) => {
 
   return {
     campaignsState,
-    loadReport,
     // 고른 캠페인과 다른 캠페인의 결과면 아직 불러오는 중이다
     reportState:
       reportState && reportState.campaignId === selectedCampaign?.id

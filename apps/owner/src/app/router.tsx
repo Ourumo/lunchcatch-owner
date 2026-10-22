@@ -16,7 +16,6 @@ import {
 } from '@owner/features/signup/signupSteps';
 import {
   POINT_HISTORY_PATH,
-  STORE_ANALYTICS_COMPARE_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
   STORE_IMAGES_PATH,
@@ -42,7 +41,6 @@ import CampaignNewPage from '@owner/pages/CampaignNewPage';
 import CampaignPosterPage from '@owner/pages/CampaignPosterPage';
 import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
-import ComingSoonPage from '@owner/pages/ComingSoonPage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
 import PointChargeFailPage from '@owner/pages/PointChargeFailPage';
@@ -157,16 +155,6 @@ export const router = createBrowserRouter([
           },
           { path: POINT_CHARGE_FAIL_PATH, element: <PointChargeFailPage /> },
           { path: '/qr-scan', element: <QrScanPage /> },
-          // 분석에서 연결했지만 아직 만들지 않은 화면
-          {
-            path: STORE_ANALYTICS_COMPARE_PATH,
-            element: (
-              <ComingSoonPage
-                fallbackPath={STORE_ANALYTICS_PATH}
-                title="캠페인 비교"
-              />
-            ),
-          },
           {
             path: '/campaigns/:id/edit',
             element: <CampaignFormPage />,
