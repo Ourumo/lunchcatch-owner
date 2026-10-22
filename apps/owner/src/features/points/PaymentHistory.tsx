@@ -1,4 +1,4 @@
-import { Button, StatusBadge, type StatusBadgeVariant } from '@repo/ui';
+import { StatusBadge, type StatusBadgeVariant } from '@repo/ui';
 import { Info } from 'lucide-react';
 
 import type {
@@ -7,13 +7,12 @@ import type {
 } from '@owner/api/payments';
 import { formatNumber } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { usePaymentHistory } from './usePaymentHistory';
-import type { LoadMoreStatus } from './usePointHistory';
 
 const statusBadges: Record<
   PaymentDisplayStatus,
@@ -70,46 +69,6 @@ const PaymentRow = ({ item }: { item: PaymentHistoryItem }) => {
       )}
     </li>
   );
-};
-
-interface PaymentHistoryFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
-const PaymentHistoryFooter = ({
-  hasMore,
-  loadMore,
-  onLoadMore,
-}: PaymentHistoryFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">결제 내역을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
 };
 
 const PaymentHistorySkeleton = () => (
@@ -170,10 +129,11 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
             <PaymentRow item={item} key={item.paymentId} />
           ))}
         </ul>
-        <PaymentHistoryFooter
+        <LoadMoreFooter
           hasMore={state.nextCursor !== null}
-          loadMore={state.loadMore}
+          loadingLabel="결제 내역을 더 불러오는 중"
           onLoadMore={loadMore}
+          status={state.loadMore}
         />
       </>
     );

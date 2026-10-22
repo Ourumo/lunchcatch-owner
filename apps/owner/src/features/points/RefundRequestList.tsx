@@ -3,10 +3,9 @@ import { Button, StatusBadge, type StatusBadgeVariant } from '@repo/ui';
 import type { RefundRequestItem, RefundRequestStatus } from '@owner/api/refund';
 import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
-import type { LoadMoreStatus } from './usePointHistory';
 import type { RefundRequestsState } from './useRefundRequests';
 
 const statusBadges: Record<
@@ -46,42 +45,6 @@ const RefundRequestRow = ({ item }: { item: RefundRequestItem }) => {
       )}
     </li>
   );
-};
-
-interface ListFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
-const ListFooter = ({ hasMore, loadMore, onLoadMore }: ListFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">환불 요청 내역을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
 };
 
 const ListMessage = ({
@@ -149,10 +112,11 @@ export const RefundRequestList = ({
             <RefundRequestRow item={item} key={item.id} />
           ))}
         </ul>
-        <ListFooter
+        <LoadMoreFooter
           hasMore={state.nextCursor !== null}
-          loadMore={state.loadMore}
+          loadingLabel="환불 요청 내역을 더 불러오는 중"
           onLoadMore={onLoadMore}
+          status={state.loadMore}
         />
       </>
     );

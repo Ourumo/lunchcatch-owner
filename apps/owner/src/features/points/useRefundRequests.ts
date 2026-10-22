@@ -4,8 +4,7 @@ import {
   getRefundRequestPage,
   type RefundRequestItem,
 } from '@owner/api/refund';
-
-import type { LoadMoreStatus } from './usePointHistory';
+import type { LoadMoreStatus } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 
 export type RefundRequestsState =
   | { status: 'loading' }
