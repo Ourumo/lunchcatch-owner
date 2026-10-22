@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react';
 import { ChoiceChip, SegmentedControl } from '@repo/ui';
-import { Clock, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 import {
   type AgeGroup,
   ageGroupOptions,
   type ExposureRadius,
   exposureRadiusOptions,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
   type TargetGender,
   targetGenderOptions,
   type TargetStepValues,
@@ -56,7 +54,7 @@ const toggleAgeGroup = (ageGroups: AgeGroup[], ageGroup: AgeGroup) =>
         .map(({ value }) => value)
         .filter((value) => value === ageGroup || ageGroups.includes(value));
 
-// 등록 3단계: 점주 반경, 성별, 연령대. 시간대는 점심 고정이라 안내만 한다
+// 등록 3단계: 점주 반경, 성별, 연령대. 시간대는 점심 고정이라 고르지 않는다
 export const TargetStep = () => {
   const { updateStepValues, values } = useCampaignForm();
   const { target } = values;
@@ -118,19 +116,6 @@ export const TargetStep = () => {
             </ChoiceChip>
           ))}
         </div>
-      </FieldGroup>
-
-      <FieldGroup legend="노출 시간대">
-        <p className="flex items-center gap-2 rounded-xl border border-border-subtle bg-bg-surface px-4 py-3.5 text-body-sm-mobile text-text-primary">
-          <Clock aria-hidden="true" className="size-4 text-text-secondary" />
-          <span className="font-medium">점심</span>
-          <span className="text-text-secondary">
-            {SERVING_TIME_START} ~ {SERVING_TIME_END}
-          </span>
-          <span className="ml-auto text-caption-mobile text-text-secondary">
-            고정
-          </span>
-        </p>
       </FieldGroup>
 
       {/* 고른 조건을 한 문장으로 다시 보여줘 누구에게 노출되는지 바로 알 수 있게 한다 */}

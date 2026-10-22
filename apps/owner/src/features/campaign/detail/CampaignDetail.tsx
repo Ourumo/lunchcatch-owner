@@ -3,12 +3,7 @@ import { Link } from 'react-router';
 import { Button } from '@repo/ui';
 import { Info } from 'lucide-react';
 
-import {
-  type Campaign,
-  ISSUE_OPEN_TIME,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
-} from '@owner/api/campaign';
+import { type Campaign, ISSUE_OPEN_TIME } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
 import { useCampaignPerformance } from '@owner/hooks/useCampaignPerformance';
 import { useGoBack } from '@owner/hooks/useGoBack';
@@ -165,10 +160,6 @@ const CampaignContent = ({
         <DetailRow
           label="연령대"
           value={formatAgeGroups(campaign.target.ageGroups)}
-        />
-        <DetailRow
-          label="노출 시간대"
-          value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
         />
       </DetailSection>
 

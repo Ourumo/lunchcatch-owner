@@ -25,9 +25,6 @@ export const USABLE_TIME_STEP_MINUTES = 30;
 export const MIN_USABLE_MINUTES = 60;
 // 선착순 오픈 시각. 플랫폼 고정이라 점주가 입력하지 않고 안내만 한다
 export const ISSUE_OPEN_TIME = '11:00';
-// 피드에 캠페인이 노출되는 서빙 시간대. 노출 대상의 시간대는 점심으로 고정이라 고르지 않는다
-export const SERVING_TIME_START = '10:00';
-export const SERVING_TIME_END = '12:59';
 
 export type DiscountTarget = 'ALL' | 'MENU';
 export type DiscountType = 'PERCENT' | 'AMOUNT';
