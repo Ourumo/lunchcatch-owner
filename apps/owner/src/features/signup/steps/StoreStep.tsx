@@ -42,7 +42,7 @@ const formatBusinessNumber = (digits: string) =>
 // 상호명, 대표자 성명, 전화번호, 업종, 사업자등록번호 입력
 export const StoreStep = () => {
   const categoryName = useId();
-  const { updateStepValues, values } = useSignupFlow();
+  const { rejectedBusinessNumber, updateStepValues, values } = useSignupFlow();
   const { business, store } = values;
   // 입력 중에는 오류를 보여주지 않고, 필드를 벗어난 뒤부터 보여준다
   const [touched, setTouched] = useState<Record<TouchableField, boolean>>({
@@ -68,6 +68,10 @@ export const StoreStep = () => {
         ? undefined
         : '사업자등록번호 10자리를 입력해주세요',
   };
+  // 서버가 확인하지 못한 번호를 그대로 두면 바로 안내하고, 번호를 고치면 사라진다
+  const isRejectedBusinessNumber =
+    rejectedBusinessNumber !== null &&
+    rejectedBusinessNumber === business.registrationNumber;
   const getVisibleError = (field: TouchableField) =>
     touched[field] ? errors[field] : undefined;
 
@@ -147,7 +151,11 @@ export const StoreStep = () => {
       </fieldset>
 
       <Input
-        errorMessage={getVisibleError('registrationNumber')}
+        errorMessage={
+          isRejectedBusinessNumber
+            ? '사업자등록번호를 확인하지 못했어요. 번호를 다시 확인해주세요'
+            : getVisibleError('registrationNumber')
+        }
         inputMode="numeric"
         label="사업자등록번호"
         onBlur={handleBlur('registrationNumber')}
