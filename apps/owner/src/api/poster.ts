@@ -15,39 +15,31 @@ export interface PosterTemplate {
   html: string;
 }
 
-// 템플릿 슬롯에 채우는 값
+// 미리보기에서 템플릿 슬롯에 채우는 값. 글은 서버가 포스터를 만들 때 채우는 값과 같게 만든다
 export interface PosterSlotValues {
+  // 가게명
   eventName: string;
   discountText: string;
-  // 집행 기간인지 사용 가능 시간인지 확정되지 않아 화면에 적을 문구 그대로 둔다
+  // 집행 기간
   period: string;
   // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
   imageUrl: string | null;
 }
 
-// 캠페인당 1건
+// 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 점주가 고르는 것은 템플릿과 이미지뿐이다
 export interface CampaignPoster {
   // 처음 만들 때는 빈 문자열이고, 저장하면 서버가 정한다
   posterId: string;
   templateId: string;
   // 2단계에서 올린 포스터 이미지. 포스터 생성에 그대로 보낸다. 올리기 전이면 null
   imageObjectKey: string | null;
-  slots: PosterSlotValues;
+  // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
+  imageUrl: string | null;
 }
 
-// 슬롯 입력 길이 제한. 관리자 검수 기준(제목 길이)에 맞춰 연동 때 서버 값으로 바꾼다
-export const POSTER_TEXT_MAX_LENGTH = {
-  discountText: 20,
-  eventName: 30,
-} as const;
-
-// 포스터 생성에 필요한 값(템플릿, 이미지, 할인 내용, 기간)이 모두 있는지. 이벤트명은 선택이다
+// 포스터 생성에 필요한 값(템플릿, 이미지)이 모두 있는지
 export const isPosterComplete = (poster: CampaignPoster | null) =>
-  poster !== null &&
-  poster.templateId !== '' &&
-  poster.imageObjectKey !== null &&
-  poster.slots.discountText.trim() !== '' &&
-  poster.slots.period.trim() !== '';
+  poster !== null && poster.templateId !== '' && poster.imageObjectKey !== null;
 
 // 게시되고 활성인 템플릿만 최신순으로 내려온다
 interface OwnerTemplateResponse {
@@ -137,7 +129,7 @@ interface PosterResponse {
 export interface SavedPoster {
   // 확인 단계와 캠페인 상세에 그대로 보여주는 완성 HTML
   html: string;
-  // 이어서 작성할 때 2단계에 채우는 값. 완성 HTML에서 꺼낸다
+  // 이어서 작성할 때 2단계에 채우는 템플릿과 이미지. 이미지는 완성 HTML에서 꺼낸다
   poster: CampaignPoster;
 }
 
@@ -150,35 +142,22 @@ const toObjectKey = (imageUrl: string) => {
   }
 };
 
-// 조회 응답에는 템플릿 ID와 완성 HTML만 있어, 글과 이미지는 HTML의 data-slot 자리에서 꺼낸다
+// 조회 응답에는 템플릿 ID와 완성 HTML만 있어, 이미지는 HTML의 data-slot 자리에서 꺼낸다
 const toCampaignPoster = ({
   html,
   posterId,
   templateId,
 }: PosterResponse): CampaignPoster => {
-  const document = parsePosterHtml(html);
-  const readText = (slot: string) =>
-    document.querySelector(`[data-slot="${slot}"]`)?.textContent?.trim() ?? '';
   const imageUrl =
-    document.querySelector('img[data-slot="image"]')?.getAttribute('src') ||
-    null;
+    parsePosterHtml(html)
+      .querySelector('img[data-slot="image"]')
+      ?.getAttribute('src') || null;
 
   return {
     posterId: String(posterId),
     templateId: String(templateId),
     imageObjectKey: imageUrl ? toObjectKey(imageUrl) : null,
-    slots: {
-      eventName: readText('eventName').slice(
-        0,
-        POSTER_TEXT_MAX_LENGTH.eventName,
-      ),
-      discountText: readText('discount').slice(
-        0,
-        POSTER_TEXT_MAX_LENGTH.discountText,
-      ),
-      period: readText('period'),
-      imageUrl,
-    },
+    imageUrl,
   };
 };
 

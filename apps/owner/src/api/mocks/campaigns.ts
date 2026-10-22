@@ -55,12 +55,7 @@ const mockCurrentCampaigns: Record<
       posterId: 'poster-active',
       templateId: 'template-orange-modern',
       imageObjectKey: null,
-      slots: {
-        eventName: '오늘 점심 한정 특별 혜택!',
-        discountText: '전 메뉴 2,000원 할인',
-        period: '11:30 ~ 15:00',
-        imageUrl: cheeseKatsu.imageUrl,
-      },
+      imageUrl: cheeseKatsu.imageUrl,
     },
     target: {
       radius: 1000,
@@ -93,12 +88,7 @@ const mockCurrentCampaigns: Record<
       posterId: 'poster-scheduled',
       templateId: 'template-retro-pop',
       imageObjectKey: null,
-      slots: {
-        eventName: '치즈가 쭉 늘어나는 점심',
-        discountText: `${cheeseKatsu.name} 3,000원 할인`,
-        period: '11:30 ~ 14:00',
-        imageUrl: cheeseKatsu.imageUrl,
-      },
+      imageUrl: cheeseKatsu.imageUrl,
     },
     target: { radius: 500, gender: 'ALL', ageGroups: [] },
     budget: {
@@ -150,13 +140,6 @@ const archivedCoupons: {
   { menu: soba, discountType: 'PERCENT', discountValue: 15 },
 ];
 
-const archivedEventNames = [
-  '점심 한정 특가',
-  '이번 주 점심 할인',
-  '직장인 점심 응원',
-  '든든한 점심 한 끼',
-];
-
 const archivedTemplateIds = [
   'template-orange-modern',
   'template-retro-pop',
@@ -165,11 +148,6 @@ const archivedTemplateIds = [
 
 const createArchivedCampaign = (index: number): Campaign => {
   const coupon = archivedCoupons[index % archivedCoupons.length];
-  const target = coupon.menu?.name ?? '전 메뉴';
-  const value =
-    coupon.discountType === 'PERCENT'
-      ? `${coupon.discountValue}%`
-      : `${coupon.discountValue.toLocaleString('ko-KR')}원`;
   // 9일 간격으로 7일씩 집행한다. 5건마다 앞 캠페인과 종료일을 같게 두어 같은 종료일의 정렬(ID순)을 확인한다
   const endDaysAgo = 80 + (index - Math.floor(index / 5)) * 9;
   const dailyBudget = 5000 + (index % 4) * 1000;
@@ -195,12 +173,7 @@ const createArchivedCampaign = (index: number): Campaign => {
       posterId: `poster-archived-${number}`,
       templateId: archivedTemplateIds[index % archivedTemplateIds.length],
       imageObjectKey: null,
-      slots: {
-        eventName: archivedEventNames[index % archivedEventNames.length],
-        discountText: `${target} ${value} 할인`,
-        period: '11:30 ~ 14:00',
-        imageUrl: (coupon.menu ?? cheeseKatsu).imageUrl,
-      },
+      imageUrl: (coupon.menu ?? cheeseKatsu).imageUrl,
     },
     target: { radius: 1000, gender: 'ALL', ageGroups: [] },
     budget: {
@@ -237,12 +210,7 @@ export const mockCampaigns: Campaign[] = [
       posterId: 'poster-ended-1',
       templateId: 'template-orange-modern',
       imageObjectKey: null,
-      slots: {
-        eventName: '오픈 기념 점심 할인',
-        discountText: '전 메뉴 3,000원 할인',
-        period: '11:30 ~ 15:00',
-        imageUrl: rosuKatsu.imageUrl,
-      },
+      imageUrl: rosuKatsu.imageUrl,
     },
     target: { radius: 1000, gender: 'ALL', ageGroups: [] },
     budget: {
@@ -271,12 +239,7 @@ export const mockCampaigns: Campaign[] = [
       posterId: 'poster-ended-2',
       templateId: 'template-retro-pop',
       imageObjectKey: null,
-      slots: {
-        eventName: '메뉴 한정 특가',
-        discountText: `${rosuKatsu.name} 40% 할인`,
-        period: '11:30 ~ 13:30',
-        imageUrl: rosuKatsu.imageUrl,
-      },
+      imageUrl: rosuKatsu.imageUrl,
     },
     target: { radius: 500, gender: 'MALE', ageGroups: ['THIRTIES'] },
     budget: {
@@ -305,12 +268,7 @@ export const mockCampaigns: Campaign[] = [
       posterId: 'poster-ended-3',
       templateId: 'template-classic-wood',
       imageObjectKey: null,
-      slots: {
-        eventName: '여름 한정 시원한 점심',
-        discountText: `${soba.name} 2,000원 할인`,
-        period: '11:30 ~ 14:00',
-        imageUrl: soba.imageUrl,
-      },
+      imageUrl: soba.imageUrl,
     },
     target: {
       radius: 1000,
@@ -343,12 +301,7 @@ export const mockCampaigns: Campaign[] = [
       posterId: 'poster-ended-4',
       templateId: 'template-retro-pop',
       imageObjectKey: null,
-      slots: {
-        eventName: '첫 캠페인 기념',
-        discountText: `${cheeseKatsu.name} 25% 할인`,
-        period: '11:30 ~ 15:00',
-        imageUrl: cheeseKatsu.imageUrl,
-      },
+      imageUrl: cheeseKatsu.imageUrl,
     },
     target: { radius: 500, gender: 'ALL', ageGroups: [] },
     budget: {

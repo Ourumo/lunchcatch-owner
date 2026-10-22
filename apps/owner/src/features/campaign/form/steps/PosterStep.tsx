@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
-import { Input } from '@repo/ui';
 import { Check, Info } from 'lucide-react';
 
+import type { BudgetStepValues, CouponStepValues } from '@owner/api/campaign';
 import {
   type ImageValue,
   isImageOfFile,
@@ -12,20 +12,44 @@ import {
 import {
   type CampaignPoster,
   getPosterTemplates,
-  POSTER_TEXT_MAX_LENGTH,
   type PosterSlotValues,
   type PosterTemplate,
   preparePosterImageUpload,
 } from '@owner/api/poster';
-import { getMyStore, type MyStore } from '@owner/api/store';
-import { getCampaignTitle } from '@owner/ui/campaignFormat';
+import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
 import { ImageUploadSlot } from '@owner/ui/ImageUploadSlot/ImageUploadSlot';
 
 import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
 
-const DEFAULT_EVENT_NAME = '오늘 점심 한정 특별 혜택!';
 const THUMBNAIL_WIDTH = 96;
+// 집행 기간은 4단계에서 정해, 아직 없으면 기간 자리에 이 이름을 보여준다
+const PERIOD_PLACEHOLDER = '집행 기간';
+
+// 미리보기 글은 서버가 포스터를 만들 때 채우는 형식을 따른다 (예: 전체 메뉴 1000원 할인, 10.22~10.24)
+const toPosterDiscountText = (
+  { discountTarget, discountType, discountValue, menuId }: CouponStepValues,
+  menus: StoreMenu[],
+) => {
+  if (discountValue === null) {
+    return '';
+  }
+
+  const target =
+    discountTarget === 'MENU'
+      ? (menus.find(({ id }) => id === menuId)?.name ?? '')
+      : '전체 메뉴';
+
+  return `${target} ${discountValue}${discountType === 'PERCENT' ? '%' : '원'} 할인`.trim();
+};
+
+// YYYY-MM-DD를 MM.DD로 적는다
+const toPosterDate = (value: string) => value.slice(5).replace('-', '.');
+
+const toPosterPeriod = ({ endDate, startDate }: BudgetStepValues) =>
+  startDate && endDate
+    ? `${toPosterDate(startDate)}~${toPosterDate(endDate)}`
+    : PERIOD_PLACEHOLDER;
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
@@ -83,7 +107,7 @@ interface TemplateOptionsProps {
   onSelect: (template: PosterTemplate) => void;
 }
 
-// 게시·활성 템플릿을 지금 입력한 내용으로 작게 그려 보여주고 하나를 고른다
+// 게시·활성 템플릿을 지금 채울 내용으로 작게 그려 보여주고 하나를 고른다
 const TemplateOptions = ({
   onSelect,
   selectedId,
@@ -124,19 +148,17 @@ const TemplateOptions = ({
   );
 };
 
-// 등록 2단계: 관리자가 게시한 템플릿을 고르고, 포스터 이미지를 올리고, 할인 내용·이벤트명을 슬롯에 채운다.
-// 템플릿 HTML 구조는 바꿀 수 없고, 슬롯 값만 바뀐다
+// 등록 2단계: 관리자가 게시한 템플릿을 고르고 포스터 이미지를 올린다.
+// 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워, 미리보기도 같은 값으로 보여준다
 export const PosterStep = () => {
   const { campaignId, setPoster, values } = useCampaignForm();
-  const { coupon, poster } = values;
+  const { budget, coupon, poster } = values;
   const [templates, setTemplates] = useState<Loadable<PosterTemplate[]>>();
   const [store, setStore] = useState<Loadable<MyStore>>();
   // 이미지 칸의 업로드 상태. 이미 올린 이미지는 미리보기 주소로 보여준다
   const [image, setImage] = useState<ImageValue | null>(() =>
-    poster?.slots.imageUrl ? toSavedImage(poster.slots.imageUrl) : null,
+    poster?.imageUrl ? toSavedImage(poster.imageUrl) : null,
   );
-  // 포스터에 적는 기간은 쿠폰 사용 가능 시간을 따른다. 1단계에서 바꾸면 여기에도 반영한다
-  const period = `${coupon.usableFrom} ~ ${coupon.usableUntil}`;
 
   useEffect(() => {
     let ignore = false;
@@ -157,24 +179,6 @@ export const PosterStep = () => {
       ignore = true;
     };
   }, []);
-
-  // 저장해 둔 포스터의 기간이 지금 쿠폰 사용 시간과 다르면 맞춰서 함께 저장되게 한다
-  useEffect(() => {
-    if (poster && poster.slots.period !== period) {
-      setPoster({ ...poster, slots: { ...poster.slots, period } });
-    }
-  }, [period, poster, setPoster]);
-
-  // 아직 포스터가 없을 때 템플릿을 고르면 쿠폰 조건으로 슬롯을 미리 채운다. 이미지는 따로 올린다
-  const createDefaultSlots = (currentStore: MyStore): PosterSlotValues => ({
-    discountText: getCampaignTitle(coupon, currentStore.menus).slice(
-      0,
-      POSTER_TEXT_MAX_LENGTH.discountText,
-    ),
-    eventName: DEFAULT_EVENT_NAME,
-    imageUrl: null,
-    period,
-  });
 
   if (templates === undefined || store === undefined) {
     return (
@@ -209,10 +213,13 @@ export const PosterStep = () => {
     );
   }
 
-  // 미리보기와 썸네일은 저장된 슬롯을 쓰되, 기간은 항상 지금 쿠폰 사용 시간으로 맞춘다
-  const slots: PosterSlotValues = poster
-    ? { ...poster.slots, period }
-    : createDefaultSlots(store);
+  // 미리보기와 썸네일의 글. 서버가 포스터를 만들 때 채우는 값과 같다
+  const slots: PosterSlotValues = {
+    eventName: store.name,
+    discountText: toPosterDiscountText(coupon, store.menus),
+    period: toPosterPeriod(budget),
+    imageUrl: poster?.imageUrl ?? null,
+  };
   const selectedTemplate = templates.find(
     ({ id }) => id === poster?.templateId,
   );
@@ -222,16 +229,13 @@ export const PosterStep = () => {
       posterId: poster?.posterId ?? '',
       templateId: poster?.templateId ?? '',
       imageObjectKey: poster?.imageObjectKey ?? null,
+      imageUrl: poster?.imageUrl ?? null,
       ...patch,
-      slots: { ...slots, ...patch.slots },
     });
   };
 
-  const updateSlots = (patch: Partial<PosterSlotValues>) =>
-    updatePoster({ slots: { ...slots, ...patch } });
-
   // 이미지는 고르자마자 올린다. 올리는 동안에는 이전 이미지로 저장되지 않게 키를 비우고,
-  // 다 올리면 그사이 바뀐 글은 그대로 두고 이미지만 바꾼다
+  // 다 올리면 그사이 고른 템플릿은 그대로 두고 이미지만 바꾼다
   const uploadPosterImage = async (target: UploadableImage) => {
     const { file } = target;
 
@@ -259,7 +263,7 @@ export const PosterStep = () => {
           prev && {
             ...prev,
             imageObjectKey: uploaded.uploadKey,
-            slots: { ...prev.slots, imageUrl },
+            imageUrl,
           },
       );
     }
@@ -282,9 +286,10 @@ export const PosterStep = () => {
           <div className="overflow-hidden rounded-xl border border-border-subtle shadow-[0_4px_16px_rgba(36,36,36,0.08)]">
             <PosterPreview html={selectedTemplate.html} slots={slots} />
           </div>
-          <p className="flex items-center gap-1 text-caption-mobile text-text-secondary">
-            <Info aria-hidden="true" className="size-3.5 shrink-0" />
-            배치는 템플릿에 고정되어 바꿀 수 없어요.
+          <p className="flex gap-1 text-caption-mobile break-keep text-text-secondary">
+            <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+            가게명과 할인 내용은 자동으로 채워지고, 기간은 집행 기간을 정하면
+            들어가요.
           </p>
         </section>
       ) : (
@@ -294,61 +299,23 @@ export const PosterStep = () => {
       )}
 
       {selectedTemplate && (
-        <>
-          <FieldGroup legend="문구">
-            <Input
-              errorMessage={
-                slots.discountText.trim()
-                  ? undefined
-                  : '할인 내용을 입력해 주세요'
+        <FieldGroup
+          description="jpg, png 파일을 10MB 이하로 올려 주세요. 고르면 바로 올라가요."
+          legend="이미지"
+        >
+          <ImageUploadSlot
+            image={image}
+            label="포스터 이미지"
+            onRetry={() => {
+              if (image?.status === 'failed') {
+                void uploadPosterImage(image);
               }
-              label="할인 내용"
-              maxLength={POSTER_TEXT_MAX_LENGTH.discountText}
-              onChange={(event) =>
-                updateSlots({ discountText: event.target.value })
-              }
-              placeholder="예) 전 메뉴 2,000원 할인"
-              trailing={`${slots.discountText.length}/${POSTER_TEXT_MAX_LENGTH.discountText}`}
-              value={slots.discountText}
-            />
-            <Input
-              label="이벤트 문구 (선택)"
-              maxLength={POSTER_TEXT_MAX_LENGTH.eventName}
-              onChange={(event) =>
-                updateSlots({ eventName: event.target.value })
-              }
-              placeholder={`예) ${DEFAULT_EVENT_NAME}`}
-              trailing={`${slots.eventName.length}/${POSTER_TEXT_MAX_LENGTH.eventName}`}
-              value={slots.eventName}
-            />
-            <div className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-subtle px-3 py-2.5 text-caption-web">
-              <span className="text-text-secondary">기간</span>
-              <span className="font-medium text-text-primary">{period}</span>
-            </div>
-            <p className="-mt-1 text-caption-mobile break-keep text-text-secondary">
-              기간은 쿠폰 사용 가능 시간으로 채워지고, 1단계에서 바꾸면 함께
-              바뀌어요.
-            </p>
-          </FieldGroup>
-
-          <FieldGroup
-            description="jpg, png 파일을 10MB 이하로 올려 주세요. 고르면 바로 올라가요."
-            legend="이미지"
-          >
-            <ImageUploadSlot
-              image={image}
-              label="포스터 이미지"
-              onRetry={() => {
-                if (image?.status === 'failed') {
-                  void uploadPosterImage(image);
-                }
-              }}
-              onSelect={([file]) =>
-                void uploadPosterImage({ status: 'selected', file })
-              }
-            />
-          </FieldGroup>
-        </>
+            }}
+            onSelect={([file]) =>
+              void uploadPosterImage({ status: 'selected', file })
+            }
+          />
+        </FieldGroup>
       )}
     </div>
   );

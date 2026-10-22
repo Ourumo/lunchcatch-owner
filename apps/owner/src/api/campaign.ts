@@ -883,8 +883,7 @@ interface PosterCreateResponse {
   html: string;
 }
 
-// 포스터 생성 요청 본문. 서버가 아직 글을 받지 않아 템플릿과 이미지만 보낸다.
-// 서버가 점주가 고친 글을 받게 되면 여기에 slots의 글만 더한다
+// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 템플릿과 이미지만 보낸다
 const toPosterCreateRequest = ({
   imageObjectKey,
   templateId,
@@ -899,7 +898,7 @@ export const savePosterStep = async (
   id: string,
   poster: CampaignPoster | null,
 ): Promise<ApiResult<null>> => {
-  // 템플릿, 이미지, 할인 내용, 기간이 없으면 포스터를 만들지 않는다
+  // 템플릿이나 이미지가 없으면 포스터를 만들지 않는다
   if (!poster || !isPosterComplete(poster)) {
     return { ok: false, message: INVALID_POSTER_MESSAGE };
   }
