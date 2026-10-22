@@ -9,9 +9,13 @@ import {
   historyPeriodItems,
   toKstDateKey,
 } from '@owner/ui/historyFormat';
+import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { useCouponUsageHistory } from './useCouponUsageHistory';
+import {
+  type LoadMoreStatus,
+  useCouponUsageHistory,
+} from './useCouponUsageHistory';
 
 // 처음에는 최근 30일을 보여준다
 const DEFAULT_PERIOD: PointHistoryPeriod = '30D';
@@ -51,6 +55,42 @@ const UsageRow = ({ usage }: { usage: CouponUsage }) => (
   </li>
 );
 
+interface UsageFooterProps {
+  hasMore: boolean;
+  loadMore: LoadMoreStatus;
+  onLoadMore: () => void;
+}
+
+// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
+const UsageFooter = ({ hasMore, loadMore, onLoadMore }: UsageFooterProps) => {
+  if (loadMore === 'loading') {
+    return (
+      <div className="flex justify-center py-4" role="status">
+        <span
+          aria-hidden="true"
+          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
+        />
+        <span className="sr-only">쿠폰 사용 이력을 더 불러오는 중</span>
+      </div>
+    );
+  }
+
+  if (loadMore === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <p className="text-body-sm-mobile text-text-secondary" role="alert">
+          불러오지 못했어요
+        </p>
+        <Button onClick={onLoadMore} variant="secondary">
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
+};
+
 const UsageSkeleton = () => (
   <div aria-busy="true">
     <span className="sr-only">쿠폰 사용 이력을 불러오는 중</span>
@@ -85,9 +125,10 @@ interface CouponUsageHistoryProps {
 }
 
 // 가게 관리 > 쿠폰 사용 이력 (docs/requirements-owner.md "발급/사용 이력 조회").
-// API가 매장 단위의 확정된 사용 이력만 주어, 사용 시각과 할인액을 날짜별로 묶어 보여준다
+// API가 매장 단위의 확정된 사용 이력만 주어, 사용 시각과 할인액을 날짜별로 묶어 보여준다.
+// 목록 끝에 가까워지면 다음 구간을 이어 붙이고, 같은 날이 두 구간에 걸치면 이어 붙인 목록으로 다시 묶는다
 export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
-  const { changePeriod, period, retry, state } =
+  const { changePeriod, loadMore, period, retry, state } =
     useCouponUsageHistory(DEFAULT_PERIOD);
 
   const renderContent = () => {
@@ -134,6 +175,11 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
             </ul>
           </section>
         ))}
+        <UsageFooter
+          hasMore={state.nextCursor !== null}
+          loadMore={state.loadMore}
+          onLoadMore={loadMore}
+        />
       </div>
     );
   };
