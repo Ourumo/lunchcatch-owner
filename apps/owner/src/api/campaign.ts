@@ -936,6 +936,8 @@ type CampaignAction = 'activate' | 'cancel' | 'pause' | 'resume' | 'end';
 interface CampaignStatusResponse {
   campaignId: number;
   status: CampaignStatus;
+  // 활성화만 온다. 자동 검수 실패 사유 코드이고, 통과했으면 빈 배열이다
+  reasons?: string[];
 }
 
 // 409 CAMPAIGN-006. 그사이 상태가 바뀌어 지금 상태에서는 할 수 없다
@@ -954,14 +956,14 @@ const STATUS_CHANGED_MESSAGES: Record<CampaignAction, string> = {
 const requestCampaignAction = async (
   id: string,
   action: CampaignAction,
-): Promise<ApiResult<CampaignStatus>> => {
+): Promise<ApiResult<CampaignStatusResponse>> => {
   try {
-    const { status } = await request<CampaignStatusResponse>(
+    const data = await request<CampaignStatusResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}:${action}`,
       { method: 'POST' },
     );
 
-    return { ok: true, data: status };
+    return { ok: true, data };
   } catch (error) {
     if (!(error instanceof ApiError)) {
       return { ok: false };
@@ -997,10 +999,76 @@ const requestCampaignAction = async (
   }
 };
 
-// 작성 중(DRAFT) 캠페인 활성화 요청. 자동 검수를 통과하면 대기 중(SCHEDULED)이 된다.
-// 자동 검수는 실제로 실패하지 않는다(기능 축소). 잔액은 검사하지 않고, 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다
-export const requestCampaignActivation = (id: string) =>
-  requestCampaignAction(id, 'activate');
+// 포스터 자동 검수 실패 사유. 서버가 포스터 글과 사진을 검사한다
+type ModerationFailReason =
+  // 포스터 글이나 사진 속 글자에 금지 표현이 있음
+  | 'FORBIDDEN_EXPRESSION'
+  | 'IMAGE_UNREADABLE'
+  // 사진이 200×200보다 작음
+  | 'RESOLUTION_TOO_LOW'
+  // 사진에서 글자 영역이 절반을 넘음
+  | 'TEXT_RATIO_EXCEEDED'
+  // 검수 도구 장애나 시간 초과. 사진을 바꾸지 않고 다시 요청하면 된다
+  | 'MODERATION_TOOL_FAILURE';
+
+const MODERATION_FAIL_MESSAGES: Record<ModerationFailReason, string> = {
+  RESOLUTION_TOO_LOW:
+    '포스터 사진이 너무 작아요. 200×200 이상인 사진으로 바꿔 주세요.',
+  TEXT_RATIO_EXCEEDED:
+    '사진에 글자가 너무 많아요. 글자가 적은 사진으로 바꿔 주세요.',
+  FORBIDDEN_EXPRESSION:
+    '사진이나 포스터 문구에 쓸 수 없는 표현이 있어요. 다른 사진으로 바꿔 주세요.',
+  IMAGE_UNREADABLE: '사진을 읽지 못했어요. 다른 jpg, png 사진으로 바꿔 주세요.',
+  MODERATION_TOOL_FAILURE:
+    '검수를 마치지 못했어요. 잠시 후 다시 시도해 주세요.',
+};
+
+// 자동 검수 실패. 사진을 바꿔야 통과하면 화면이 포스터 단계로 보내고,
+// 검수 도구 장애처럼 다시 요청하면 되는 실패는 확인 단계에 남긴다
+export type ActivationFailureCode =
+  'MODERATION_FIX_POSTER' | 'MODERATION_RETRY';
+
+const isModerationFailReason = (
+  reason: string,
+): reason is ModerationFailReason => reason in MODERATION_FAIL_MESSAGES;
+
+// 작성 중(DRAFT) 캠페인 활성화 요청. 자동 검수를 통과하면 대기 중(SCHEDULED)이 되고,
+// 실패하면 작성 중으로 남아 서버가 사유를 돌려준다. 사유는 이 응답에만 있어 다시 조회할 수 없다.
+// 잔액은 검사하지 않고, 모자라면 첫 서빙일 00:00 예약에서 PAUSED(NO_POINTS)가 된다
+export const requestCampaignActivation = async (
+  id: string,
+): Promise<ApiResult<CampaignStatus>> => {
+  const result = await requestCampaignAction(id, 'activate');
+
+  if (!result.ok) {
+    return result;
+  }
+
+  const { reasons = [], status } = result.data;
+
+  if (status === 'SCHEDULED') {
+    return { ok: true, data: status };
+  }
+
+  // 모르는 사유는 문구 없이 다시 시도하게 한다
+  const knownReasons = reasons.filter(isModerationFailReason);
+  const needsPosterFix = knownReasons.some(
+    (reason) => reason !== 'MODERATION_TOOL_FAILURE',
+  );
+
+  return {
+    ok: false,
+    code: (needsPosterFix
+      ? 'MODERATION_FIX_POSTER'
+      : 'MODERATION_RETRY') satisfies ActivationFailureCode,
+    message:
+      knownReasons.length > 0
+        ? knownReasons
+            .map((reason) => MODERATION_FAIL_MESSAGES[reason])
+            .join(' ')
+        : undefined,
+  };
+};
 
 // 대기 중(SCHEDULED) 취소. 지우지 않고 작성 중으로 되돌려 입력값은 그대로 둔다.
 // 다시 노출하려면 활성화를 다시 요청해야 하고, 시작일 전날 23:59까지 SCHEDULED여야 시작일부터 노출된다
