@@ -20,6 +20,7 @@ import { TopBar } from '@owner/ui/TopBar/TopBar';
 import {
   campaignSteps,
   getCampaignEditPath,
+  isFromReview,
   isValueStep,
   NEW_CAMPAIGN_ID,
 } from './campaignSteps';
@@ -41,7 +42,7 @@ interface ActionError {
 // 마지막 확인 단계에서는 활성화를 요청하고 완료 화면으로 간다
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const { campaignId, platformSettings, reload, updateStepValues, values } =
     useCampaignForm();
   const [isSaving, setIsSaving] = useState(false);
@@ -70,6 +71,9 @@ export const CampaignFormLayout = () => {
     currentIndex > 0 ? campaignSteps.at(currentIndex - 1) : undefined;
   const nextStep = campaignSteps.at(currentIndex + 1);
   const canProceed = currentStep.canProceed?.(values, platformSettings) ?? true;
+  // 확인 단계에서 수정을 눌러 들어온 단계. 저장하면 확인 단계로 바로 돌아간다
+  const isEditingFromReview =
+    isFromReview(state) && isValueStep(currentStep.id);
 
   const clearMessages = () => setActionError(undefined);
 
@@ -217,6 +221,12 @@ export const CampaignFormLayout = () => {
       return;
     }
 
+    // 확인 단계에서 들어왔으면 그 확인 단계 기록으로 돌아가, 뒤로 가기로 수정 화면에 다시 오지 않게 한다
+    if (isEditingFromReview) {
+      navigate(-1);
+      return;
+    }
+
     // 1단계를 처음 저장하면 서버가 만든 DRAFT의 ID로 이어 간다. 뒤로 가기로 ID 없는 1단계에 돌아오지 않게 기록을 바꿔치기한다
     navigate(getCampaignEditPath(result.data, nextStep), {
       replace: campaignId === NEW_CAMPAIGN_ID,
@@ -267,7 +277,9 @@ export const CampaignFormLayout = () => {
         hint={currentStep.progressHint?.(values, platformSettings)}
         isNextDisabled={!canProceed}
         isNextLoading={isSaving}
-        nextLabel={nextStep ? '다음' : '활성화 요청'}
+        nextLabel={
+          isEditingFromReview ? '저장' : nextStep ? '다음' : '활성화 요청'
+        }
         onNext={handleNext}
         onPrevious={previousStep ? goPrevious : undefined}
       />
