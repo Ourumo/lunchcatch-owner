@@ -42,10 +42,13 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
   const renderBalance = () => {
     if (state.status === 'loading') {
       return (
-        <div aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">잔액을 불러오는 중</span>
-          <SkeletonBlock className="h-4 w-10" />
-          <SkeletonBlock className="h-8 w-32" />
+        // "잔액" 글자는 그대로 두고 금액 자리만 같은 높이의 스켈레톤으로 둔다
+        <div>
+          <p className="text-caption-mobile text-text-secondary">잔액</p>
+          <SkeletonBlock
+            className="mt-0.5 h-7.5 w-32"
+            label="잔액을 불러오는 중"
+          />
         </div>
       );
     }
@@ -88,13 +91,18 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
           충전
         </button>
       </div>
-      {state.status === 'success' && (
+      {/* 불러오는 동안에도 그려 두어 잔액이 들어올 때 카드 높이가 바뀌지 않게 한다. 값 자리만 스켈레톤으로 둔다 */}
+      {state.status !== 'error' && (
         <div className="mt-4 border-t border-border-subtle pt-3">
           <div className="flex items-center justify-between gap-3 text-body-sm-mobile">
             <span className="text-text-secondary">예약 중 포인트</span>
-            <span className="shrink-0 font-bold text-text-primary">
-              {formatPoints(state.balance.reservedPoints)}
-            </span>
+            {state.status === 'success' ? (
+              <span className="shrink-0 font-bold text-text-primary">
+                {formatPoints(state.balance.reservedPoints)}
+              </span>
+            ) : (
+              <SkeletonBlock className="h-5 w-16" />
+            )}
           </div>
           <p className="mt-1 text-caption-mobile break-keep text-text-tertiary">
             오늘 캠페인에 예약했지만 아직 쓰지 않은 포인트로, 잔액과 따로
