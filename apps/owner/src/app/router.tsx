@@ -55,6 +55,7 @@ import PointChargeSuccessPage from '@owner/pages/PointChargeSuccessPage';
 import PointHistoryPage from '@owner/pages/PointHistoryPage';
 import PointRefundPage from '@owner/pages/PointRefundPage';
 import QrScanPage from '@owner/pages/QrScanPage';
+import RouteErrorPage from '@owner/pages/RouteErrorPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
 import SignupImagesPage from '@owner/pages/SignupImagesPage';
@@ -91,98 +92,107 @@ const campaignStepPages: Record<CampaignStepId, ReactNode> = {
 // 로그인 상태(로그인 전, 입점 신청 중, 입점 완료)마다 들어갈 수 있는 화면을 나눈다.
 // 맞지 않는 화면에 들어오면 RequireAuth가 상태에 맞는 첫 화면으로 보낸다
 export const router = createBrowserRouter([
-  // 첫 화면은 로그인으로 보내고, 로그인한 상태면 RequireAuth가 다시 상태에 맞는 화면으로 보낸다
-  { path: '/', element: <Navigate replace to="/login" /> },
+  // 모든 화면을 하나로 감싸, 어느 화면에서 오류가 나도 같은 오류 화면을 보여준다
   {
-    element: <RequireAuth access="guest" />,
+    errorElement: <RouteErrorPage />,
     children: [
+      // 첫 화면은 로그인으로 보내고, 로그인한 상태면 RequireAuth가 다시 상태에 맞는 화면으로 보낸다
+      { path: '/', element: <Navigate replace to="/login" /> },
       {
-        element: <AuthLayout />,
+        element: <RequireAuth access="guest" />,
         children: [
-          { path: '/login', element: <LoginPage /> },
-          { path: '/signup', element: <SignupPage /> },
-        ],
-      },
-    ],
-  },
-  {
-    element: <RequireAuth access="onboarding" />,
-    children: [
-      {
-        // 단계를 오가도 입력값이 유지되도록 모든 단계를 하나의 Provider 아래에 둔다
-        element: (
-          <SignupFlowProvider>
-            <SignupFlowLayout />
-          </SignupFlowProvider>
-        ),
-        children: signupSteps.map((step) => ({
-          path: getSignupStepPath(step),
-          element: stepPages[step.id] ?? (
-            <p className="px-page py-5 type-body text-text-secondary">
-              {step.title} 화면 준비 중
-            </p>
-          ),
-        })),
-      },
-      // 입점 신청을 제출한 뒤의 화면. 홈으로 갈 때 ACTIVE로 바꾼다
-      { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
-    ],
-  },
-  {
-    element: <RequireAuth access="active" />,
-    children: [
-      {
-        // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면
-        element: <TabLayout />,
-        children: [
-          { path: '/home', element: <HomePage /> },
-          { path: '/campaigns', element: <CampaignListPage /> },
-          { path: STORE_PATH, element: <StoreManagementPage /> },
-        ],
-      },
-      {
-        element: <MainLayout />,
-        children: [
-          { path: '/campaigns/new', element: <CampaignNewPage /> },
-          { path: '/campaigns/ended', element: <CampaignEndedPage /> },
-          { path: '/campaigns/:id', element: <CampaignDetailPage /> },
           {
-            path: '/campaigns/:id/complete',
-            element: <CampaignCompletePage />,
-          },
-          { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
-          { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
-          { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
-          { path: COUPON_USAGE_PATH, element: <CouponUsagePage /> },
-          { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
-          { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
-          { path: PAYMENT_HISTORY_PATH, element: <PaymentHistoryPage /> },
-          { path: POINT_REFUND_PATH, element: <PointRefundPage /> },
-          { path: POINT_CHARGE_PATH, element: <PointChargePage /> },
-          {
-            path: POINT_CHARGE_SUCCESS_PATH,
-            element: <PointChargeSuccessPage />,
-          },
-          { path: POINT_CHARGE_FAIL_PATH, element: <PointChargeFailPage /> },
-          { path: '/qr-scan', element: <QrScanPage /> },
-          {
-            path: '/campaigns/:id/edit',
-            element: <CampaignFormPage />,
+            element: <AuthLayout />,
             children: [
-              {
-                index: true,
-                element: <Navigate replace to={campaignSteps[0].path} />,
-              },
-              ...campaignSteps.map((step) => ({
-                path: step.path,
-                element: campaignStepPages[step.id],
-              })),
+              { path: '/login', element: <LoginPage /> },
+              { path: '/signup', element: <SignupPage /> },
             ],
           },
         ],
       },
+      {
+        element: <RequireAuth access="onboarding" />,
+        children: [
+          {
+            // 단계를 오가도 입력값이 유지되도록 모든 단계를 하나의 Provider 아래에 둔다
+            element: (
+              <SignupFlowProvider>
+                <SignupFlowLayout />
+              </SignupFlowProvider>
+            ),
+            children: signupSteps.map((step) => ({
+              path: getSignupStepPath(step),
+              element: stepPages[step.id] ?? (
+                <p className="px-page py-5 type-body text-text-secondary">
+                  {step.title} 화면 준비 중
+                </p>
+              ),
+            })),
+          },
+          // 입점 신청을 제출한 뒤의 화면. 홈으로 갈 때 ACTIVE로 바꾼다
+          { path: SIGNUP_COMPLETE_PATH, element: <SignupCompletePage /> },
+        ],
+      },
+      {
+        element: <RequireAuth access="active" />,
+        children: [
+          {
+            // 하단 탭(홈 · 캠페인 · 가게 관리)의 첫 화면
+            element: <TabLayout />,
+            children: [
+              { path: '/home', element: <HomePage /> },
+              { path: '/campaigns', element: <CampaignListPage /> },
+              { path: STORE_PATH, element: <StoreManagementPage /> },
+            ],
+          },
+          {
+            element: <MainLayout />,
+            children: [
+              { path: '/campaigns/new', element: <CampaignNewPage /> },
+              { path: '/campaigns/ended', element: <CampaignEndedPage /> },
+              { path: '/campaigns/:id', element: <CampaignDetailPage /> },
+              {
+                path: '/campaigns/:id/complete',
+                element: <CampaignCompletePage />,
+              },
+              { path: STORE_HOURS_PATH, element: <StoreHoursPage /> },
+              { path: STORE_IMAGES_PATH, element: <StoreImagesPage /> },
+              { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
+              { path: COUPON_USAGE_PATH, element: <CouponUsagePage /> },
+              { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
+              { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
+              { path: PAYMENT_HISTORY_PATH, element: <PaymentHistoryPage /> },
+              { path: POINT_REFUND_PATH, element: <PointRefundPage /> },
+              { path: POINT_CHARGE_PATH, element: <PointChargePage /> },
+              {
+                path: POINT_CHARGE_SUCCESS_PATH,
+                element: <PointChargeSuccessPage />,
+              },
+              {
+                path: POINT_CHARGE_FAIL_PATH,
+                element: <PointChargeFailPage />,
+              },
+              { path: '/qr-scan', element: <QrScanPage /> },
+              {
+                path: '/campaigns/:id/edit',
+                element: <CampaignFormPage />,
+                children: [
+                  {
+                    index: true,
+                    element: <Navigate replace to={campaignSteps[0].path} />,
+                  },
+                  ...campaignSteps.map((step) => ({
+                    path: step.path,
+                    element: campaignStepPages[step.id],
+                  })),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      // 없는 주소. 상태별 경로(RequireAuth) 밖에 두어 로그인 전, 입점 신청 중, 입점 완료 모두 같은 화면을 보여준다
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
-  // 없는 주소. 상태별 경로(RequireAuth) 밖에 두어 로그인 전, 입점 신청 중, 입점 완료 모두 같은 화면을 보여준다
-  { path: '*', element: <NotFoundPage /> },
 ]);
