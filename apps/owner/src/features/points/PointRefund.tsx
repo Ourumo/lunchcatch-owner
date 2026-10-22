@@ -12,7 +12,9 @@ import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { RefundRequestList } from './RefundRequestList';
 import { useRefundPreview } from './useRefundPreview';
+import { useRefundRequests } from './useRefundRequests';
 
 const skeletonClassName =
   'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
@@ -197,9 +199,10 @@ interface PointRefundProps {
 }
 
 // 가게 관리 > 포인트 환불 (docs/requirements-owner.md "포인트 환불 요청").
-// 잔액 전액만 환불할 수 있어, 서버 미리보기로 환불 대상 포인트와 수수료, 예상 환불액을 보여준다
+// 잔액 전액만 환불할 수 있어, 서버 미리보기로 환불 대상 포인트와 수수료, 예상 환불액을 보여주고 그 아래에 요청 내역을 둔다
 export const PointRefund = ({ onBack }: PointRefundProps) => {
   const { reload, state } = useRefundPreview();
+  const requests = useRefundRequests();
   const [reason, setReason] = useState('');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -229,6 +232,8 @@ export const PointRefund = ({ onBack }: PointRefundProps) => {
         description: '관리자가 승인한 뒤에 처리돼요.',
       });
       reload();
+      // 새 요청이 맨 위에 대기로 보이도록 내역도 처음부터 다시 받는다
+      requests.reload();
       return;
     }
 
@@ -305,6 +310,7 @@ export const PointRefund = ({ onBack }: PointRefundProps) => {
           />
         )}
         {renderPreview()}
+        <RefundRequestList onRetry={requests.reload} state={requests.state} />
       </main>
       <StepActionBar
         isNextDisabled={!canRequest}
