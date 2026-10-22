@@ -1,4 +1,4 @@
-import { Button, StatusBadge, type StatusBadgeVariant } from '@repo/ui';
+import { StatusBadge, type StatusBadgeVariant } from '@repo/ui';
 import { Info } from 'lucide-react';
 
 import type {
@@ -7,14 +7,12 @@ import type {
 } from '@owner/api/payments';
 import { formatNumber } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { usePaymentHistory } from './usePaymentHistory';
-import type { LoadMoreStatus } from './usePointHistory';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 const statusBadges: Record<
   PaymentDisplayStatus,
@@ -73,73 +71,8 @@ const PaymentRow = ({ item }: { item: PaymentHistoryItem }) => {
   );
 };
 
-interface PaymentHistoryFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
-const PaymentHistoryFooter = ({
-  hasMore,
-  loadMore,
-  onLoadMore,
-}: PaymentHistoryFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">결제 내역을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
-};
-
 const PaymentHistorySkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">결제 내역을 불러오는 중</span>
-    <div aria-hidden="true" className={`h-60 ${skeletonClassName}`} />
-  </div>
-);
-
-const PaymentHistoryMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
+  <SkeletonBlock className="h-60" label="결제 내역을 불러오는 중" />
 );
 
 // 확인 중인 결제가 있으면 서버가 새 충전 주문을 받지 않는다
@@ -169,7 +102,7 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
 
     if (state.status === 'error') {
       return (
-        <PaymentHistoryMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="결제 내역을 불러오지 못했어요"
@@ -179,7 +112,7 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
 
     if (state.items.length === 0) {
       return (
-        <PaymentHistoryMessage
+        <StatusMessage
           description="포인트를 충전하면 여기에 결제 내역이 쌓여요"
           title="결제 내역이 없어요"
         />
@@ -196,10 +129,11 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
             <PaymentRow item={item} key={item.paymentId} />
           ))}
         </ul>
-        <PaymentHistoryFooter
+        <LoadMoreFooter
           hasMore={state.nextCursor !== null}
-          loadMore={state.loadMore}
+          loadingLabel="결제 내역을 더 불러오는 중"
           onLoadMore={loadMore}
+          status={state.loadMore}
         />
       </>
     );

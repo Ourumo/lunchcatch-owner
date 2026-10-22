@@ -1,4 +1,4 @@
-import { Button, SegmentedControl } from '@repo/ui';
+import { SegmentedControl } from '@repo/ui';
 
 import type { CouponUsage } from '@owner/api/couponUsage';
 import type { PointHistoryPeriod } from '@owner/api/points';
@@ -9,19 +9,15 @@ import {
   historyPeriodItems,
   toKstDateKey,
 } from '@owner/ui/historyFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import {
-  type LoadMoreStatus,
-  useCouponUsageHistory,
-} from './useCouponUsageHistory';
+import { useCouponUsageHistory } from './useCouponUsageHistory';
 
 // 처음에는 최근 30일을 보여준다
 const DEFAULT_PERIOD: PointHistoryPeriod = '30D';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 interface CouponUsageDay {
   // YYYY-MM-DD
@@ -55,69 +51,8 @@ const UsageRow = ({ usage }: { usage: CouponUsage }) => (
   </li>
 );
 
-interface UsageFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
-const UsageFooter = ({ hasMore, loadMore, onLoadMore }: UsageFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">쿠폰 사용 이력을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
-};
-
 const UsageSkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">쿠폰 사용 이력을 불러오는 중</span>
-    <div aria-hidden="true" className={`h-48 ${skeletonClassName}`} />
-  </div>
-);
-
-const UsageMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
+  <SkeletonBlock className="h-48" label="쿠폰 사용 이력을 불러오는 중" />
 );
 
 interface CouponUsageHistoryProps {
@@ -139,12 +74,12 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
     if (state.status === 'error') {
       // 권한이 없으면 다시 시도해도 같아 버튼을 두지 않는다
       return state.isForbidden ? (
-        <UsageMessage
+        <StatusMessage
           description="이 계정으로는 가게의 쿠폰 사용 이력을 볼 수 없어요"
           title="쿠폰 사용 이력을 조회할 수 없어요"
         />
       ) : (
-        <UsageMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="쿠폰 사용 이력을 불러오지 못했어요"
@@ -154,7 +89,7 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
 
     if (state.usages.length === 0) {
       return (
-        <UsageMessage
+        <StatusMessage
           description="손님이 쿠폰을 쓰면 여기에 사용 이력이 쌓여요"
           title="이 기간에 사용된 쿠폰이 없어요"
         />
@@ -175,10 +110,11 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
             </ul>
           </section>
         ))}
-        <UsageFooter
+        <LoadMoreFooter
           hasMore={state.nextCursor !== null}
-          loadMore={state.loadMore}
+          loadingLabel="쿠폰 사용 이력을 더 불러오는 중"
           onLoadMore={loadMore}
+          status={state.loadMore}
         />
       </div>
     );

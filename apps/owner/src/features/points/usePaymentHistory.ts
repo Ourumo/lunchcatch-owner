@@ -4,8 +4,7 @@ import {
   getPaymentHistoryPage,
   type PaymentHistoryItem,
 } from '@owner/api/payments';
-
-import type { LoadMoreStatus } from './usePointHistory';
+import type { LoadMoreStatus } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 
 type PaymentHistoryState =
   | { status: 'loading' }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Button } from '@repo/ui';
 
 export type AuthCheckScreenProps =
@@ -21,15 +21,37 @@ const Frame = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
+// 이보다 오래 걸릴 때만 확인 중 문구를 화면에 보여준다
+const SLOW_CHECK_DELAY_MS = 1000;
+
+// 확인은 보통 바로 끝나, 문구가 잠깐 떴다가 다음 화면(스켈레톤 등)으로 바뀌며 깜빡이지 않도록
+// 오래 걸릴 때만 보여준다. 그 전에는 빈 배경으로 두고 스크린 리더에만 알린다
+const CheckingMessage = () => {
+  const [isSlow, setIsSlow] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsSlow(true), SLOW_CHECK_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <p
+      className={isSlow ? 'text-body-sm-mobile text-text-secondary' : 'sr-only'}
+      role="status"
+    >
+      로그인 정보를 확인하는 중이에요
+    </p>
+  );
+};
+
 // 앱을 열 때 내 정보 조회로 로그인 상태를 확인하는 동안과 확인하지 못했을 때 보여준다.
 // 확인하지 못했으면 로그인 전인지 알 수 없어 로그인 화면이나 보호 화면으로 보내지 않고 다시 시도하게 한다
 export const AuthCheckScreen = (props: AuthCheckScreenProps) => {
   if (props.status === 'checking') {
     return (
       <Frame>
-        <p className="text-body-sm-mobile text-text-secondary" role="status">
-          로그인 정보를 확인하는 중이에요
-        </p>
+        <CheckingMessage />
       </Frame>
     );
   }

@@ -9,15 +9,14 @@ import {
   requestRefund,
 } from '@owner/api/refund';
 import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { RefundRequestList } from './RefundRequestList';
 import { useRefundPreview } from './useRefundPreview';
 import { useRefundRequests } from './useRefundRequests';
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 // 지금 환불을 요청할 수 없는 이유. 요청이 같은 이유로 거절됐을 때도 쓴다
 const refundBlockedMessages: Record<RefundBlockedReason, string> = {
@@ -176,24 +175,7 @@ const ConfirmRefundSheet = ({
 );
 
 const PreviewSkeleton = () => (
-  <div aria-busy="true">
-    <span className="sr-only">환불 미리보기를 불러오는 중</span>
-    <div aria-hidden="true" className={`h-36 ${skeletonClassName}`} />
-  </div>
-);
-
-const PreviewError = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      환불 정보를 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      잠시 후 다시 시도해 주세요
-    </p>
-    <Button className="mt-2" onClick={onRetry} variant="secondary">
-      다시 시도
-    </Button>
-  </div>
+  <SkeletonBlock className="h-36" label="환불 미리보기를 불러오는 중" />
 );
 
 interface PointRefundProps {
@@ -264,7 +246,13 @@ export const PointRefund = ({ onBack }: PointRefundProps) => {
     }
 
     if (state.status === 'error') {
-      return <PreviewError onRetry={reload} />;
+      return (
+        <StatusMessage
+          description="잠시 후 다시 시도해 주세요"
+          onRetry={reload}
+          title="환불 정보를 불러오지 못했어요"
+        />
+      );
     }
 
     const { preview } = state;

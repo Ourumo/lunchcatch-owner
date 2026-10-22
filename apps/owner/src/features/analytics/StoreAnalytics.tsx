@@ -1,12 +1,13 @@
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Button } from '@repo/ui';
 import { ChevronDown, Info } from 'lucide-react';
 
 import type { Campaign } from '@owner/api/campaign';
 import type { CampaignDayReport } from '@owner/api/report';
 import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { AnalyticsSummary } from './AnalyticsSummary';
@@ -19,46 +20,25 @@ const CAMPAIGNS_PATH = '/campaigns';
 // 주소에 두는 선택한 캠페인 ID
 const CAMPAIGN_ID_PARAM = 'campaignId';
 
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
-
 const notices = [
   '노출 수는 보장되지 않아요. 주변 직장인 수와 다른 캠페인 상황에 따라 달라져요.',
   '찜·발급·사용 수는 정산에 반영되지 않아요.',
   '수치는 하루 한 번 집계돼요. 오늘 값은 다음 날 반영돼요.',
 ];
 
-const AnalyticsSkeleton = ({ label }: { label: string }) => (
-  <div aria-busy="true" className="flex flex-col gap-5">
+// 리포트(집계 기간 한 줄, 요약, 일별 추이)와 같은 높이로 두어, 리포트가 들어와도 아래 안내가 밀리지 않게 한다.
+// 높이는 360px 폭에서 잰 값이라 요약이나 추이의 모양을 바꾸면 함께 맞춘다
+const ReportSkeleton = ({ label }: { label: string }) => (
+  <div aria-busy="true" className="flex flex-col gap-4">
     <span className="sr-only">{label}</span>
-    {[80, 176].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className={skeletonClassName}
-        key={index}
-        style={{ height }}
-      />
-    ))}
+    <SkeletonBlock className="h-5 w-56" rounded="lg" />
+    <SkeletonBlock height={425} />
+    <SkeletonBlock height={411} />
   </div>
 );
 
-const AnalyticsMessage = ({
-  action,
-  description,
-  title,
-}: {
-  title: string;
-  description: string;
-  action?: ReactNode;
-}) => (
-  <div className="flex flex-col items-center gap-3 py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {action && <div className="mt-2">{action}</div>}
-  </div>
-);
+// 캠페인 선택 버튼 높이
+const CAMPAIGN_SELECT_HEIGHT = 96;
 
 // 집계된 기간과 집행 기간. 리포트는 날짜 오름차순으로 온다
 const formatReportPeriod = (
@@ -160,18 +140,14 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
   const renderReport = (campaign: Campaign) => {
     if (!reportState) {
-      return <AnalyticsSkeleton label="리포트를 불러오는 중" />;
+      return <ReportSkeleton label="리포트를 불러오는 중" />;
     }
 
     if (reportState.status === 'error') {
       return (
-        <AnalyticsMessage
-          action={
-            <Button onClick={retryReport} variant="secondary">
-              다시 시도
-            </Button>
-          }
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
+          onRetry={retryReport}
           title="리포트를 불러오지 못했어요"
         />
       );
@@ -191,7 +167,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
             <AnalyticsTrend campaign={campaign} report={report} />
           </>
         ) : (
-          <AnalyticsMessage
+          <StatusMessage
             description="수치는 하루 한 번 집계돼 집행 다음 날부터 볼 수 있어요"
             title="아직 집계된 날이 없어요"
           />
@@ -202,18 +178,21 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
   const renderContent = () => {
     if (campaignsState.status === 'loading') {
-      return <AnalyticsSkeleton label="분석을 불러오는 중" />;
+      // 캠페인이 있을 때의 모양(선택 버튼, 리포트, 안내)으로 그려 둔다. 안내는 고정 문구라 그대로 보여준다
+      return (
+        <>
+          <SkeletonBlock height={CAMPAIGN_SELECT_HEIGHT} />
+          <ReportSkeleton label="분석을 불러오는 중" />
+          <AnalyticsNotices />
+        </>
+      );
     }
 
     if (campaignsState.status === 'error') {
       return (
-        <AnalyticsMessage
-          action={
-            <Button onClick={retryCampaigns} variant="secondary">
-              다시 시도
-            </Button>
-          }
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
+          onRetry={retryCampaigns}
           title="분석을 불러오지 못했어요"
         />
       );
@@ -221,7 +200,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
     if (!selectedCampaign) {
       return (
-        <AnalyticsMessage
+        <StatusMessage
           action={
             <Link
               className="flex h-10 items-center rounded-full border border-action-primary px-4 text-body-sm-mobile font-bold text-text-brand transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"

@@ -8,9 +8,7 @@ import {
 import type { PointHistoryPeriod } from '@owner/api/points';
 import { getMyStore } from '@owner/api/store';
 import type { ApiResult } from '@owner/api/types';
-
-// 이어서 불러오기 상태. 처음 불러오기와 따로 두어 실패해도 이미 불러온 이력은 그대로 둔다
-export type LoadMoreStatus = 'idle' | 'loading' | 'error';
+import type { LoadMoreStatus } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 
 type CouponUsageHistoryState =
   | { status: 'loading' }

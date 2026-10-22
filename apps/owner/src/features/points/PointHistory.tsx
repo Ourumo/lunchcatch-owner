@@ -13,8 +13,10 @@ import {
   formatHistoryTime,
   historyPeriodItems,
 } from '@owner/ui/historyFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
@@ -24,13 +26,10 @@ import {
   type PointHistoryItem,
   pointHistoryTypeLabels,
 } from './pointHistoryFormat';
-import { type LoadMoreStatus, usePointHistory } from './usePointHistory';
+import { usePointHistory } from './usePointHistory';
 
 // 처음에는 최근 30일 전체 내역을 보여준다
 const DEFAULT_FILTER: PointHistoryFilter = { period: '30D', campaignId: null };
-
-const skeletonClassName =
-  'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
 
 interface BalanceSummaryProps {
   state: ReturnType<typeof usePointHistory>['balanceState'];
@@ -43,10 +42,13 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
   const renderBalance = () => {
     if (state.status === 'loading') {
       return (
-        <div aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">잔액을 불러오는 중</span>
-          <div aria-hidden="true" className={`h-4 w-10 ${skeletonClassName}`} />
-          <div aria-hidden="true" className={`h-8 w-32 ${skeletonClassName}`} />
+        // "잔액" 글자는 그대로 두고 금액 자리만 같은 높이의 스켈레톤으로 둔다
+        <div>
+          <p className="text-caption-mobile text-text-secondary">잔액</p>
+          <SkeletonBlock
+            className="mt-0.5 h-7.5 w-32"
+            label="잔액을 불러오는 중"
+          />
         </div>
       );
     }
@@ -89,13 +91,18 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
           충전
         </button>
       </div>
-      {state.status === 'success' && (
+      {/* 불러오는 동안에도 그려 두어 잔액이 들어올 때 카드 높이가 바뀌지 않게 한다. 값 자리만 스켈레톤으로 둔다 */}
+      {state.status !== 'error' && (
         <div className="mt-4 border-t border-border-subtle pt-3">
           <div className="flex items-center justify-between gap-3 text-body-sm-mobile">
             <span className="text-text-secondary">예약 중 포인트</span>
-            <span className="shrink-0 font-bold text-text-primary">
-              {formatPoints(state.balance.reservedPoints)}
-            </span>
+            {state.status === 'success' ? (
+              <span className="shrink-0 font-bold text-text-primary">
+                {formatPoints(state.balance.reservedPoints)}
+              </span>
+            ) : (
+              <SkeletonBlock className="h-5 w-16" />
+            )}
           </div>
           <p className="mt-1 text-caption-mobile break-keep text-text-tertiary">
             오늘 캠페인에 예약했지만 아직 쓰지 않은 포인트로, 잔액과 따로
@@ -105,46 +112,6 @@ const BalanceSummary = ({ onCharge, onRetry, state }: BalanceSummaryProps) => {
       )}
     </section>
   );
-};
-
-interface HistoryFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
-const HistoryFooter = ({
-  hasMore,
-  loadMore,
-  onLoadMore,
-}: HistoryFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">포인트 내역을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
 };
 
 interface HistoryRowProps {
@@ -187,34 +154,8 @@ const HistorySkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-3">
     <span className="sr-only">포인트 내역을 불러오는 중</span>
     {[0, 1].map((index) => (
-      <div
-        aria-hidden="true"
-        className={`h-40 ${skeletonClassName}`}
-        key={index}
-      />
+      <SkeletonBlock className="h-40" key={index} />
     ))}
-  </div>
-);
-
-const HistoryMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
   </div>
 );
 
@@ -247,7 +188,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
 
     if (historyState.status === 'error') {
       return (
-        <HistoryMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retryHistory}
           title="포인트 내역을 불러오지 못했어요"
@@ -262,7 +203,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
 
     if (days.length === 0) {
       return (
-        <HistoryMessage
+        <StatusMessage
           description={
             filter.campaignId
               ? '다른 기간이나 캠페인을 골라 보세요'
@@ -291,10 +232,11 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
             </ul>
           </section>
         ))}
-        <HistoryFooter
+        <LoadMoreFooter
           hasMore={historyState.nextCursor !== null}
-          loadMore={historyState.loadMore}
+          loadingLabel="포인트 내역을 더 불러오는 중"
           onLoadMore={loadMoreHistory}
+          status={historyState.loadMore}
         />
       </div>
     );

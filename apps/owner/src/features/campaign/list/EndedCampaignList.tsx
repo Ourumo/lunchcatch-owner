@@ -1,19 +1,17 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router';
-import { Button } from '@repo/ui';
 
 import { useGoBack } from '@owner/hooks/useGoBack';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
-import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
+import { LoadMoreFooter } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
 import { ENDED_CAMPAIGNS_PATH } from './endedCampaigns';
 import { readEndedListScroll, saveEndedListScroll } from './endedListStorage';
-import {
-  type LoadMoreStatus,
-  useEndedCampaignList,
-} from './useEndedCampaignList';
+import { useEndedCampaignList } from './useEndedCampaignList';
 
 const CAMPAIGN_LIST_PATH = '/campaigns';
 
@@ -21,80 +19,10 @@ const EndedListSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-2 px-page py-5">
     <span className="sr-only">지난 캠페인을 불러오는 중</span>
     {[0, 1, 2].map((index) => (
-      <div
-        aria-hidden="true"
-        className="h-40 animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-      />
+      <SkeletonBlock className="h-40" key={index} />
     ))}
   </div>
 );
-
-const EndedListMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
-);
-
-interface ListFooterProps {
-  hasMore: boolean;
-  loadMore: LoadMoreStatus;
-  onLoadMore: () => void;
-}
-
-// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패, 끝까지 봤을 때
-const ListFooter = ({ hasMore, loadMore, onLoadMore }: ListFooterProps) => {
-  if (loadMore === 'loading') {
-    return (
-      <div className="flex justify-center py-4" role="status">
-        <span
-          aria-hidden="true"
-          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
-        />
-        <span className="sr-only">지난 캠페인을 더 불러오는 중</span>
-      </div>
-    );
-  }
-
-  if (loadMore === 'error') {
-    return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <p className="text-body-sm-mobile text-text-secondary" role="alert">
-          불러오지 못했어요
-        </p>
-        <Button onClick={onLoadMore} variant="secondary">
-          다시 시도
-        </Button>
-      </div>
-    );
-  }
-
-  if (hasMore) {
-    return <LoadMoreTrigger onLoadMore={onLoadMore} />;
-  }
-
-  return (
-    <p className="py-4 text-center text-body-sm-mobile text-text-secondary">
-      모든 캠페인을 봤어요
-    </p>
-  );
-};
 
 // 스크롤 위치를 기록해 두었다가, 복원한 목록을 처음 그릴 때 그 위치로 돌려놓는다.
 // 상세로 넘어가는 순간에는 화면이 짧아져 브라우저가 스크롤 값을 줄이므로, 떠날 때 읽지 않고 스크롤할 때마다 기록한다
@@ -148,7 +76,8 @@ export const EndedCampaignList = () => {
 
     if (state.status === 'error') {
       return (
-        <EndedListMessage
+        <StatusMessage
+          fill
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="지난 캠페인을 불러오지 못했어요"
@@ -158,7 +87,8 @@ export const EndedCampaignList = () => {
 
     if (state.campaigns.length === 0) {
       return (
-        <EndedListMessage
+        <StatusMessage
+          fill
           description="집행 기간이 끝난 캠페인이 여기에 모여요"
           title="아직 끝난 캠페인이 없어요"
         />
@@ -177,10 +107,12 @@ export const EndedCampaignList = () => {
             </li>
           ))}
         </ul>
-        <ListFooter
+        <LoadMoreFooter
+          endMessage="모든 캠페인을 봤어요"
           hasMore={state.nextCursor !== null}
-          loadMore={state.loadMore}
+          loadingLabel="지난 캠페인을 더 불러오는 중"
           onLoadMore={loadMore}
+          status={state.loadMore}
         />
       </div>
     );

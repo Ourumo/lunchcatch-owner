@@ -1,5 +1,7 @@
 import { Button } from '@repo/ui';
 
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+
 interface StoreEditStatusProps {
   status: 'loading' | 'error';
   onRetry: () => void;
@@ -12,12 +14,7 @@ export const StoreEditStatus = ({ onRetry, status }: StoreEditStatusProps) => {
       <div aria-busy="true" className="flex flex-col gap-4 px-page py-6">
         <span className="sr-only">가게 정보를 불러오는 중</span>
         {[72, 72].map((height, index) => (
-          <div
-            aria-hidden="true"
-            className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-            key={index}
-            style={{ height }}
-          />
+          <SkeletonBlock height={height} key={index} />
         ))}
       </div>
     );
