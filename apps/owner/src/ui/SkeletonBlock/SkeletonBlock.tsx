@@ -1,6 +1,7 @@
 const roundedClassNames = {
   lg: 'rounded-lg',
   xl: 'rounded-xl',
+  full: 'rounded-full',
 };
 
 export interface SkeletonBlockProps {
@@ -8,7 +9,7 @@ export interface SkeletonBlockProps {
   className?: string;
   // 높이가 목록마다 다를 때 숫자(px)로 넘긴다
   height?: number;
-  // 카드 안의 작은 영역은 lg, 화면의 카드 자리는 xl
+  // 카드 안의 작은 영역은 lg, 화면의 카드 자리는 xl, 알약 모양 버튼 자리는 full
   rounded?: keyof typeof roundedClassNames;
   // 블록 하나로 불러오는 중을 알릴 때 스크린 리더에 읽을 문구. 없으면 스크린 리더에서 숨긴다
   label?: string;

@@ -25,10 +25,11 @@ import { useHome } from './useHome';
 const QR_SCAN_PATH = '/qr-scan';
 
 interface HomeHeaderProps {
-  balance: number;
+  // 불러오는 중이면 null. 가게 이름과 잔액 자리만 스켈레톤으로 두고 사용법은 그대로 그린다
+  balance: number | null;
   onBalanceClick: () => void;
   onHelpClick: () => void;
-  store: MyStore;
+  store: MyStore | null;
 }
 
 // 알림 기능이 없어 알림 아이콘 대신 잔액을 둔다. 잔액이 모자라면 캠페인이 멈추므로 늘 보이게 한다.
@@ -42,22 +43,30 @@ const HomeHeader = ({
 }: HomeHeaderProps) => (
   <header className="flex flex-col">
     <div className="flex items-center justify-between gap-3">
-      <h1 className="min-w-0 truncate text-h2-mobile font-bold text-text-primary">
-        {store.name}
-      </h1>
-      <button
-        aria-label={`포인트 잔액 ${formatPoints(balance)}, 충전하기`}
-        className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface pr-2.5 pl-3.5 text-body-sm-mobile font-bold text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
-        onClick={onBalanceClick}
-        type="button"
-      >
-        <Wallet aria-hidden="true" className="size-4 text-text-secondary" />
-        {formatPoints(balance)}
-        <ChevronRight
-          aria-hidden="true"
-          className="size-4 text-text-tertiary"
-        />
-      </button>
+      {store ? (
+        <h1 className="min-w-0 truncate text-h2-mobile font-bold text-text-primary">
+          {store.name}
+        </h1>
+      ) : (
+        <SkeletonBlock className="h-7 w-36" />
+      )}
+      {balance === null ? (
+        <SkeletonBlock className="h-11 w-28" rounded="full" />
+      ) : (
+        <button
+          aria-label={`포인트 잔액 ${formatPoints(balance)}, 충전하기`}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface pr-2.5 pl-3.5 text-body-sm-mobile font-bold text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+          onClick={onBalanceClick}
+          type="button"
+        >
+          <Wallet aria-hidden="true" className="size-4 text-text-secondary" />
+          {formatPoints(balance)}
+          <ChevronRight
+            aria-hidden="true"
+            className="size-4 text-text-tertiary"
+          />
+        </button>
+      )}
     </div>
     {/* 누르는 영역은 높이 44px로 두되 위쪽 영역이 높아지지 않도록 바깥 여백을 당긴다 */}
     <button
@@ -107,15 +116,6 @@ const QrScanLink = () => (
   </Link>
 );
 
-const HomeSkeleton = () => (
-  <div aria-busy="true" className="flex flex-col gap-5 px-page py-5">
-    <span className="sr-only">홈 화면을 불러오는 중</span>
-    {[64, 52, 176].map((height, index) => (
-      <SkeletonBlock height={height} key={index} />
-    ))}
-  </div>
-);
-
 // 홈 탭. 점심에 앱을 열면 가장 먼저 보는 화면이라 QR 스캔과 오늘 캠페인 상황을 위에 둔다
 export const HomeDashboard = () => {
   const { retry, state } = useHome();
@@ -125,10 +125,6 @@ export const HomeDashboard = () => {
   const startCharge = usePointCharge();
 
   const renderContent = () => {
-    if (state.status === 'loading') {
-      return <HomeSkeleton />;
-    }
-
     if (state.status === 'error') {
       return (
         <StatusMessage
@@ -140,30 +136,36 @@ export const HomeDashboard = () => {
       );
     }
 
-    const current = getCurrentCampaign(state.campaigns);
+    // 불러오는 동안에도 같은 배치로 그린다. 고정된 부분(사용법, QR, 섹션 제목)은 그대로 두고 값 자리만 스켈레톤으로 둔다
+    const home = state.status === 'success' ? state : null;
+    const current = home && getCurrentCampaign(home.campaigns);
     const isPausedByNoPoints =
       current?.status === 'PAUSED' && current.pausedReason === 'NO_POINTS';
     const openCharge = () => setIsChargeOpen(true);
 
     return (
-      <div className="flex flex-col gap-5 px-page py-5">
+      <div
+        aria-busy={home ? undefined : true}
+        className="flex flex-col gap-5 px-page py-5"
+      >
+        {!home && <span className="sr-only">홈 화면을 불러오는 중</span>}
         <HomeHeader
-          balance={state.balance}
+          balance={home?.balance ?? null}
           onBalanceClick={openCharge}
           onHelpClick={() => setIsTutorialOpen(true)}
-          store={state.store}
+          store={home?.store ?? null}
         />
         {isPausedByNoPoints && <LowBalanceAlert onCharge={openCharge} />}
         <QrScanLink />
         <HomeCampaignSection
-          campaigns={state.campaigns}
-          menus={state.store.menus}
+          campaigns={home?.campaigns ?? null}
+          menus={home?.store.menus ?? []}
         />
-        <RecentPerformance days={state.recentDays} />
+        <RecentPerformance days={home?.recentDays ?? null} />
 
-        {isChargeOpen && (
+        {home && isChargeOpen && (
           <PointChargeSheet
-            balance={state.balance}
+            balance={home.balance}
             policy={chargePolicy}
             onCharge={startCharge}
             onClose={() => setIsChargeOpen(false)}
