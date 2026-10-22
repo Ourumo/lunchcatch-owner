@@ -22,14 +22,3 @@ export const findSelectedCampaign = (
   campaigns: Campaign[],
   campaignId: string | null,
 ) => campaigns.find(({ id }) => id === campaignId) ?? campaigns.at(0) ?? null;
-
-// 캠페인 비교에 두는 최근 종료 캠페인 수
-const COMPARISON_ENDED_COUNT = 2;
-
-// 캠페인 비교 목록. 진행 중·일시중지 캠페인과 최근에 끝난 캠페인 몇 개를 둔다
-export const getComparisonCampaigns = (campaigns: Campaign[]) => [
-  ...campaigns.filter(isCurrentCampaign),
-  ...campaigns
-    .filter(({ status }) => status === 'ENDED')
-    .slice(0, COMPARISON_ENDED_COUNT),
-];
