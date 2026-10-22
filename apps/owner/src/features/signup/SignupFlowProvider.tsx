@@ -24,6 +24,9 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
   // 값이 바뀌면 다시 불러온다
   const [loadRequestId, setLoadRequestId] = useState(0);
   const [version, setVersion] = useState(0);
+  const [rejectedBusinessNumber, setRejectedBusinessNumber] = useState<
+    string | null
+  >(null);
 
   // 서버에 저장한 값으로 입력값과 버전을 바꾸고, 들어온 주소와 상관없이 서버가 정한 이어갈 단계로 보낸다.
   // 로그인하면 늘 약관 동의 주소로 들어온다
@@ -105,7 +108,15 @@ export const SignupFlowProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <SignupFlowContext
-      value={{ reload, setVersion, updateStepValues, values, version }}
+      value={{
+        rejectedBusinessNumber,
+        reload,
+        setRejectedBusinessNumber,
+        setVersion,
+        updateStepValues,
+        values,
+        version,
+      }}
     >
       {children}
     </SignupFlowContext>
