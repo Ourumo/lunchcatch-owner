@@ -90,6 +90,9 @@ export const BudgetStep = () => {
   // 저장해 둔 시작일이 그사이 지나 버린 경우
   const isStartDatePast =
     Boolean(budget.startDate) && budget.startDate < tomorrow;
+  // 같은 날을 시작일과 종료일로 고른 경우. 서버는 최소 2일(양 끝 포함)부터 받는다
+  const isSameDayPeriod =
+    Boolean(budget.startDate) && budget.startDate === budget.endDate;
 
   return (
     <div className="flex flex-col gap-8 px-page">
@@ -131,6 +134,15 @@ export const BudgetStep = () => {
             role="alert"
           >
             시작일이 지났어요. 내일 이후로 다시 골라 주세요.
+          </p>
+        )}
+        {isSameDayPeriod && (
+          <p
+            className="-mt-1 text-caption-mobile text-status-danger-fg"
+            role="alert"
+          >
+            집행 기간은 2일 이상이어야 해요. 종료일을 시작일 다음 날 이후로 골라
+            주세요.
           </p>
         )}
         {hasPeriod && (
