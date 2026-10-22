@@ -34,7 +34,7 @@ const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
 
   const message =
     status === 'DRAFT'
-      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 자동 검수를 거쳐 대기 중 상태가 돼요.'
+      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 대기 중 상태가 돼요.'
       : status === 'SCHEDULED' && budget.startDate
         ? `${formatShortDate(budget.startDate)} 00:00부터 피드에 노출돼요.`
         : status === 'PAUSED' && pausedReason
