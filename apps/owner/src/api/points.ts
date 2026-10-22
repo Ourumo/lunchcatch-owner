@@ -32,6 +32,9 @@ export interface PointHistoryEntry {
   // 잔액의 증감(+/−)
   amount: number;
   occurredAt: string;
+  // 예약과 예약 해제가 어느 날 몫인지(YYYY-MM-DD). 전날 몫의 예약 해제는 다음 날 00:00에 기록된다.
+  // 충전, 환불, 조정은 null
+  businessDate: string | null;
   campaignId: string | null;
 }
 
@@ -148,7 +151,7 @@ interface OwnerLedgerItem {
   entryType: PointHistoryType;
   amount: number;
   campaignId: number | null;
-  businessDate: string;
+  businessDate: string | null;
   paymentId: number | null;
   createdAt: string;
 }
@@ -168,6 +171,7 @@ const getSignedAmount = (type: PointHistoryType, amount: number) => {
 
 const toHistoryEntry = ({
   amount,
+  businessDate,
   campaignId,
   createdAt,
   entryType,
@@ -177,6 +181,7 @@ const toHistoryEntry = ({
   type: entryType,
   amount: getSignedAmount(entryType, amount),
   occurredAt: createdAt,
+  businessDate,
   campaignId: campaignId === null ? null : String(campaignId),
 });
 
