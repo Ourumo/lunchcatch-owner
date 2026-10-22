@@ -18,6 +18,7 @@ import {
   formatStoreImageCount,
 } from './storeFormat';
 import {
+  PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
@@ -209,6 +210,7 @@ export const StoreManagement = () => {
             onCharge={() => setIsChargeOpen(true)}
           />
           <LinkRow label="포인트 내역" to={POINT_HISTORY_PATH} />
+          <LinkRow label="결제 내역" to={PAYMENT_HISTORY_PATH} />
         </ManagementSection>
 
         <ManagementSection title="가게 정보">

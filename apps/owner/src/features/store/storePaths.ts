@@ -6,6 +6,8 @@ export const STORE_ANALYTICS_PATH = '/store/analytics';
 
 export const POINT_HISTORY_PATH = '/points/history';
 
+export const PAYMENT_HISTORY_PATH = '/points/payments';
+
 export const STORE_HOURS_PATH = '/store/hours';
 
 export const STORE_IMAGES_PATH = '/store/images';

@@ -181,6 +181,10 @@ export const formatHistoryDate = (dateKey: string) => {
 export const formatHistoryTime = (occurredAt: string) =>
   kstTimeFormatter.format(new Date(occurredAt));
 
+// 10월 22일 (수) 09:20. 날짜 묶음 없이 한 줄씩 보여주는 결제 내역에 쓴다
+export const formatHistoryDateTime = (occurredAt: string) =>
+  `${formatHistoryDate(toDateKey(new Date(occurredAt)))} ${formatHistoryTime(occurredAt)}`;
+
 // +30,000P, −2,800P. 빼기는 하이픈보다 잘 보이는 마이너스 기호를 쓴다
 export const formatSignedPoints = (amount: number) => {
   if (amount > 0) {
