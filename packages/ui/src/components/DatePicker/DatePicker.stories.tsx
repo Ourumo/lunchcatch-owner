@@ -24,3 +24,10 @@ export const Empty: Story = {
     placeholder: '가입일 선택',
   },
 };
+
+export const LimitedDate: Story = {
+  args: {
+    defaultValue: '2026-10-21',
+    maxDate: '2026-10-21',
+  },
+};

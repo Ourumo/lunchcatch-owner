@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
+import { useCalendarPopover } from '../../hooks/useCalendarPopover';
 import {
   type DateRangeSelectionMode,
   type DateRangeValue,
@@ -25,8 +26,6 @@ export interface DateRangePickerProps {
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 const emptyDateRange: DateRangeValue = { endDate: '', startDate: '' };
-const popupWidth = 296;
-const popupMargin = 8;
 
 const createDate = (value: string) => {
   const [year, month, day] = value.split('-').map(Number);
@@ -51,9 +50,8 @@ export function DateRangePicker({
   value,
   selectionMode = 'day',
 }: DateRangePickerProps) {
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const { fieldRef, popupRef } = useCalendarPopover(isOpen);
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(true);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedRange = value ?? uncontrolledValue;
@@ -83,70 +81,6 @@ export function DateRangePicker({
     0,
   ).getDate();
 
-  useLayoutEffect(() => {
-    const popup = popupRef.current;
-    const field = fieldRef.current;
-
-    if (!isOpen || !popup || !field) {
-      return;
-    }
-
-    // Popover API의 최상위 레이어는 부모의 overflow와 stacking context에 영향을 받지 않는다.
-    // manual 모드로 브라우저의 자동 닫기를 끄고, 바깥 클릭·Escape와 isOpen으로 열림 상태를 관리한다.
-    // useLayoutEffect에서 배치해 최초 표시 때 위치가 튀는 것을 막는다.
-    popup.showPopover();
-
-    const updatePosition = () => {
-      // 모바일 키보드나 확대 때문에 실제 보이는 영역이 작아진 경우에도 그 영역 안에 배치한다.
-      const viewport = window.visualViewport;
-      const viewportLeft = viewport?.offsetLeft ?? 0;
-      const viewportTop = viewport?.offsetTop ?? 0;
-      const viewportWidth =
-        viewport?.width ?? document.documentElement.clientWidth;
-      const viewportHeight = viewport?.height ?? window.innerHeight;
-      const margin = popupMargin;
-      const minLeft = viewportLeft + margin;
-      const minTop = viewportTop + margin;
-      const viewportBottom = viewportTop + viewportHeight - margin;
-      const fieldRect = field.getBoundingClientRect();
-
-      // 좁은 화면에서는 폭에 따라 내용 높이도 달라지므로 크기를 제한한 후 위치 계산에 쓸 높이를 측정한다.
-      popup.style.width = `${Math.min(popupWidth, Math.max(0, viewportWidth - margin * 2))}px`;
-      popup.style.maxHeight = `${Math.max(0, viewportHeight - margin * 2)}px`;
-
-      const popupRect = popup.getBoundingClientRect();
-      const maxLeft = viewportLeft + viewportWidth - margin - popupRect.width;
-      const belowTop = fieldRect.bottom + margin;
-      const aboveTop = fieldRect.top - margin - popupRect.height;
-      // 아래 공간이 부족하면 위로 펼치고, 어느 쪽도 부족하면 화면 안으로 보정한다.
-      const preferredTop =
-        belowTop + popupRect.height <= viewportBottom ? belowTop : aboveTop;
-
-      popup.style.left = `${Math.max(minLeft, Math.min(fieldRect.left, maxLeft))}px`;
-      popup.style.top = `${Math.max(minTop, Math.min(preferredTop, viewportBottom - popupRect.height))}px`;
-    };
-
-    updatePosition();
-
-    // 월 변경으로 달력 높이가 달라지거나 화면을 스크롤해도 입력란을 따라간다.
-    const observer = new ResizeObserver(updatePosition);
-    observer.observe(popup);
-    observer.observe(field);
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    window.visualViewport?.addEventListener('resize', updatePosition);
-    window.visualViewport?.addEventListener('scroll', updatePosition);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.visualViewport?.removeEventListener('resize', updatePosition);
-      window.visualViewport?.removeEventListener('scroll', updatePosition);
-      popup.hidePopover();
-    };
-  }, [isOpen]);
-
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       if (!fieldRef.current?.contains(event.target as Node)) {
@@ -167,7 +101,7 @@ export function DateRangePicker({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [fieldRef]);
 
   const handleValueChange = (nextValue: DateRangeValue) => {
     if (value === undefined) {
