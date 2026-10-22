@@ -1,9 +1,6 @@
-import type {
-  PointHistoryEntry,
-  PointHistoryPeriod,
-  PointHistoryType,
-} from '@owner/api/points';
+import type { PointHistoryEntry, PointHistoryType } from '@owner/api/points';
 import { formatPoints } from '@owner/ui/campaignFormat';
+import { toKstDateKey } from '@owner/ui/historyFormat';
 
 // 관리자 앱(billing)의 원장 유형 이름과 맞춘다
 export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {
@@ -14,15 +11,6 @@ export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {
   REFUND: '환불',
   ADJUST: '조정',
 };
-
-export const pointHistoryPeriodItems: {
-  label: string;
-  value: PointHistoryPeriod;
-}[] = [
-  { label: '최근 7일', value: '7D' },
-  { label: '최근 30일', value: '30D' },
-  { label: '최근 3개월', value: '3M' },
-];
 
 // 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전이면 released가 null이다.
 // 예약 해제 전의 소진은 오늘이면 소진 집계로 받고, 받지 못했거나 지난날(예약 해제가 늦어진 경우)이면 spent가 null이다
@@ -49,34 +37,13 @@ export interface PointHistoryDay {
   items: PointHistoryItem[];
 }
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-// 집행일(00:00 예약 ~ 13:30 예약 해제)은 한국 시간 기준이라, 브라우저 시간대와 상관없이 한국 날짜와 시각으로 묶고 보여준다.
-// 다른 시간대로 묶으면 00:00 예약이 전날로 넘어가 집행일 묶음이 깨진다
-const kstDateFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Seoul',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-
-const kstTimeFormatter = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Seoul',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
-// YYYY-MM-DD
-const toDateKey = (date: Date) => kstDateFormatter.format(date);
-
 const SERVING_TYPES: PointHistoryType[] = ['RESERVE', 'DEDUCT', 'RELEASE'];
 
 const isServingEntry = (entry: PointHistoryEntry) =>
   entry.campaignId !== null && SERVING_TYPES.includes(entry.type);
 
 const getServingKey = (entry: PointHistoryEntry) =>
-  `${toDateKey(new Date(entry.occurredAt))}:${entry.campaignId}`;
+  `${toKstDateKey(new Date(entry.occurredAt))}:${entry.campaignId}`;
 
 const toItem = (entry: PointHistoryEntry): PointHistoryItem => ({
   key: entry.id,
@@ -102,7 +69,7 @@ const toServingItem = (
   const released = isReleased ? anchor.amount : null;
   // 소진 집계는 오늘 것만 받으므로 오늘 묶음에만 쓴다
   const isToday =
-    toDateKey(new Date(anchor.occurredAt)) === toDateKey(new Date());
+    toKstDateKey(new Date(anchor.occurredAt)) === toKstDateKey(new Date());
   // 소진 집계에 없는 캠페인은 아직 노출되지 않아 소진이 0이다
   const unreleasedSpent =
     !isToday || todaySpent === null
@@ -154,7 +121,7 @@ export const groupPointHistory = (
       item = toServingItem(entry, group, todaySpent);
     }
 
-    const date = toDateKey(new Date(entry.occurredAt));
+    const date = toKstDateKey(new Date(entry.occurredAt));
     const lastDay = days.at(-1);
 
     if (lastDay?.date === date) {
@@ -166,24 +133,6 @@ export const groupPointHistory = (
 
   return days;
 };
-
-// 10월 13일 (월). 오늘이면 요일 대신 "오늘"
-export const formatHistoryDate = (dateKey: string) => {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  const label =
-    dateKey === toDateKey(new Date()) ? '오늘' : WEEKDAYS[date.getDay()];
-
-  return `${month}월 ${day}일 (${label})`;
-};
-
-// 09:20
-export const formatHistoryTime = (occurredAt: string) =>
-  kstTimeFormatter.format(new Date(occurredAt));
-
-// 10월 22일 (수) 09:20. 날짜 묶음 없이 한 줄씩 보여주는 결제 내역에 쓴다
-export const formatHistoryDateTime = (occurredAt: string) =>
-  `${formatHistoryDate(toDateKey(new Date(occurredAt)))} ${formatHistoryTime(occurredAt)}`;
 
 // +30,000P, −2,800P. 빼기는 하이픈보다 잘 보이는 마이너스 기호를 쓴다
 export const formatSignedPoints = (amount: number) => {
