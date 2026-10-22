@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Button } from '@repo/ui';
 import {
   ChevronRight,
   CircleAlert,
@@ -15,6 +14,7 @@ import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
@@ -116,20 +116,6 @@ const HomeSkeleton = () => (
   </div>
 );
 
-const HomeError = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      홈 화면을 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      잠시 후 다시 시도해 주세요
-    </p>
-    <Button className="mt-2" onClick={onRetry} variant="secondary">
-      다시 시도
-    </Button>
-  </div>
-);
-
 // 홈 탭. 점심에 앱을 열면 가장 먼저 보는 화면이라 QR 스캔과 오늘 캠페인 상황을 위에 둔다
 export const HomeDashboard = () => {
   const { retry, state } = useHome();
@@ -144,7 +130,14 @@ export const HomeDashboard = () => {
     }
 
     if (state.status === 'error') {
-      return <HomeError onRetry={retry} />;
+      return (
+        <StatusMessage
+          description="잠시 후 다시 시도해 주세요"
+          fill
+          onRetry={retry}
+          title="홈 화면을 불러오지 못했어요"
+        />
+      );
     }
 
     const current = getCurrentCampaign(state.campaigns);

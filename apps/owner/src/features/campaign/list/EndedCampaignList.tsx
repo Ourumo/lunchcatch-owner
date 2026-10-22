@@ -6,6 +6,7 @@ import { useGoBack } from '@owner/hooks/useGoBack';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { EndedCampaignCard } from './EndedCampaignCard';
@@ -24,28 +25,6 @@ const EndedListSkeleton = () => (
     {[0, 1, 2].map((index) => (
       <SkeletonBlock className="h-40" key={index} />
     ))}
-  </div>
-);
-
-const EndedListMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
   </div>
 );
 
@@ -145,7 +124,8 @@ export const EndedCampaignList = () => {
 
     if (state.status === 'error') {
       return (
-        <EndedListMessage
+        <StatusMessage
+          fill
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="지난 캠페인을 불러오지 못했어요"
@@ -155,7 +135,8 @@ export const EndedCampaignList = () => {
 
     if (state.campaigns.length === 0) {
       return (
-        <EndedListMessage
+        <StatusMessage
+          fill
           description="집행 기간이 끝난 캠페인이 여기에 모여요"
           title="아직 끝난 캠페인이 없어요"
         />

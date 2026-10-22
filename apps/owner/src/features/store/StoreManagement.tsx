@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '@repo/ui';
 import { ChartNoAxesColumn, ChevronRight, Store } from 'lucide-react';
 
 import type { MyStore } from '@owner/api/store';
@@ -10,6 +9,7 @@ import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { LogoutSheet } from './LogoutSheet';
@@ -162,20 +162,6 @@ const StoreManagementSkeleton = () => (
   </div>
 );
 
-const StoreManagementError = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      가게 정보를 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      잠시 후 다시 시도해 주세요
-    </p>
-    <Button className="mt-2" onClick={onRetry} variant="secondary">
-      다시 시도
-    </Button>
-  </div>
-);
-
 // 가게 관리 탭. 명세의 필수 기능(포인트 충전·내역, 영업시간·사진·메뉴 수정)만 둔다
 export const StoreManagement = () => {
   const navigate = useNavigate();
@@ -192,7 +178,14 @@ export const StoreManagement = () => {
     }
 
     if (state.status === 'error') {
-      return <StoreManagementError onRetry={retry} />;
+      return (
+        <StatusMessage
+          description="잠시 후 다시 시도해 주세요"
+          fill
+          onRetry={retry}
+          title="가게 정보를 불러오지 못했어요"
+        />
+      );
     }
 
     const { balance, store } = state;

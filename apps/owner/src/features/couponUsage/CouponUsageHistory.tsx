@@ -11,6 +11,7 @@ import {
 } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
@@ -93,28 +94,6 @@ const UsageSkeleton = () => (
   <SkeletonBlock className="h-48" label="쿠폰 사용 이력을 불러오는 중" />
 );
 
-const UsageMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
-);
-
 interface CouponUsageHistoryProps {
   onBack: () => void;
 }
@@ -134,12 +113,12 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
     if (state.status === 'error') {
       // 권한이 없으면 다시 시도해도 같아 버튼을 두지 않는다
       return state.isForbidden ? (
-        <UsageMessage
+        <StatusMessage
           description="이 계정으로는 가게의 쿠폰 사용 이력을 볼 수 없어요"
           title="쿠폰 사용 이력을 조회할 수 없어요"
         />
       ) : (
-        <UsageMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="쿠폰 사용 이력을 불러오지 못했어요"
@@ -149,7 +128,7 @@ export const CouponUsageHistory = ({ onBack }: CouponUsageHistoryProps) => {
 
     if (state.usages.length === 0) {
       return (
-        <UsageMessage
+        <StatusMessage
           description="손님이 쿠폰을 쓰면 여기에 사용 이력이 쌓여요"
           title="이 기간에 사용된 쿠폰이 없어요"
         />

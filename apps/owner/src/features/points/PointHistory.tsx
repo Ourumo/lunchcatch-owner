@@ -16,6 +16,7 @@ import {
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import {
@@ -190,28 +191,6 @@ const HistorySkeleton = () => (
   </div>
 );
 
-const HistoryMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
-);
-
 interface PointHistoryProps {
   onBack: () => void;
 }
@@ -241,7 +220,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
 
     if (historyState.status === 'error') {
       return (
-        <HistoryMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retryHistory}
           title="포인트 내역을 불러오지 못했어요"
@@ -256,7 +235,7 @@ export const PointHistory = ({ onBack }: PointHistoryProps) => {
 
     if (days.length === 0) {
       return (
-        <HistoryMessage
+        <StatusMessage
           description={
             filter.campaignId
               ? '다른 기간이나 캠페인을 골라 보세요'

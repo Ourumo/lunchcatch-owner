@@ -9,6 +9,7 @@ import { formatNumber } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
 import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { usePaymentHistory } from './usePaymentHistory';
@@ -115,28 +116,6 @@ const PaymentHistorySkeleton = () => (
   <SkeletonBlock className="h-60" label="결제 내역을 불러오는 중" />
 );
 
-const PaymentHistoryMessage = ({
-  description,
-  onRetry,
-  title,
-}: {
-  title: string;
-  description: string;
-  onRetry?: () => void;
-}) => (
-  <div className="flex flex-col items-center gap-3 px-page py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {onRetry && (
-      <Button className="mt-2" onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-    )}
-  </div>
-);
-
 // 확인 중인 결제가 있으면 서버가 새 충전 주문을 받지 않는다
 const ConfirmingNotice = () => (
   <p className="flex gap-2 rounded-xl bg-surface-subtle p-4 text-body-sm-mobile break-keep text-text-primary">
@@ -164,7 +143,7 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
 
     if (state.status === 'error') {
       return (
-        <PaymentHistoryMessage
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
           onRetry={retry}
           title="결제 내역을 불러오지 못했어요"
@@ -174,7 +153,7 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
 
     if (state.items.length === 0) {
       return (
-        <PaymentHistoryMessage
+        <StatusMessage
           description="포인트를 충전하면 여기에 결제 내역이 쌓여요"
           title="결제 내역이 없어요"
         />

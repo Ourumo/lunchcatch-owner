@@ -1,6 +1,5 @@
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Button } from '@repo/ui';
 import { ChevronDown, Info } from 'lucide-react';
 
 import type { Campaign } from '@owner/api/campaign';
@@ -8,6 +7,7 @@ import type { CampaignDayReport } from '@owner/api/report';
 import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { AnalyticsSummary } from './AnalyticsSummary';
@@ -32,24 +32,6 @@ const AnalyticsSkeleton = ({ label }: { label: string }) => (
     {[80, 176].map((height, index) => (
       <SkeletonBlock height={height} key={index} />
     ))}
-  </div>
-);
-
-const AnalyticsMessage = ({
-  action,
-  description,
-  title,
-}: {
-  title: string;
-  description: string;
-  action?: ReactNode;
-}) => (
-  <div className="flex flex-col items-center gap-3 py-12 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">{title}</p>
-    <p className="text-body-sm-mobile break-keep text-text-secondary">
-      {description}
-    </p>
-    {action && <div className="mt-2">{action}</div>}
   </div>
 );
 
@@ -158,13 +140,9 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
     if (reportState.status === 'error') {
       return (
-        <AnalyticsMessage
-          action={
-            <Button onClick={retryReport} variant="secondary">
-              다시 시도
-            </Button>
-          }
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
+          onRetry={retryReport}
           title="리포트를 불러오지 못했어요"
         />
       );
@@ -184,7 +162,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
             <AnalyticsTrend campaign={campaign} report={report} />
           </>
         ) : (
-          <AnalyticsMessage
+          <StatusMessage
             description="수치는 하루 한 번 집계돼 집행 다음 날부터 볼 수 있어요"
             title="아직 집계된 날이 없어요"
           />
@@ -200,13 +178,9 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
     if (campaignsState.status === 'error') {
       return (
-        <AnalyticsMessage
-          action={
-            <Button onClick={retryCampaigns} variant="secondary">
-              다시 시도
-            </Button>
-          }
+        <StatusMessage
           description="잠시 후 다시 시도해 주세요"
+          onRetry={retryCampaigns}
           title="분석을 불러오지 못했어요"
         />
       );
@@ -214,7 +188,7 @@ export const StoreAnalytics = ({ onBack }: StoreAnalyticsProps) => {
 
     if (!selectedCampaign) {
       return (
-        <AnalyticsMessage
+        <StatusMessage
           action={
             <Link
               className="flex h-10 items-center rounded-full border border-action-primary px-4 text-body-sm-mobile font-bold text-text-brand transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
