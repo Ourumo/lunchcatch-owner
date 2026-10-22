@@ -1,4 +1,3 @@
-import { mockDelay } from './mocks/delay';
 import { mockPlatformSettings } from './mocks/platform';
 import type { ApiResult } from './types';
 
@@ -15,8 +14,4 @@ export interface PlatformSettings {
 
 export const getPlatformSettings = async (): Promise<
   ApiResult<PlatformSettings>
-> => {
-  await mockDelay();
-
-  return { ok: true, data: { ...mockPlatformSettings } };
-};
+> => ({ ok: true, data: { ...mockPlatformSettings } });
