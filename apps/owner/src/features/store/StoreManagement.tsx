@@ -21,6 +21,7 @@ import {
   COUPON_USAGE_PATH,
   PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
+  POINT_REFUND_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
   STORE_IMAGES_PATH,
@@ -212,6 +213,7 @@ export const StoreManagement = () => {
           />
           <LinkRow label="포인트 내역" to={POINT_HISTORY_PATH} />
           <LinkRow label="결제 내역" to={PAYMENT_HISTORY_PATH} />
+          <LinkRow label="포인트 환불" to={POINT_REFUND_PATH} />
         </ManagementSection>
 
         <ManagementSection title="쿠폰">

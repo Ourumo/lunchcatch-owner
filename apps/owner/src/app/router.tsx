@@ -18,6 +18,7 @@ import {
   COUPON_USAGE_PATH,
   PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
+  POINT_REFUND_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
   STORE_IMAGES_PATH,
@@ -51,6 +52,7 @@ import PointChargeFailPage from '@owner/pages/PointChargeFailPage';
 import PointChargePage from '@owner/pages/PointChargePage';
 import PointChargeSuccessPage from '@owner/pages/PointChargeSuccessPage';
 import PointHistoryPage from '@owner/pages/PointHistoryPage';
+import PointRefundPage from '@owner/pages/PointRefundPage';
 import QrScanPage from '@owner/pages/QrScanPage';
 import SignupCompletePage from '@owner/pages/SignupCompletePage';
 import SignupHoursPage from '@owner/pages/SignupHoursPage';
@@ -154,6 +156,7 @@ export const router = createBrowserRouter([
           { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
           { path: PAYMENT_HISTORY_PATH, element: <PaymentHistoryPage /> },
+          { path: POINT_REFUND_PATH, element: <PointRefundPage /> },
           { path: POINT_CHARGE_PATH, element: <PointChargePage /> },
           {
             path: POINT_CHARGE_SUCCESS_PATH,
