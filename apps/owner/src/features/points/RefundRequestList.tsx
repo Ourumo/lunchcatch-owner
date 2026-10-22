@@ -3,7 +3,9 @@ import { Button, StatusBadge, type StatusBadgeVariant } from '@repo/ui';
 import type { RefundRequestItem, RefundRequestStatus } from '@owner/api/refund';
 import { formatNumber, formatPoints } from '@owner/ui/campaignFormat';
 import { formatHistoryDateTime } from '@owner/ui/historyFormat';
+import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 
+import type { LoadMoreStatus } from './usePointHistory';
 import type { RefundRequestsState } from './useRefundRequests';
 
 const skeletonClassName =
@@ -48,6 +50,42 @@ const RefundRequestRow = ({ item }: { item: RefundRequestItem }) => {
   );
 };
 
+interface ListFooterProps {
+  hasMore: boolean;
+  loadMore: LoadMoreStatus;
+  onLoadMore: () => void;
+}
+
+// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
+const ListFooter = ({ hasMore, loadMore, onLoadMore }: ListFooterProps) => {
+  if (loadMore === 'loading') {
+    return (
+      <div className="flex justify-center py-4" role="status">
+        <span
+          aria-hidden="true"
+          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
+        />
+        <span className="sr-only">환불 요청 내역을 더 불러오는 중</span>
+      </div>
+    );
+  }
+
+  if (loadMore === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <p className="text-body-sm-mobile text-text-secondary" role="alert">
+          불러오지 못했어요
+        </p>
+        <Button onClick={onLoadMore} variant="secondary">
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
+};
+
 const ListMessage = ({
   description,
   onRetry,
@@ -75,10 +113,13 @@ const ListMessage = ({
 interface RefundRequestListProps {
   state: RefundRequestsState;
   onRetry: () => void;
+  onLoadMore: () => void;
 }
 
-// 내 환불 요청 내역. 요청 시각, 금액, 수수료, 상태와 처리 시각을 보여주고, 거절이면 거절 사유를 함께 보여준다
+// 내 환불 요청 내역. 요청 시각, 금액, 수수료, 상태와 처리 시각을 보여주고, 거절이면 거절 사유를 함께 보여준다.
+// 목록 끝에 가까워지면 다음 구간을 이어 붙인다
 export const RefundRequestList = ({
+  onLoadMore,
   onRetry,
   state,
 }: RefundRequestListProps) => {
@@ -107,11 +148,18 @@ export const RefundRequestList = ({
     }
 
     return (
-      <ul className="divide-y divide-border-subtle overflow-hidden rounded-xl border border-border-subtle bg-bg-surface">
-        {state.items.map((item) => (
-          <RefundRequestRow item={item} key={item.id} />
-        ))}
-      </ul>
+      <>
+        <ul className="divide-y divide-border-subtle overflow-hidden rounded-xl border border-border-subtle bg-bg-surface">
+          {state.items.map((item) => (
+            <RefundRequestRow item={item} key={item.id} />
+          ))}
+        </ul>
+        <ListFooter
+          hasMore={state.nextCursor !== null}
+          loadMore={state.loadMore}
+          onLoadMore={onLoadMore}
+        />
+      </>
     );
   };
 

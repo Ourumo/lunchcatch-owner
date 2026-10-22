@@ -310,7 +310,11 @@ export const PointRefund = ({ onBack }: PointRefundProps) => {
           />
         )}
         {renderPreview()}
-        <RefundRequestList onRetry={requests.reload} state={requests.state} />
+        <RefundRequestList
+          onLoadMore={requests.loadMore}
+          onRetry={requests.reload}
+          state={requests.state}
+        />
       </main>
       <StepActionBar
         isNextDisabled={!canRequest}
