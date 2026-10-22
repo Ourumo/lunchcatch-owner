@@ -19,6 +19,8 @@ export interface DateRangePickerProps {
   ariaLabel?: string;
   defaultValue?: DateRangeValue;
   disabled?: boolean;
+  /** 선택 가능한 마지막 날짜. 미지정 시 제한하지 않으며 주·월 구간에도 적용한다. */
+  maxDate?: string;
   onValueChange?: (value: DateRangeValue) => void;
   placeholder?: string;
   value?: DateRangeValue;
@@ -38,13 +40,14 @@ const isSameDate = (firstDate: Date, secondDate: Date) =>
 
 /**
  * 시작·종료 구간을 선택하는 달력으로, 일·주는 날짜 격자, 월은 월 목록을 표시한다.
- * 주는 월요일~일요일, 월은 첫날~마지막 날을 YYYY-MM-DD 범위로 반환한다.
+ * 주는 월요일~일요일, 월은 첫날~마지막 날을 반환하며 maxDate가 있으면 종료일을 제한한다.
  * value가 있으면 부모 상태를 사용하고, 없으면 defaultValue에서 시작해 내부 상태로 관리한다.
  */
 export function DateRangePicker({
   ariaLabel = '날짜 범위 선택',
   defaultValue = emptyDateRange,
   disabled = false,
+  maxDate,
   onValueChange,
   placeholder = '가입일 범위 선택',
   value,
@@ -112,7 +115,10 @@ export function DateRangePicker({
   };
 
   const handleDateSelect = (nextDate: string) => {
+    if (maxDate && nextDate > maxDate) return;
     const nextUnit = getDateRangeUnit(nextDate, selectionMode);
+    // 현재 주·월을 선택해도 구간의 종료일이 허용된 날짜를 넘지 않게 한다.
+    if (maxDate && nextUnit.endDate > maxDate) nextUnit.endDate = maxDate;
     if (
       isSelectingStartDate ||
       !selectedRange.startDate ||
@@ -125,6 +131,7 @@ export function DateRangePicker({
 
     // 종료 구간을 먼저 선택해도 두 구간을 모두 포함하는 날짜 범위를 반환한다.
     const startUnit = getDateRangeUnit(selectedRange.startDate, selectionMode);
+    if (maxDate && startUnit.endDate > maxDate) startUnit.endDate = maxDate;
     handleValueChange({
       startDate:
         nextUnit.startDate < startUnit.startDate
@@ -254,6 +261,7 @@ export function DateRangePicker({
                   dateValue > selectedRange.startDate &&
                   dateValue < selectedRange.endDate;
                 const isToday = isSameDate(today, date);
+                const isUnavailable = !!maxDate && dateValue > maxDate;
 
                 return (
                   <div
@@ -268,13 +276,16 @@ export function DateRangePicker({
                       aria-current={isToday ? 'date' : undefined}
                       aria-label={`${date.getMonth() + 1}월 ${date.getDate()}일`}
                       aria-pressed={isSelectedBoundary}
+                      disabled={isUnavailable}
                       className={[
                         'relative z-10 flex size-8 items-center justify-center rounded-full text-caption-web transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary',
-                        isSelectedBoundary
-                          ? 'bg-action-primary font-semibold text-text-inverse'
-                          : isToday
-                            ? 'bg-surface-brand font-medium text-text-brand hover:bg-action-primary hover:text-text-inverse'
-                            : 'text-text-primary hover:bg-surface-subtle',
+                        isUnavailable
+                          ? 'cursor-not-allowed text-text-disabled'
+                          : isSelectedBoundary
+                            ? 'bg-action-primary font-semibold text-text-inverse'
+                            : isToday
+                              ? 'bg-surface-brand font-medium text-text-brand hover:bg-action-primary hover:text-text-inverse'
+                              : 'text-text-primary hover:bg-surface-subtle',
                       ].join(' ')}
                       onClick={() => handleDateSelect(dateValue)}
                       type="button"
@@ -292,6 +303,7 @@ export function DateRangePicker({
               visibleMonth={visibleMonth}
               selectedRange={selectedRange}
               onSelect={handleDateSelect}
+              maxDate={maxDate}
             />
           )}
 
@@ -307,7 +319,8 @@ export function DateRangePicker({
               초기화
             </button>
             <button
-              className="text-caption-web font-medium text-action-primary transition-colors hover:text-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              className="text-caption-web font-medium text-action-primary transition-colors hover:text-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled"
+              disabled={!!maxDate && formatDateValue(today) > maxDate}
               onClick={() => handleDateSelect(formatDateValue(today))}
               type="button"
             >

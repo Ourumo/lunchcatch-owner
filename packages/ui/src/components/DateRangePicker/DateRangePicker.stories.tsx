@@ -45,3 +45,18 @@ export const SameDayRange: Story = {
     defaultValue: { startDate: '2026-10-19', endDate: '2026-10-19' },
   },
 };
+
+export const LimitedDates: Story = {
+  args: {
+    maxDate: '2026-10-22',
+    defaultValue: { startDate: '2026-10-01', endDate: '2026-10-22' },
+  },
+};
+
+export const LimitedWeekly: Story = {
+  args: { ...LimitedDates.args, selectionMode: 'week' },
+};
+
+export const LimitedMonthly: Story = {
+  args: { ...LimitedDates.args, selectionMode: 'month' },
+};
