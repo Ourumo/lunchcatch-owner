@@ -8,6 +8,8 @@ export const POINT_HISTORY_PATH = '/points/history';
 
 export const PAYMENT_HISTORY_PATH = '/points/payments';
 
+export const POINT_REFUND_PATH = '/points/refund';
+
 export const STORE_HOURS_PATH = '/store/hours';
 
 export const STORE_IMAGES_PATH = '/store/images';
