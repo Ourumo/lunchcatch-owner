@@ -979,7 +979,7 @@ const requestCampaignAction = async (
       case 'CAMPAIGN-001':
         return { ok: false, message: NOT_ACTIVE_OWNER_ACTION_MESSAGE };
       // 활성화할 때 저장된 포스터가 없다. 화면이 code를 보고 포스터 단계로 보낸다
-      case 'POSTER-021':
+      case 'POSTER-020':
         return {
           ok: false,
           code: error.code,

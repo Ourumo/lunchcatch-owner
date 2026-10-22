@@ -203,7 +203,7 @@ export const CampaignFormLayout = () => {
       // 저장된 포스터가 없으면 안내를 남긴 채 포스터 단계로 보낸다
       const posterStep = campaignSteps.find(({ id }) => id === 'poster');
 
-      if (result.code === 'POSTER-021' && posterStep) {
+      if (result.code === 'POSTER-020' && posterStep) {
         setActionError({ title, message });
         navigate(getCampaignEditPath(campaignId, posterStep));
         return;
