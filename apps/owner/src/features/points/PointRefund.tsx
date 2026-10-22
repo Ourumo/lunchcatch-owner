@@ -149,9 +149,11 @@ const ConfirmRefundSheet = ({
     title="환불을 요청할까요?"
   >
     <p className="text-center text-body-sm-mobile break-keep text-text-secondary">
-      잔액 {formatPoints(preview.refundablePoint)} 전액을 환불 요청해요.
-      수수료를 빼고 {formatNumber(preview.expectedRefundAmount)}원이 환불되고,
-      관리자가 승인한 뒤에 처리돼요.
+      잔액 {formatPoints(preview.refundablePoint)} 전액을 환불 요청해요.{' '}
+      {/* 수수료가 없으면 빼는 금액이 없어 수수료를 말하지 않는다 */}
+      {preview.fee > 0 && '수수료를 빼고 '}
+      {formatNumber(preview.expectedRefundAmount)}원이 환불되고, 관리자가 승인한
+      뒤에 처리돼요.
     </p>
     <div className="mt-5 flex gap-2">
       <Button
@@ -238,12 +240,12 @@ export const PointRefund = ({ onBack }: PointRefundProps) => {
     }
 
     if (response.code && response.code in refundBlockedMessages) {
-      // 미리보기를 본 뒤 상태가 바뀌었다. 바뀐 상태를 다시 받아 보여준다
+      // 미리보기를 본 뒤 상태가 바뀌었다. 다시 받은 미리보기 아래에 이유가 나오므로 같은 문장을 되풀이하지 않는다
       setResult({
         variant: 'danger',
         title: '환불을 요청하지 못했어요',
         description:
-          refundBlockedMessages[response.code as RefundBlockedReason],
+          '상태가 바뀌어 다시 불러왔어요. 아래 안내를 확인해 주세요.',
       });
       reload();
       return;
