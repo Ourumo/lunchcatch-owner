@@ -179,7 +179,7 @@ export function SelectField({
                 <button
                   className={`flex w-full rounded-sm px-3 py-2 text-left text-caption-web disabled:cursor-not-allowed disabled:text-text-disabled ${
                     isSelected
-                      ? 'bg-surface-subtle text-action-primary'
+                      ? 'bg-surface-brand font-medium text-text-brand'
                       : 'text-text-primary hover:bg-surface-subtle'
                   }`}
                   disabled={option.disabled}
