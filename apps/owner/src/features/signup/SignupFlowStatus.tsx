@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button } from '@repo/ui';
 
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+
 interface SignupFlowStatusProps {
   status: 'loading' | 'error';
   onRetry: () => void;
@@ -21,13 +23,30 @@ export const SignupFlowStatus = ({
   onRetry,
   status,
 }: SignupFlowStatusProps) => {
+  // 이어갈 단계를 아직 몰라, 입점 신청 화면의 틀(상단 바, 진행 막대, 입력 칸, 하단 버튼)만 같은 자리에 그린다
   if (status === 'loading') {
     return (
-      <Frame>
-        <p className="text-body-sm-mobile text-text-secondary" role="status">
-          입점 신청 정보를 불러오는 중이에요
-        </p>
-      </Frame>
+      <div className="min-h-dvh min-w-mobile-min">
+        <div
+          aria-busy="true"
+          className="mx-auto flex min-h-dvh max-w-mobile flex-col bg-bg-page"
+        >
+          <span className="sr-only">입점 신청 정보를 불러오는 중</span>
+          <div className="flex h-14 items-center bg-bg-surface px-page">
+            <SkeletonBlock className="h-6 w-32" rounded="lg" />
+          </div>
+          <div aria-hidden="true" className="h-1 bg-surface-subtle" />
+          <div className="flex flex-1 flex-col gap-4 px-page pt-6 pb-8">
+            <SkeletonBlock className="h-12" />
+            {[96, 96, 96].map((height, index) => (
+              <SkeletonBlock height={height} key={index} />
+            ))}
+          </div>
+          <div className="border-t border-border-subtle bg-bg-surface px-page pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+            <SkeletonBlock className="h-12" />
+          </div>
+        </div>
+      </div>
     );
   }
 
