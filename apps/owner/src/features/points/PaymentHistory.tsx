@@ -6,10 +6,12 @@ import type {
   PaymentHistoryItem,
 } from '@owner/api/payments';
 import { formatNumber } from '@owner/ui/campaignFormat';
+import { LoadMoreTrigger } from '@owner/ui/LoadMoreTrigger/LoadMoreTrigger';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatHistoryDateTime } from './pointHistoryFormat';
 import { usePaymentHistory } from './usePaymentHistory';
+import type { LoadMoreStatus } from './usePointHistory';
 
 const skeletonClassName =
   'animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none';
@@ -71,6 +73,46 @@ const PaymentRow = ({ item }: { item: PaymentHistoryItem }) => {
   );
 };
 
+interface PaymentHistoryFooterProps {
+  hasMore: boolean;
+  loadMore: LoadMoreStatus;
+  onLoadMore: () => void;
+}
+
+// 목록 아래: 이어서 불러오는 중, 이어서 불러오기 실패. 끝까지 불러왔으면 아무것도 두지 않는다
+const PaymentHistoryFooter = ({
+  hasMore,
+  loadMore,
+  onLoadMore,
+}: PaymentHistoryFooterProps) => {
+  if (loadMore === 'loading') {
+    return (
+      <div className="flex justify-center py-4" role="status">
+        <span
+          aria-hidden="true"
+          className="size-6 animate-spin rounded-full border-2 border-text-tertiary border-r-transparent motion-reduce:animate-none"
+        />
+        <span className="sr-only">결제 내역을 더 불러오는 중</span>
+      </div>
+    );
+  }
+
+  if (loadMore === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <p className="text-body-sm-mobile text-text-secondary" role="alert">
+          불러오지 못했어요
+        </p>
+        <Button onClick={onLoadMore} variant="secondary">
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
+  return hasMore ? <LoadMoreTrigger onLoadMore={onLoadMore} /> : null;
+};
+
 const PaymentHistorySkeleton = () => (
   <div aria-busy="true">
     <span className="sr-only">결제 내역을 불러오는 중</span>
@@ -115,10 +157,10 @@ interface PaymentHistoryProps {
   onBack: () => void;
 }
 
-// 가게 관리 > 결제 내역. 포인트 충전 결제를 최근 순으로 보여준다.
+// 가게 관리 > 결제 내역. 포인트 충전 결제를 최근 순으로 보여주고, 목록 끝에 가까워지면 다음 구간을 이어 붙인다.
 // 결제창에서 승인을 시도하기 전에 닫은 주문은 서버가 내려주지 않는다
 export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
-  const { retry, state } = usePaymentHistory();
+  const { loadMore, retry, state } = usePaymentHistory();
 
   const renderContent = () => {
     if (state.status === 'loading') {
@@ -154,6 +196,11 @@ export const PaymentHistory = ({ onBack }: PaymentHistoryProps) => {
             <PaymentRow item={item} key={item.paymentId} />
           ))}
         </ul>
+        <PaymentHistoryFooter
+          hasMore={state.nextCursor !== null}
+          loadMore={state.loadMore}
+          onLoadMore={loadMore}
+        />
       </>
     );
   };
