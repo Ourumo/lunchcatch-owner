@@ -248,14 +248,15 @@ export const isValidDailyBudget = (
   Number.isInteger(dailyBudget) &&
   dailyBudget >= minDailyBudget;
 
-// 시작일은 내일 이후, 종료일은 시작일 이후(시작일과 같으면 1일)
+// 시작일은 내일 이후, 종료일은 시작일 다음 날 이후(양 끝 포함 최소 2일).
+// 서버가 시작일과 종료일이 같으면 422 CAMPAIGN-008로 거절한다
 export const isValidPeriod = ({
   endDate,
   startDate,
 }: Pick<BudgetStepValues, 'endDate' | 'startDate'>) =>
   Boolean(startDate && endDate) &&
   startDate >= getDateValueFromToday(1) &&
-  endDate >= startDate;
+  endDate > startDate;
 
 // 하루 예산과 집행 기간 필수 항목별 입력 완료 여부.
 // 잔액 부족은 저장을 막지 않으므로 검사하지 않는다
