@@ -1,30 +1,18 @@
+import type { Campaign } from './campaign';
 import { request } from './client';
-import { mockDelay } from './mocks/delay';
-import { mockRecentServingDays } from './mocks/report';
 import type { ApiResult } from './types';
 
 // 점주 리포트 (docs/requirements-owner.md "리포트 > 광고주 노출 리포트")
-// 캠페인별 날짜별 리포트는 서버 API를 쓴다. 홈의 가게 단위 쿠폰 사용 실적은 API 연동 전까지 mock 데이터로 동작한다
+// 캠페인별 날짜별 리포트와 홈의 가게 단위 쿠폰 사용 실적은 서버 API를 쓴다
 
 export interface ServingDayPerformance {
   // 캠페인이 집행된 날 (YYYY-MM-DD). 캠페인이 매일 열리지 않아 간격이 일정하지 않다
   date: string;
   // 그날 사용 처리된 쿠폰 수
   redeemedCount: number;
-  // 일 1회 집계로 확정됐는지. 확정 전인 당일 값은 화면에 "집계 중"으로 표시한다
+  // 하루가 끝나 확정됐는지. 확정 전인 당일 값은 화면에 "집계 중"으로 표시한다
   isConfirmed: boolean;
 }
-
-// 가게 단위 쿠폰 사용 실적. 홈의 쿠폰 사용 추이에 쓴다.
-// 캠페인별 리포트와 달리 여러 캠페인에 걸친 가게 단위 실적이라 응답 형태를 백엔드와 확인해야 한다
-// 최근 집행일 5회. 오래된 날짜부터 온다
-export const getRecentServingDays = async (): Promise<
-  ApiResult<ServingDayPerformance[]>
-> => {
-  await mockDelay();
-
-  return { ok: true, data: structuredClone(mockRecentServingDays) };
-};
 
 // 한 캠페인의 하루 리포트. 하루 한 번 집계해 오늘과 아직 집계되지 않은 날은 오지 않는다.
 // 오지 않은 날을 실적 0으로 보지 않는다
@@ -179,4 +167,81 @@ export const getCampaignReport = async ({
       .flatMap((result) => (result.ok ? result.data : []))
       .filter((item) => item.campaignId === campaignId),
   };
+};
+
+// 날짜별 쿠폰 사용 건수 (GET /v1/owner/stores/{storeId}/coupon-usages/daily).
+// Swagger의 items 스키마는 다른 응답으로 잘못 붙어 있어 실제 응답에 맞춘다
+interface DailyCouponUsageResponse {
+  items: { businessDate: string; usedCount: number }[];
+}
+
+// 날짜별 사용 건수를 한 번에 조회할 수 있는 최대 일수 (시작일과 종료일 포함)
+const DAILY_USAGE_MAX_DAYS = 31;
+
+const RECENT_SERVING_DAY_COUNT = 5;
+
+// 실적이 쌓이는 캠페인(진행 중, 일시중지, 종료)과 그 집행 기간.
+// 실제 종료일을 받지 않아, 점주가 일찍 종료한 캠페인도 집행 종료일까지 집행한 것으로 본다
+const isServedCampaign = ({ budget, status }: Campaign) =>
+  (status === 'ACTIVE' || status === 'PAUSED' || status === 'ENDED') &&
+  budget.startDate !== '' &&
+  budget.endDate !== '';
+
+// from~to(양 끝 포함) 안에서 캠페인이 집행된 날. 기간이 겹치는 날은 한 번만 넣고 오름차순으로 둔다
+const getServingDates = (campaigns: Campaign[], from: string, to: string) => {
+  const dates = new Set<string>();
+
+  campaigns.filter(isServedCampaign).forEach(({ budget }) => {
+    const start = budget.startDate > from ? budget.startDate : from;
+    const end = budget.endDate < to ? budget.endDate : to;
+
+    for (let date = start; date <= end; date = addDays(date, 1)) {
+      dates.add(date);
+    }
+  });
+
+  return [...dates].sort();
+};
+
+// 홈 쿠폰 사용 추이. 오늘을 포함한 최근 31일 안의 집행일 중 최근 5회를 오래된 날짜부터 돌려준다.
+// 사용 건수는 가게의 모든 캠페인을 사용일로 합친 값이라, 캠페인 집행 기간으로 집행일을 골라 붙인다.
+// 응답에 없는 집행일은 사용이 없던 날이다
+export const getRecentServingDays = async ({
+  campaigns,
+  storeId,
+}: {
+  campaigns: Campaign[];
+  storeId: string;
+}): Promise<ApiResult<ServingDayPerformance[]>> => {
+  const today = getKstToday();
+  const from = addDays(today, -(DAILY_USAGE_MAX_DAYS - 1));
+  const servingDates = getServingDates(campaigns, from, today).slice(
+    -RECENT_SERVING_DAY_COUNT,
+  );
+
+  // 집행한 날이 없으면 받을 사용 건수가 없다
+  if (servingDates.length === 0) {
+    return { ok: true, data: [] };
+  }
+
+  try {
+    const params = new URLSearchParams({ from, to: today });
+    const { items } = await request<DailyCouponUsageResponse>(
+      `/v1/owner/stores/${storeId}/coupon-usages/daily?${params}`,
+    );
+    const usedCounts = new Map(
+      items.map(({ businessDate, usedCount }) => [businessDate, usedCount]),
+    );
+
+    return {
+      ok: true,
+      data: servingDates.map((date) => ({
+        date,
+        redeemedCount: usedCounts.get(date) ?? 0,
+        isConfirmed: date !== today,
+      })),
+    };
+  } catch {
+    return { ok: false };
+  }
 };
