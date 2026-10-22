@@ -637,17 +637,23 @@ export const getCampaignTodayPerformance = async (
 };
 
 // 집행 시작일부터 오늘(끝난 캠페인은 종료일)까지의 누적. 31일씩 나눠 받아 더한다.
-// 아직 시작하지 않았으면 null
+// 아직 집행 전(작성 중, 대기 중)이면 null. 시작일이 지나도 서버가 진행 중으로 바꾸기 전에는 집행 전이다
 export const getCampaignTotalPerformance = async ({
   budget,
   id,
-}: Pick<Campaign, 'id' | 'budget'>): Promise<
+  status,
+}: Pick<Campaign, 'id' | 'status' | 'budget'>): Promise<
   ApiResult<CampaignTotalPerformance | null>
 > => {
   const today = getKstToday();
   const to = budget.endDate && budget.endDate < today ? budget.endDate : today;
 
-  if (!budget.startDate || budget.startDate > to) {
+  if (
+    status === 'DRAFT' ||
+    status === 'SCHEDULED' ||
+    !budget.startDate ||
+    budget.startDate > to
+  ) {
     return { ok: true, data: null };
   }
 
