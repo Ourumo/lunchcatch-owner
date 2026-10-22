@@ -8,6 +8,7 @@ export const mockStore: MyStore = {
   id: 'store-1',
   name: '카츠쿠라 역삼점',
   roadAddress: '서울 강남구 테헤란로 152',
+  location: { latitude: 37.5003, longitude: 127.0363 },
   logoImageUrl: photo('1504674900247-0877df9cc836'),
   interiorImageUrls: [
     photo('1517248135467-4c7edcad34c4'),
