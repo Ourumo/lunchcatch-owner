@@ -15,6 +15,7 @@ import {
   signupSteps,
 } from '@owner/features/signup/signupSteps';
 import {
+  PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
@@ -43,6 +44,7 @@ import CampaignReviewPage from '@owner/pages/CampaignReviewPage';
 import CampaignTargetPage from '@owner/pages/CampaignTargetPage';
 import HomePage from '@owner/pages/HomePage';
 import LoginPage from '@owner/pages/LoginPage';
+import PaymentHistoryPage from '@owner/pages/PaymentHistoryPage';
 import PointChargeFailPage from '@owner/pages/PointChargeFailPage';
 import PointChargePage from '@owner/pages/PointChargePage';
 import PointChargeSuccessPage from '@owner/pages/PointChargeSuccessPage';
@@ -148,6 +150,7 @@ export const router = createBrowserRouter([
           { path: STORE_MENUS_PATH, element: <StoreMenusPage /> },
           { path: STORE_ANALYTICS_PATH, element: <StoreAnalyticsPage /> },
           { path: POINT_HISTORY_PATH, element: <PointHistoryPage /> },
+          { path: PAYMENT_HISTORY_PATH, element: <PaymentHistoryPage /> },
           { path: POINT_CHARGE_PATH, element: <PointChargePage /> },
           {
             path: POINT_CHARGE_SUCCESS_PATH,
