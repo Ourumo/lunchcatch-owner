@@ -1,0 +1,37 @@
+.ui-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--semantic-border-subtle) transparent;
+
+  /* 표준 색상 속성이 아래 WebKit 손잡이 스타일을 덮어쓰지 않도록 한다. */
+  @supports selector(::-webkit-scrollbar) {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  &::-webkit-scrollbar {
+    width: var(--space-2);
+    height: var(--space-2);
+  }
+
+  &::-webkit-scrollbar-track,
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: calc(var(--space-1) / 2) solid transparent;
+    border-radius: var(--space-2);
+    background-color: var(--semantic-border-subtle);
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--semantic-text-tertiary);
+  }
+}
+
+/* 옵션이 적은 드롭다운에는 스크롤바 여백을 예약하지 않는다. */
+.ui-scrollbar:is([role='listbox'], [role='dialog']) {
+  scrollbar-gutter: auto;
+}

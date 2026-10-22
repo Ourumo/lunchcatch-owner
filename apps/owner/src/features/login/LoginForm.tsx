@@ -17,6 +17,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     handleChange,
     handleSubmit,
     isSubmitting,
+    remainingSeconds,
     submitError,
     values,
   } = useLoginForm({ onSuccess });
@@ -50,11 +51,18 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       />
       {submitError && (
         <Toast
+          className="break-keep"
           description={submitError}
           style={{ maxWidth: 'none' }}
           title="로그인에 실패했습니다"
           variant="danger"
         />
+      )}
+      {remainingSeconds !== null && (
+        // 남은 시간은 1초마다 바뀌어 화면 낭독기가 매번 다시 읽지 않도록 위 안내(알림 영역) 밖에 둔다
+        <p className="-mt-2 text-caption-mobile text-text-secondary">
+          {remainingSeconds}초 후에 다시 시도할 수 있어요.
+        </p>
       )}
       <Button
         className="w-full"

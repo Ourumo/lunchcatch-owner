@@ -2,8 +2,11 @@ import { type FormEvent, useRef, useState } from 'react';
 import { Input } from '@repo/ui';
 import { MapPin, RotateCcw, Search } from 'lucide-react';
 
-import { searchStorePlaces, type StorePlace } from '@owner/api/signupFlow';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+import type { StorePlace } from '@owner/api/signupFlow';
+import { LocationPreviewMap } from '@owner/ui/KakaoMap/LocationPreviewMap';
+
+import { searchStorePlaces } from '../searchStorePlaces';
+import { useSignupFlow } from '../useSignupFlow';
 
 type SearchState =
   | { status: 'idle' }
@@ -100,41 +103,59 @@ export const LocationStep = () => {
                 </p>
               ) : (
                 <ul aria-label="검색 결과" className="flex flex-col">
-                  {search.places.map((item) => (
-                    <li
-                      className="border-b border-border-subtle last:border-b-0"
-                      key={item.kakaoPlaceId}
-                    >
-                      <button
-                        className="flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-action-primary"
-                        onClick={() => selectPlace(item)}
-                        type="button"
+                  {search.places.map((item) => {
+                    // 위치 저장에 도로명 주소가 필수라, 도로명 주소가 없는 장소는 지번 주소만 보여주고 고를 수 없다
+                    const hasRoadAddress = item.roadAddress !== '';
+
+                    return (
+                      <li
+                        className="border-b border-border-subtle last:border-b-0"
+                        key={item.kakaoPlaceId}
                       >
-                        <span className="text-body-sm-mobile font-semibold text-text-primary">
-                          {item.placeName}
-                        </span>
-                        <span className="text-caption-mobile text-text-secondary">
-                          {item.roadAddress}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                        <button
+                          className="flex w-full flex-col gap-0.5 px-4 py-3 text-left hover:bg-surface-subtle focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          disabled={!hasRoadAddress}
+                          onClick={() => selectPlace(item)}
+                          type="button"
+                        >
+                          <span
+                            className={`text-body-sm-mobile font-semibold ${hasRoadAddress ? 'text-text-primary' : 'text-text-disabled'}`}
+                          >
+                            {item.placeName}
+                          </span>
+                          <span className="text-caption-mobile text-text-secondary">
+                            {hasRoadAddress ? item.roadAddress : item.address}
+                          </span>
+                          {!hasRoadAddress && (
+                            <span className="text-caption-mobile break-keep text-text-secondary">
+                              도로명 주소가 없는 장소라 선택할 수 없어요
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ))}
           </div>
         )}
       </div>
 
-      {/* 카카오 지도 연동 전까지 위치 표시 자리만 둔다 */}
-      <div
-        aria-hidden="true"
-        className="flex aspect-4/3 items-center justify-center rounded-xl border border-border-subtle bg-surface-subtle"
-      >
-        <MapPin
-          className={`size-10 ${place ? 'text-action-primary' : 'text-text-disabled'}`}
-          strokeWidth={1.5}
+      {/* 위치를 고르면 지도에 핀으로 보여주고, 고르기 전에는 지도 자리만 둔다.
+          서버에서 불러온 위치도 좌표가 있어 지도에 보여준다 */}
+      {place ? (
+        <LocationPreviewMap
+          latitude={place.latitude}
+          longitude={place.longitude}
         />
-      </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="flex aspect-4/3 items-center justify-center rounded-xl border border-border-subtle bg-surface-subtle"
+        >
+          <MapPin className="size-10 text-text-disabled" strokeWidth={1.5} />
+        </div>
+      )}
 
       <section
         aria-label="선택한 가게 위치"
@@ -146,12 +167,17 @@ export const LocationStep = () => {
               <p className="text-body-mobile font-semibold break-keep text-text-primary">
                 {place.roadAddress}
               </p>
-              <p className="mt-1 text-body-sm-mobile break-keep text-text-secondary">
-                {place.placeName}
-              </p>
-              <p className="text-body-sm-mobile break-keep text-text-secondary">
-                {place.address}
-              </p>
+              {/* 서버에서 불러온 위치는 상호명과 지번 주소가 없다 */}
+              {place.placeName && (
+                <p className="mt-1 text-body-sm-mobile break-keep text-text-secondary">
+                  {place.placeName}
+                </p>
+              )}
+              {place.address && (
+                <p className="text-body-sm-mobile break-keep text-text-secondary">
+                  {place.address}
+                </p>
+              )}
             </div>
             <button
               aria-label="선택한 가게 위치 초기화"

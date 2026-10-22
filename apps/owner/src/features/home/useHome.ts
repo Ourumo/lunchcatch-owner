@@ -70,12 +70,5 @@ export const useHome = () => {
     setRequestId((id) => id + 1);
   };
 
-  // 충전하면 다시 불러오지 않고 결제 응답의 잔액으로 바로 바꾼다
-  const updateBalance = (balance: number) => {
-    setState((prev) =>
-      prev.status === 'success' ? { ...prev, balance } : prev,
-    );
-  };
-
-  return { retry, state, updateBalance };
+  return { retry, state };
 };

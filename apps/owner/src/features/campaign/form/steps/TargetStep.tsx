@@ -13,12 +13,13 @@ import {
   targetGenderOptions,
   type TargetStepValues,
 } from '@owner/api/campaign';
+
 import {
   formatAgeGroups,
   formatGender,
   formatRadius,
-} from '@owner/features/campaign/campaignFormat';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
+} from '../../campaignFormat';
+import { useCampaignForm } from '../useCampaignForm';
 
 // SegmentedControl은 문자열 값만 받으므로 반경은 문자열로 바꿔 넘긴다
 const radiusItems = exposureRadiusOptions.map(({ label, value }) => ({

@@ -1,6 +1,10 @@
 import { type ChangeEvent, type FormEvent, useState } from 'react';
 
-import { signup, type SignupFieldErrors } from '@owner/api/auth';
+import {
+  type LoginResponse,
+  signup,
+  type SignupFieldErrors,
+} from '@owner/api/auth';
 import {
   hasErrors,
   type SignupAccountErrors,
@@ -9,7 +13,8 @@ import {
 } from '@owner/auth/validation';
 
 interface UseSignupAccountFormOptions {
-  onSuccess: () => void;
+  // 가입 직후 이어서 한 로그인의 결과를 넘긴다
+  onSuccess: (owner: LoginResponse) => void;
 }
 
 const initialValues: SignupAccountValues = {
@@ -82,7 +87,7 @@ export const useSignupAccountForm = ({
       return;
     }
 
-    onSuccess();
+    onSuccess(result.data);
   };
 
   return {

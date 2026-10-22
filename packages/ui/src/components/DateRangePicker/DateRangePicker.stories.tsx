@@ -23,3 +23,40 @@ export const Default: Story = {
 };
 
 export const Empty: Story = {};
+
+export const Weekly: Story = {
+  args: {
+    selectionMode: 'week',
+    ariaLabel: '주 범위 선택',
+    placeholder: '주 범위 선택',
+  },
+};
+
+export const Monthly: Story = {
+  args: {
+    selectionMode: 'month',
+    ariaLabel: '월 범위 선택',
+    placeholder: '월 범위 선택',
+  },
+};
+
+export const SameDayRange: Story = {
+  args: {
+    defaultValue: { startDate: '2026-10-19', endDate: '2026-10-19' },
+  },
+};
+
+export const LimitedDates: Story = {
+  args: {
+    maxDate: '2026-10-22',
+    defaultValue: { startDate: '2026-10-01', endDate: '2026-10-22' },
+  },
+};
+
+export const LimitedWeekly: Story = {
+  args: { ...LimitedDates.args, selectionMode: 'week' },
+};
+
+export const LimitedMonthly: Story = {
+  args: { ...LimitedDates.args, selectionMode: 'month' },
+};

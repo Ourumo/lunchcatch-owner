@@ -1,5 +1,6 @@
 /* 앱에서 @repo/ui/styles.css로 불러오는 공통 스타일 */
 @import './tokens.css';
+@import './scrollbar.css';
 
 @layer base {
   * {

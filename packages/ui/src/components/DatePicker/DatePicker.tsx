@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 
+import { useCalendarPopover } from '../../hooks/useCalendarPopover';
+
 export interface DatePickerProps {
+  align?: 'start' | 'end';
   ariaLabel?: string;
   defaultValue?: string;
   disabled?: boolean;
+  /** 선택 가능한 마지막 날짜(YYYY-MM-DD). */
+  maxDate?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
+  /** 오늘로 취급할 기준 날짜(YYYY-MM-DD). 미지정 시 브라우저 현지 날짜를 사용한다. */
+  todayDate?: string;
   value?: string;
 }
 
@@ -29,24 +36,27 @@ const isSameDate = (firstDate: Date, secondDate: Date) =>
   formatDateValue(firstDate) === formatDateValue(secondDate);
 
 export function DatePicker({
+  align = 'start',
   ariaLabel = '날짜 선택',
   defaultValue = '',
   disabled = false,
+  maxDate,
   onValueChange,
   placeholder = '날짜 선택',
+  todayDate,
   value,
 }: DatePickerProps) {
-  const fieldRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const { fieldRef, popupRef } = useCalendarPopover(isOpen, align);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedValue = value ?? uncontrolledValue;
   const selectedDate = selectedValue ? createDate(selectedValue) : undefined;
+  const today = todayDate ? createDate(todayDate) : new Date();
   const [visibleMonth, setVisibleMonth] = useState(
     selectedDate
       ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-      : new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      : new Date(today.getFullYear(), today.getMonth(), 1),
   );
-  const today = new Date();
   const monthStartDay = visibleMonth.getDay();
   const daysInMonth = new Date(
     visibleMonth.getFullYear(),
@@ -74,9 +84,10 @@ export function DatePicker({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [fieldRef]);
 
   const handleValueChange = (nextValue: string) => {
+    if (nextValue && maxDate && nextValue > maxDate) return;
     if (value === undefined) {
       setUncontrolledValue(nextValue);
     }
@@ -117,7 +128,9 @@ export function DatePicker({
       {isOpen && (
         <div
           aria-label={`${visibleMonth.getFullYear()}년 ${visibleMonth.getMonth() + 1}월 달력`}
-          className="absolute left-0 top-full z-30 mt-2 w-[296px] rounded-lg border border-border-subtle bg-bg-surface p-4 shadow-lg"
+          className="fixed inset-auto m-0 overflow-y-auto overscroll-contain rounded-lg border border-border-subtle bg-bg-surface p-4 shadow-lg"
+          popover="manual"
+          ref={popupRef}
           role="dialog"
         >
           <div className="mb-4 flex items-center justify-between">
@@ -181,19 +194,23 @@ export function DatePicker({
               const dateValue = formatDateValue(date);
               const isSelected = selectedValue === dateValue;
               const isToday = isSameDate(today, date);
+              const isUnavailable = !!maxDate && dateValue > maxDate;
 
               return (
                 <button
                   aria-current={isToday ? 'date' : undefined}
                   aria-label={`${date.getMonth() + 1}월 ${date.getDate()}일`}
                   aria-pressed={isSelected}
+                  disabled={isUnavailable}
                   className={[
                     'mx-auto flex size-8 items-center justify-center rounded-md text-caption-web transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary',
-                    isSelected
-                      ? 'bg-action-primary font-semibold text-text-inverse'
-                      : isToday
-                        ? 'bg-surface-brand font-medium text-text-brand hover:bg-action-primary hover:text-text-inverse'
-                        : 'text-text-primary hover:bg-surface-subtle',
+                    isUnavailable
+                      ? 'cursor-not-allowed text-text-disabled'
+                      : isSelected
+                        ? 'bg-action-primary font-semibold text-text-inverse'
+                        : isToday
+                          ? 'bg-surface-brand font-medium text-text-brand hover:bg-action-primary hover:text-text-inverse'
+                          : 'text-text-primary hover:bg-surface-subtle',
                   ].join(' ')}
                   key={dateValue}
                   onClick={() => handleValueChange(dateValue)}
@@ -214,7 +231,8 @@ export function DatePicker({
               초기화
             </button>
             <button
-              className="text-caption-web font-medium text-action-primary transition-colors hover:text-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              className="text-caption-web font-medium text-action-primary transition-colors hover:text-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled"
+              disabled={!!maxDate && formatDateValue(today) > maxDate}
               onClick={() => handleValueChange(formatDateValue(today))}
               type="button"
             >

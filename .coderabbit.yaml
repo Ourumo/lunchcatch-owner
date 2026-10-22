@@ -23,18 +23,20 @@ reviews:
         로직 오류, 버그 가능성, 보안 문제 위주로 리뷰해줘.
     - path: 'apps/*/src/**'
       instructions: |
-        docs/folder-structure.md의 의존 방향(app → pages → features → components)을 지키는지 봐줘.
+        docs/folder-structure.md의 의존 방향(app → pages → features → ui)을 지키는지 봐줘.
         features끼리, 앱끼리 import하지 않아야 해.
     - path: 'packages/utils/**'
       instructions: 'React와 DOM에 의존하지 않는 순수 함수만 둬야 해.'
     - path: '**/*.stories.tsx'
       instructions: |
-        스토리는 packages/ui와 각 앱의 components에만 둬. pages, features에 있으면 지적해줘.
+        스토리는 packages/ui와 각 앱의 ui에만 둬. pages, features에 있으면 지적해줘.
         스토리 제목은 공통 컴포넌트는 Shared/..., 앱 컴포넌트는 Admin/...처럼 위치에 맞게 시작해야 해.
     - path: 'apps/*/src/pages/**'
       instructions: 'pages는 직접 로직을 갖지 않고 layout과 features를 조합만 해. 상태나 비즈니스 로직이 있으면 features로 옮기라고 제안해줘.'
   tools:
     biome:
+      enabled: false
+    eslint:
       enabled: false
     gitleaks:
       enabled: true

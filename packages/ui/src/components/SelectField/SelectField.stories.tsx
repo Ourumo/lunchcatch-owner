@@ -39,3 +39,12 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+export const ScrollableOptions: Story = {
+  args: {
+    options: Array.from({ length: 24 }, (_, index) => ({
+      value: String(index + 1),
+      label: `선택 항목 ${index + 1}`,
+    })),
+  },
+};

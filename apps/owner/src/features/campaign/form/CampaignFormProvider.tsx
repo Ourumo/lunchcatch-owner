@@ -3,22 +3,38 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import { Button } from '@repo/ui';
 
 import {
+  type Campaign,
   type CampaignStatus,
   type CampaignValues,
+  createInitialCampaignValues,
   getCampaign,
 } from '@owner/api/campaign';
 import {
   getPlatformSettings,
   type PlatformSettings,
 } from '@owner/api/platform';
-import { TopBar } from '@owner/components/TopBar/TopBar';
+import type { ApiResult } from '@owner/api/types';
+import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { takeCampaignDraft } from './campaignDraftStorage';
 import {
   CampaignFormContext,
   type CampaignFormContextValue,
 } from './campaignFormContext';
+import { NEW_CAMPAIGN_ID } from './campaignSteps';
 
 const LIST_PATH = '/campaigns';
+
+// 새 캠페인은 1단계를 처음 저장할 때 서버가 DRAFT를 만들므로, 그 전까지는 기본값으로 쓴다
+const loadCampaign = (
+  campaignId: string,
+): Promise<ApiResult<Pick<Campaign, keyof CampaignValues | 'status'>>> =>
+  campaignId === NEW_CAMPAIGN_ID
+    ? Promise.resolve({
+        ok: true,
+        data: { ...createInitialCampaignValues(), status: 'DRAFT' },
+      })
+    : getCampaign(campaignId);
 
 type LoadState =
   | { status: 'loading' }
@@ -49,7 +65,7 @@ export const CampaignFormProvider = ({
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getCampaign(campaignId), getPlatformSettings()]).then(
+    Promise.all([loadCampaign(campaignId), getPlatformSettings()]).then(
       ([campaignResult, settingsResult]) => {
         if (ignore) {
           return;
@@ -67,7 +83,10 @@ export const CampaignFormProvider = ({
         }
 
         const { budget, coupon, poster, status, target } = campaignResult.data;
-        setValues({ budget, coupon, poster, target });
+        // 충전하러 결제 화면에 다녀왔으면 떠나기 전에 작성 중이던 값으로 이어 쓴다 (campaignDraftStorage)
+        setValues(
+          takeCampaignDraft(campaignId) ?? { budget, coupon, poster, target },
+        );
         setLoadState({
           status: 'loaded',
           campaignStatus: status,
@@ -87,6 +106,8 @@ export const CampaignFormProvider = ({
     setRequestId((value) => value + 1);
   };
 
+  const reload = () => setRequestId((value) => value + 1);
+
   if (loadState.status === 'loaded' && values) {
     // 작성 중인 캠페인만 수정할 수 있으므로 다른 상태면 상세 화면으로 보낸다
     if (loadState.campaignStatus !== 'DRAFT') {
@@ -103,7 +124,15 @@ export const CampaignFormProvider = ({
     };
 
     const setPoster: CampaignFormContextValue['setPoster'] = (poster) => {
-      setValues((prev) => (prev ? { ...prev, poster } : prev));
+      setValues((prev) =>
+        prev
+          ? {
+              ...prev,
+              poster:
+                typeof poster === 'function' ? poster(prev.poster) : poster,
+            }
+          : prev,
+      );
     };
 
     return (
@@ -111,6 +140,7 @@ export const CampaignFormProvider = ({
         value={{
           campaignId,
           platformSettings: loadState.platformSettings,
+          reload,
           setPoster,
           updateStepValues,
           values,

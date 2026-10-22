@@ -5,6 +5,7 @@ export * from './components/Checkbox/Checkbox';
 export * from './components/ChoiceChip/ChoiceChip';
 export * from './components/DatePicker/DatePicker';
 export * from './components/DateRangePicker/DateRangePicker';
+export { getDateRangeUnit } from './components/DateRangePicker/dateRangeUtils';
 export * from './components/FilterChip/FilterChip';
 export * from './components/Input/Input';
 export * from './components/MultiSelectField/MultiSelectField';

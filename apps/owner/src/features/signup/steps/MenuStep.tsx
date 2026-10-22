@@ -1,109 +1,130 @@
-import { useState } from 'react';
-import { Plus, SquarePen, Trash2 } from 'lucide-react';
+import {
+  type ImageValue,
+  isImageOfFile,
+  isImageUploading,
+  type UploadableImage,
+  uploadImage,
+} from '@owner/api/imageUpload';
+import {
+  MAX_MENUS,
+  menuInputRules,
+  type MenuItemValues,
+} from '@owner/api/signupFlow';
+import {
+  confirmStoreMenuImageUpload,
+  prepareStoreMenuImageUpload,
+  registerStoreMenu,
+} from '@owner/api/storeMenus';
+import { MenuListFields } from '@owner/ui/MenuListFields/MenuListFields';
 
-import { MAX_MENUS, type MenuItemValues } from '@owner/api/signupFlow';
-import { FilePreviewImage } from '@owner/components/FilePreviewImage/FilePreviewImage';
-import { MenuFormSheet } from '@owner/features/signup/MenuFormSheet';
-import { formatPriceDigits } from '@owner/features/signup/menuPrice';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+import { useSignupFlow } from '../useSignupFlow';
 
-// 바텀시트로 새 메뉴를 추가하는지, 몇 번째 메뉴를 수정하는지
-type SheetState = { mode: 'add' } | { mode: 'edit'; index: number } | null;
-
-const iconButtonClassName =
-  'flex size-10 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface-subtle hover:text-text-primary focus-visible:outline-2 focus-visible:outline-action-primary';
-
-// 대표 메뉴 목록과 추가·수정·삭제. 선택 단계라 메뉴 없이도 등록 신청을 완료할 수 있다
+// 대표 메뉴 목록과 추가. 선택 단계라 메뉴 없이도 등록 신청을 완료할 수 있다.
+// 시트에서 확인하면 바로 메뉴를 등록하고 그 메뉴 사진을 올린다 ("다음"에서는 등록하지 않는다).
+// 메뉴 수정·삭제 API가 없어 등록한 메뉴는 바꾸거나 지울 수 없다.
+// 등록하지 못한 메뉴는 서버에 없어 고치거나 지울 수 있다 (서버가 계속 거절해도 빼고 넘어갈 수 있게)
 export const MenuStep = () => {
   const { updateStepValues, values } = useSignupFlow();
   const { menus } = values.menu;
-  const [sheet, setSheet] = useState<SheetState>(null);
+  const isUploading = menus.some(
+    ({ image }) => image !== null && isImageUploading(image),
+  );
 
-  const updateMenus = (nextMenus: MenuItemValues[]) => {
-    updateStepValues('menu', { menus: nextMenus });
-  };
+  // 그 사진을 고른 메뉴만 바꾼다. 올리는 동안 다른 메뉴도 바뀌므로 그때의 최신 값에서 고른다
+  const updateMenu = (file: File, patch: Partial<MenuItemValues>) =>
+    updateStepValues('menu', ({ menus: currentMenus }) => ({
+      menus: currentMenus.map((menu) =>
+        isImageOfFile(menu.image, file) ? { ...menu, ...patch } : menu,
+      ),
+    }));
 
-  const handleSave = (menu: MenuItemValues) => {
-    if (sheet?.mode === 'edit') {
-      updateMenus(
-        menus.map((current, index) => (index === sheet.index ? menu : current)),
-      );
-    } else {
-      updateMenus([...menus, menu]);
+  // 메뉴를 등록하지 않았으면 등록해 메뉴 ID를 받고, 그 ID로 사진을 올린다.
+  // 받은 ID는 메뉴에 넣어 다시 시도할 때 다시 등록하지 않는다 (같은 메뉴를 다시 보내면 메뉴가 하나 더 생긴다)
+  const registerMenu = async (menu: MenuItemValues, image: UploadableImage) => {
+    const { file } = image;
+
+    updateMenu(file, { image: { status: 'uploading', file, progress: 0 } });
+
+    let menuId = menu.id;
+
+    if (!menuId) {
+      const result = await registerStoreMenu(menu);
+
+      if (!result.ok) {
+        updateMenu(file, {
+          image: { status: 'failed', file, code: result.code },
+        });
+        return;
+      }
+
+      menuId = result.data;
+      updateMenu(file, { id: menuId });
     }
 
-    setSheet(null);
+    const registeredMenuId = menuId;
+    const uploadedImage = await uploadImage(image, {
+      prepare: (request) =>
+        prepareStoreMenuImageUpload(registeredMenuId, request),
+      confirm: confirmStoreMenuImageUpload,
+      onProgress: (progress) =>
+        updateMenu(file, { image: { status: 'uploading', file, progress } }),
+    });
+
+    updateMenu(file, { image: uploadedImage });
+  };
+
+  // 메뉴마다 한 개씩 차례로 등록하고 사진을 올린다. 올리는 중에는 추가, 다시 시도, 사진 등록을 막아 한 번에 하나만 돈다.
+  // 앞 단계로 가도 끝까지 올린다
+  const registerMenus = async (targets: MenuItemValues[]) => {
+    for (const menu of targets) {
+      const { image } = menu;
+
+      if (image?.status === 'selected' || image?.status === 'failed') {
+        await registerMenu(menu, image);
+      }
+    }
+  };
+
+  // 시트에서 확인한 메뉴는 사진을 selected로 담아 뒤에 붙어 오고, 고친 메뉴는 새 값으로 그 자리에 온다.
+  // 둘 다 목록에 없던 값이라 등록을 시작한다. 지운 메뉴는 등록할 것이 없다
+  const handleMenusChange = (nextMenus: MenuItemValues[]) => {
+    const addedMenus = nextMenus.filter((menu) => !menus.includes(menu));
+
+    updateStepValues('menu', { menus: nextMenus });
+    void registerMenus(addedMenus);
+  };
+
+  const handleRetry = (index: number) => {
+    void registerMenus([menus[index]]);
+  };
+
+  // 새로고침으로 고른 파일이 사라져 사진이 붙지 않은 메뉴에 사진만 다시 고른다
+  const handleImageSelect = (index: number, file: File) => {
+    const image: ImageValue = { status: 'selected', file };
+    const menu = { ...menus[index], image };
+
+    updateStepValues('menu', {
+      menus: menus.map((current, menuIndex) =>
+        menuIndex === index ? menu : current,
+      ),
+    });
+    void registerMenus([menu]);
   };
 
   return (
-    <div className="flex flex-col gap-4 px-page pt-6 pb-8">
-      <p className="text-body-sm-mobile break-keep text-text-secondary">
-        손님에게 보여줄 대표 메뉴를 최대 {MAX_MENUS}개까지 등록할 수 있어요.
-      </p>
-
-      {menus.length > 0 && (
-        <ul aria-label="등록한 대표 메뉴" className="flex flex-col gap-3">
-          {menus.map((menu, index) => (
-            <li
-              className="flex items-center gap-4 rounded-xl border border-border-subtle bg-bg-surface p-3"
-              // 메뉴에 별도 ID가 없어 등록 순서로 구분한다
-              key={index}
-            >
-              <FilePreviewImage
-                className="size-18 shrink-0 rounded-lg object-cover"
-                file={menu.image}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-body-mobile font-semibold text-text-primary">
-                  {menu.name}
-                </p>
-                <p className="mt-0.5 text-body-sm-mobile text-text-secondary">
-                  {formatPriceDigits(menu.price)}원
-                </p>
-              </div>
-              <button
-                aria-label={`${menu.name} 수정`}
-                className={iconButtonClassName}
-                onClick={() => setSheet({ mode: 'edit', index })}
-                type="button"
-              >
-                <SquarePen aria-hidden="true" className="size-5" />
-              </button>
-              <button
-                aria-label={`${menu.name} 삭제`}
-                className={`-ml-3 ${iconButtonClassName}`}
-                onClick={() =>
-                  updateMenus(
-                    menus.filter((_, menuIndex) => menuIndex !== index),
-                  )
-                }
-                type="button"
-              >
-                <Trash2 aria-hidden="true" className="size-5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {menus.length < MAX_MENUS && (
-        <button
-          className="flex h-16 items-center justify-center gap-2 rounded-xl border border-dashed border-brand-200 bg-surface-brand text-body-mobile font-semibold text-text-primary hover:border-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
-          onClick={() => setSheet({ mode: 'add' })}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="size-5 text-action-primary" />
-          대표 메뉴 추가하기 ({menus.length}/{MAX_MENUS})
-        </button>
-      )}
-
-      {sheet && (
-        <MenuFormSheet
-          initialMenu={sheet.mode === 'edit' ? menus[sheet.index] : undefined}
-          onClose={() => setSheet(null)}
-          onSave={handleSave}
-        />
-      )}
+    <div className="px-page pt-6 pb-8">
+      <MenuListFields<ImageValue | null>
+        // 등록하지 못한 메뉴만 고치거나 지울 수 있다. 다른 메뉴를 처리하는 중에는 한 번에 하나만 돌도록 막는다
+        canEdit={({ id }) => !id && !isUploading}
+        disabled={isUploading}
+        maxMenus={MAX_MENUS}
+        menus={menus}
+        notice="등록한 메뉴는 지금은 바꾸거나 지울 수 없어요"
+        onChange={handleMenusChange}
+        onImageSelect={handleImageSelect}
+        onRetry={handleRetry}
+        rules={menuInputRules}
+      />
     </div>
   );
 };

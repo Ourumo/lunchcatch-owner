@@ -165,7 +165,7 @@ export function SelectField({
       {isOpen && (
         <ul
           aria-labelledby={generatedId}
-          className={`absolute left-0 z-10 max-h-48 w-full overflow-auto rounded-md border border-border-subtle bg-bg-surface p-1 ${
+          className={`ui-scrollbar absolute left-0 z-10 max-h-48 w-full overflow-auto overscroll-contain rounded-md border border-border-subtle bg-bg-surface p-1 ${
             menuPlacement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
           }`}
           id={`${generatedId}-options`}

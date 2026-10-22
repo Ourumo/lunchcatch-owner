@@ -10,8 +10,6 @@ export interface PlatformSettings {
   // 유효 노출 1회당 차감 포인트
   impressionUnitPrice: number;
   minDailyBudget: number;
-  // 반경 안에 최근 7일 데이터가 없을 때 추천하는 하루 예산
-  bootstrapDailyBudget: number;
 }
 
 export const getPlatformSettings = async (): Promise<

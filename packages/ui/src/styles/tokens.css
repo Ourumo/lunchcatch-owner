@@ -102,6 +102,9 @@
   /* 모바일 화면 폭: 360~480px에서 화면 폭에 맞춘다 (디자인 기준 폭은 390px) */
   --layout-mobile-max-width: 480px;
   --layout-mobile-min-width: 360px;
+
+  /* 날짜 범위 필드와 이를 담는 테이블 열에서 함께 사용하는 기본 너비 */
+  --layout-date-range-picker-width: 200px;
 }
 
 /* =========================================================
@@ -127,10 +130,13 @@
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-600);
   --semantic-action-primary-disabled: var(--primitive-neutral-200);
+  --semantic-action-disabled-fg: var(--primitive-neutral-900);
 
   --semantic-surface-brand: var(--primitive-brand-100);
   --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-600);
+  --semantic-code-selection-bg: var(--primitive-info-500);
+  --semantic-code-selection-fg: var(--primitive-neutral-0);
   --semantic-bg-inverse: var(--primitive-neutral-900);
   --semantic-text-on-inverse: var(--primitive-neutral-0);
   --semantic-action-secondary: var(--primitive-secondary-500);
@@ -179,10 +185,13 @@
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-400);
   --semantic-action-primary-disabled: var(--primitive-neutral-500);
+  --semantic-action-disabled-fg: var(--primitive-neutral-0);
 
   --semantic-surface-brand: var(--primitive-brand-900);
   --semantic-bg-brand: var(--primitive-brand-500);
   --semantic-text-brand: var(--primitive-brand-400);
+  --semantic-code-selection-bg: var(--primitive-info-500);
+  --semantic-code-selection-fg: var(--primitive-neutral-0);
   --semantic-bg-inverse: var(--primitive-neutral-0);
   --semantic-text-on-inverse: var(--primitive-neutral-900);
   --semantic-action-secondary: var(--primitive-secondary-500);
@@ -249,9 +258,12 @@
   --color-action-primary: var(--semantic-action-primary);
   --color-action-primary-hover: var(--semantic-action-primary-hover);
   --color-action-primary-disabled: var(--semantic-action-primary-disabled);
+  --color-action-disabled-fg: var(--semantic-action-disabled-fg);
   --color-surface-brand: var(--semantic-surface-brand);
   --color-bg-brand: var(--semantic-bg-brand);
   --color-text-brand: var(--semantic-text-brand);
+  --color-code-selection: var(--semantic-code-selection-bg);
+  --color-code-selection-fg: var(--semantic-code-selection-fg);
   --color-bg-inverse: var(--semantic-bg-inverse);
   --color-text-on-inverse: var(--semantic-text-on-inverse);
   --color-action-secondary: var(--semantic-action-secondary);

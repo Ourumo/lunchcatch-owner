@@ -37,6 +37,10 @@ const badgeStyle: CSSProperties = {
   paddingInline: 'var(--space-3)',
 };
 
+/**
+ * variant에 해당하는 상태 색상으로 라벨을 표시한다.
+ * data-status-badge는 테이블이 뱃지를 식별해 셀의 말줄임표를 제외하는 데 사용한다.
+ */
 export function StatusBadge({
   children,
   className,
@@ -46,6 +50,7 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <span
+      data-status-badge=""
       className={[
         'inline-flex items-center whitespace-nowrap text-caption-web font-medium',
         className,

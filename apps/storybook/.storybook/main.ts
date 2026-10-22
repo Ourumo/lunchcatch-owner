@@ -5,7 +5,7 @@ const config: StorybookConfig = {
     // 공통 컴포넌트
     '../../../packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
     // 앱별 컴포넌트
-    '../../*/src/components/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../../*/src/ui/**/*.stories.@(js|jsx|mjs|ts|tsx)',
   ],
   addons: [
     '@chromatic-com/storybook',

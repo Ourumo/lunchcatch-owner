@@ -43,7 +43,8 @@ export function SegmentedControl<T extends string = string>({
   return (
     <div
       aria-label={ariaLabel}
-      className="relative inline-grid rounded-lg bg-surface-subtle p-1"
+      // 내부 버튼의 z-index를 이 영역에 가둬 인접한 드롭다운 위로 올라오지 않게 한다.
+      className="relative isolate inline-grid rounded-lg bg-surface-subtle p-1"
       role="group"
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >

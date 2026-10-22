@@ -1,10 +1,8 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { CircleAlert, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 import {
-  type Campaign,
-  getCampaigns,
   isBudgetStepComplete,
   isCouponStepComplete,
   ISSUE_OPEN_TIME,
@@ -14,9 +12,9 @@ import {
 } from '@owner/api/campaign';
 import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
-  getPosterTemplates,
+  getCampaignPoster,
   isPosterComplete,
-  type PosterTemplate,
+  type SavedPoster,
 } from '@owner/api/poster';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 import {
@@ -25,21 +23,22 @@ import {
   formatPeriod,
   formatPoints,
   getPeriodDays,
-} from '@owner/components/campaignFormat';
+} from '@owner/ui/campaignFormat';
+
 import {
   formatAgeGroups,
   formatGender,
   formatRadius,
-} from '@owner/features/campaign/campaignFormat';
-import { DetailRow } from '@owner/features/campaign/detail/DetailSection';
+} from '../../campaignFormat';
+import { DetailNote, DetailRow } from '../../detail/DetailSection';
+import { PosterPreview } from '../../PosterPreview';
 import {
   type CampaignStep,
   campaignSteps,
   getCampaignEditPath,
-} from '@owner/features/campaign/form/campaignSteps';
-import { PointSummary } from '@owner/features/campaign/form/PointSummary';
-import { useCampaignForm } from '@owner/features/campaign/form/useCampaignForm';
-import { PosterPreview } from '@owner/features/campaign/PosterPreview';
+} from '../campaignSteps';
+import { PointSummary } from '../PointSummary';
+import { useCampaignForm } from '../useCampaignForm';
 
 const POSTER_PREVIEW_WIDTH = 200;
 
@@ -85,14 +84,15 @@ const ReviewSection = ({
 const findStep = (id: CampaignStep['id']) =>
   campaignSteps.find((step) => step.id === id) as CampaignStep;
 
-// 등록 5단계: 앞 단계 입력을 한눈에 확인하고, 잔액과 진행 중인 캠페인을 안내한 뒤 활성화를 요청한다
+// 등록 5단계: 앞 단계 입력을 한눈에 확인하고, 잔액을 안내한 뒤 활성화를 요청한다
 export const ReviewStep = () => {
   const { campaignId, platformSettings, values } = useCampaignForm();
   const { budget, coupon, poster, target } = values;
   const [menus, setMenus] = useState<StoreMenu[]>([]);
-  const [templates, setTemplates] = useState<PosterTemplate[]>([]);
+  // 서버가 만든 완성 포스터. 아직 만들지 않았으면 'none'
+  const [savedPoster, setSavedPoster] =
+    useState<Loadable<SavedPoster | 'none'>>();
   const [balance, setBalance] = useState<Loadable<PointBalance>>();
-  const [runningCampaign, setRunningCampaign] = useState<Campaign>();
 
   useEffect(() => {
     let ignore = false;
@@ -102,25 +102,14 @@ export const ReviewStep = () => {
         setMenus(result.data.menus);
       }
     });
-    getPosterTemplates().then((result) => {
-      if (!ignore && result.ok) {
-        setTemplates(result.data);
+    getCampaignPoster(campaignId).then((result) => {
+      if (!ignore) {
+        setSavedPoster(result.ok ? (result.data ?? 'none') : null);
       }
     });
     getPointBalance().then((result) => {
       if (!ignore) {
         setBalance(result.ok ? result.data : null);
-      }
-    });
-    // 가게당 집행 중인 캠페인은 1건이라, 이 캠페인이 시작되면 기존 캠페인은 종료된다
-    getCampaigns().then((result) => {
-      if (!ignore && result.ok) {
-        setRunningCampaign(
-          result.data.find(
-            ({ id, status }) =>
-              id !== campaignId && (status === 'ACTIVE' || status === 'PAUSED'),
-          ),
-        );
       }
     });
 
@@ -131,7 +120,6 @@ export const ReviewStep = () => {
   }, [campaignId]);
 
   const menu = menus.find(({ id }) => id === coupon.menuId);
-  const template = templates.find(({ id }) => id === poster?.templateId);
   const isBudgetComplete = isBudgetStepComplete(budget, platformSettings);
   const periodDays = isBudgetComplete
     ? getPeriodDays(budget.startDate, budget.endDate)
@@ -175,6 +163,15 @@ export const ReviewStep = () => {
             label="사용 가능 시간"
             value={`매일 ${coupon.usableFrom} ~ ${coupon.usableUntil}`}
           />
+          {coupon.minOrderAmount !== null && (
+            <DetailRow
+              label="최소 주문 금액"
+              value={`${formatNumber(coupon.minOrderAmount)}원 이상`}
+            />
+          )}
+          {coupon.notice && (
+            <DetailNote label="유의사항" value={coupon.notice} />
+          )}
         </dl>
       </ReviewSection>
 
@@ -183,21 +180,23 @@ export const ReviewStep = () => {
         isComplete={isPosterComplete(poster)}
         step={findStep('poster')}
       >
-        {poster && template ? (
+        {/* 2단계에서 입력한 글이 아니라 서버가 만든 포스터를 보여준다. 서버가 아직 글을 받지 않아 글이 다를 수 있다 */}
+        {savedPoster && savedPoster !== 'none' ? (
           <div className="mt-3 flex justify-center">
             <div className="overflow-hidden rounded-lg border border-border-subtle">
               <PosterPreview
-                html={template.html}
-                slots={poster.slots}
+                html={savedPoster.html}
                 width={POSTER_PREVIEW_WIDTH}
               />
             </div>
           </div>
         ) : (
           <p className="mt-3 text-body-sm-mobile text-text-secondary">
-            {poster
+            {savedPoster === undefined
               ? '포스터를 불러오는 중이에요'
-              : '아직 포스터를 만들지 않았어요'}
+              : savedPoster === null
+                ? '포스터를 불러오지 못했어요'
+                : '아직 포스터를 만들지 않았어요'}
           </p>
         )}
       </ReviewSection>
@@ -250,24 +249,13 @@ export const ReviewStep = () => {
         />
       )}
 
-      {runningCampaign && (
-        <p className="flex gap-1.5 rounded-xl bg-status-warning-bg px-4 py-3 text-caption-mobile break-keep text-text-primary">
-          <CircleAlert
-            aria-hidden="true"
-            className="mt-0.5 size-3.5 shrink-0 text-status-warning-fg"
-          />
-          지금 진행 중인 캠페인이 있어요. 가게마다 한 번에 하나만 노출되므로, 이
-          캠페인이 시작되면 진행 중인 캠페인은 종료돼요.
-        </p>
-      )}
-
       <p className="flex gap-1.5 rounded-xl bg-surface-subtle px-4 py-3 text-caption-mobile break-keep text-text-primary">
         <Info
           aria-hidden="true"
           className="mt-0.5 size-3.5 shrink-0 text-text-secondary"
         />
-        자동 검수를 통과하면 시작 대기 상태가 되고, 집행 시작일 00:00부터 피드에
-        노출돼요. 통과하지 못하면 사유를 알려 드려요.
+        활성화를 요청하면 대기 중 상태가 되고, 집행 시작일 00:00부터 피드에
+        노출돼요.
       </p>
     </div>
   );

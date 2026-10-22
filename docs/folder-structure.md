@@ -42,7 +42,8 @@ apps/<앱>/src/
 ├── app/          # 앱 진입점, 라우터, 전역 Provider
 ├── pages/        # 주소 하나에 대응하는 화면
 ├── features/     # 기능 단위 UI, 상태, 로직 묶음
-├── components/   # 이 앱 안에서 여러 기능이 함께 쓰는 컴포넌트
+├── ui/           # 이 앱 안에서 여러 기능이 함께 쓰는 컴포넌트
+├── hooks/        # 이 앱 안에서 여러 기능이 함께 쓰는 훅
 ├── layout/       # 여러 페이지를 감싸는 틀
 ├── api/          # 서버 요청 함수와 mock 데이터
 ├── auth/         # 로그인 상태와 접근 제어
@@ -55,7 +56,8 @@ apps/<앱>/src/
 | `app` | 앱 전체에 한 번만 설정하는 것 | `App.tsx`, `router.tsx`, `providers.tsx` |
 | `pages` | 라우터에 연결되는 화면. 직접 로직을 갖지 않고 `layout`과 `features`를 조합 | `LoginPage.tsx`, `SignupPage.tsx` |
 | `features` | 특정 기능에 필요한 UI, 상태, 로직 | `features/signup/steps/BusinessHoursStep.tsx` |
-| `components` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트 | 점주 헤더, 이미지 업로더, DataTable |
+| `ui` | 특정 기능에 묶이지 않고 앱 안에서 재사용하는 컴포넌트와 표시용 함수 | 점주 헤더, 이미지 업로더, DataTable, `campaignFormat.ts` |
+| `hooks` | 여러 기능이 함께 쓰는 훅. `api`의 요청 함수를 불러도 된다 | `useCountdown.ts`, `useWishCount.ts` |
 | `layout` | 페이지마다 반복되는 바깥 구조 | 사이드바 레이아웃, 하단 탭바 레이아웃 |
 | `api` | 서버 요청 함수와 mock 데이터 | `store.ts`, `mocks/` |
 | `auth` | 로그인 상태 제공과 비로그인 접근 차단 | `AuthProvider.tsx`, `RequireAuth.tsx` |
@@ -63,17 +65,19 @@ apps/<앱>/src/
 ## 의존 방향
 
 ```
-app → pages → features → components
+app → pages → features → ui
                   │
+                  ├──→ hooks ──→ api
                   └──→ api, auth
 
 apps/* ──→ @repo/ui, @repo/utils
 ```
 
-- 화살표 방향으로만 import합니다. `components`에서 `features`를 import하지 않습니다.
-- 예외로 `components`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
-- `components`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
-- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 그 코드를 `components`나 `@repo/ui`로 옮깁니다.
+- 화살표 방향으로만 import합니다. `ui`에서 `features`를 import하지 않습니다.
+- 예외로 `ui`는 `api`의 타입만 `import type`으로 가져올 수 있습니다. 여러 기능이 같은 데이터를 보여주는 컴포넌트(예: 캠페인 카드)가 타입을 따로 정의하지 않고 서버 응답 타입을 그대로 쓰기 위해서입니다. 요청 함수, 상수, mock 데이터는 가져오지 않습니다.
+- `ui`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
+- `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 컴포넌트와 표시용 함수는 `ui`나 `@repo/ui`로, 훅은 `hooks`로 옮깁니다.
+- `hooks`는 `features`, `pages`, `app`을 import하지 않습니다. `ui`와 달리 `api`의 요청 함수를 불러도 됩니다.
 - 앱끼리는 서로 import하지 않습니다.
 - `packages`는 `apps`를 import하지 않습니다.
 
@@ -87,21 +91,41 @@ apps/* ──→ @repo/ui, @repo/utils
 | owner | `@owner/` | `apps/owner/src` |
 | admin | `@admin/` | `apps/admin/src` |
 
+### 별칭과 상대 경로
+
+`src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/billing`, `ui/DataTable`)
+
+| 가져오는 대상 | 경로 |
+| --- | --- |
+| 같은 모듈 안의 파일 | 상대 경로(`./`, `../`) |
+| 모듈 밖의 파일 (다른 기능, 다른 레이어) | 앱 별칭(`@admin/`) |
+
 ```tsx
-import { Header } from '@owner/components/Header';
+// apps/admin/src/features/billing/ui/RefundDetails.tsx (모듈: features/billing)
+import { type AdminRefund, processRefund } from '@admin/api/refunds';
+import { AdminModal } from '@admin/ui/AdminModal/AdminModal';
+
+import { useBillingMutation } from '../useBillingMutation';
+import { DetailItem } from './BillingDetails';
 ```
+
+- 레이어 바로 아래 파일(`api/store.ts` 등)은 파일 하나가 모듈입니다. 같은 폴더는 `./`로 가져오고, `../`는 쓰지 않습니다.
+- 같은 모듈 안을 별칭으로 가져오거나 모듈 밖을 `../`로 가져오면 ESLint(`repo/module-import-path`)에서 에러가 납니다. `pnpm lint:fix`로 맞는 경로로 바꿀 수 있습니다.
+- `packages`는 별칭이 없으므로 이 규칙을 적용하지 않습니다.
+
+### 별칭 설정
 
 - 앱마다 별칭 이름이 다른 이유는 Storybook이 세 앱의 컴포넌트를 한꺼번에 읽기 때문입니다. 모두 `@/`를 쓰면 어느 앱의 `src`인지 구분할 수 없습니다.
 - 각 앱은 자기 별칭만 인식하므로, 다른 앱의 별칭을 import하면 타입 에러가 납니다.
 - 별칭은 앱의 `tsconfig.app.json`(`paths`)에만 정의합니다. Vite와 Storybook은 `resolve.tsconfigPaths` 옵션으로 이 값을 그대로 읽으므로 따로 등록하지 않습니다.
-- 앱을 추가하면 새 앱의 `tsconfig.app.json`에 `paths`를, `packages/eslint-config`의 import 정렬 그룹에 별칭 이름을 추가합니다.
+- 앱을 추가하면 새 앱의 `tsconfig.app.json`에 `paths`를, `packages/eslint-config/index.js`의 `aliasApps`에 앱 이름을 추가합니다. import 정렬 그룹과 import 경로 규칙이 이 목록을 함께 씁니다.
 
 ## 컴포넌트 배치 기준
 
 | 사용 범위 | 위치 |
 | --- | --- |
 | 두 개 이상의 앱에서 같은 형태와 동작으로 사용 | `packages/ui/src/components` |
-| 한 앱 안에서 여러 기능이 사용 | `apps/<앱>/src/components` |
+| 한 앱 안에서 여러 기능이 사용 | `apps/<앱>/src/ui` |
 | 한 기능에서만 사용 | `apps/<앱>/src/features/<기능>` |
 
 ## 공통 패키지 사용
@@ -132,6 +156,6 @@ import { Button, initializeTheme } from '@repo/ui';
 스토리 파일(`*.stories.tsx`)은 컴포넌트 옆에 두고, `apps/storybook`이 아래 경로에서 모아 보여줍니다.
 
 - `packages/ui/src/**`
-- `apps/*/src/components/**`
+- `apps/*/src/ui/**`
 
 `apps/storybook`에는 설정만 있고 스토리는 없습니다. 스토리 작성 범위는 [docs/conventions.md](/docs/conventions.md#storybook)를 참고합니다.

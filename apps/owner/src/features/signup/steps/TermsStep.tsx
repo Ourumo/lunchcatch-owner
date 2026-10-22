@@ -7,7 +7,8 @@ import {
   type TermsItem,
   type TermsStepValues,
 } from '@owner/api/signupFlow';
-import { useSignupFlow } from '@owner/features/signup/useSignupFlow';
+
+import { useSignupFlow } from '../useSignupFlow';
 
 const termsGroups = [
   { legend: '필수', items: ownerTerms.filter((item) => item.required) },
@@ -53,7 +54,7 @@ export const TermsStep = () => {
           className="cursor-pointer pr-5 pb-5 pl-14 type-body-sm text-text-primary"
           htmlFor={allAgreeId}
         >
-          선택 항목까지 한 번에 동의해요
+          모든 약관에 한 번에 동의해요
         </label>
       </div>
 

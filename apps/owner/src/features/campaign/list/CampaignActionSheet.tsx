@@ -17,7 +17,7 @@ export interface CampaignActionSheetProps {
 
 const DEFAULT_ERROR_MESSAGE = '처리하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
-// 캠페인 삭제, 시작 대기 취소처럼 되돌리기 어려운 처리를 한 번 더 확인하는 시트.
+// 대기 중 취소처럼 캠페인 상태를 바꾸는 처리를 한 번 더 확인하는 시트.
 // 열 때마다 새로 그려 오류 문구를 초기화하므로 열려 있을 때만 렌더링한다
 export const CampaignActionSheet = ({
   confirmLabel,
@@ -64,7 +64,7 @@ export const CampaignActionSheet = ({
 
       {errorMessage && (
         <p
-          className="mt-3 text-center text-body-sm-mobile text-status-danger-fg"
+          className="mt-3 text-center text-body-sm-mobile break-keep text-status-danger-fg"
           role="alert"
         >
           {errorMessage}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { type Campaign, getCampaign } from '@owner/api/campaign';
-import { getPosterTemplates, type PosterTemplate } from '@owner/api/poster';
+import { getCampaignPoster } from '@owner/api/poster';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 
 type CampaignDetailState =
@@ -11,11 +11,12 @@ type CampaignDetailState =
       status: 'success';
       campaign: Campaign;
       menus: StoreMenu[];
-      templates: PosterTemplate[];
+      // 서버가 만든 완성 포스터 HTML. 아직 만들지 않았으면 'none', 불러오지 못했으면 null
+      posterHtml: string | 'none' | null;
     };
 
-// 캠페인과 함께, 메뉴 이름과 포스터 미리보기에 필요한 가게 메뉴와 템플릿을 불러온다.
-// 메뉴나 템플릿을 못 받아도 캠페인 내용은 보여줄 수 있으므로 캠페인 조회 실패만 오류로 본다
+// 캠페인과 함께, 메뉴 이름에 필요한 가게 메뉴와 서버가 만든 포스터를 불러온다.
+// 메뉴나 포스터를 못 받아도 캠페인 내용은 보여줄 수 있으므로 캠페인 조회 실패만 오류로 본다
 export const useCampaignDetail = (id: string) => {
   const [state, setState] = useState<CampaignDetailState>({
     status: 'loading',
@@ -26,8 +27,8 @@ export const useCampaignDetail = (id: string) => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getCampaign(id), getMyStore(), getPosterTemplates()]).then(
-      ([campaignResult, storeResult, templatesResult]) => {
+    Promise.all([getCampaign(id), getMyStore(), getCampaignPoster(id)]).then(
+      ([campaignResult, storeResult, posterResult]) => {
         if (ignore) {
           return;
         }
@@ -41,7 +42,9 @@ export const useCampaignDetail = (id: string) => {
           status: 'success',
           campaign: campaignResult.data,
           menus: storeResult.ok ? storeResult.data.menus : [],
-          templates: templatesResult.ok ? templatesResult.data : [],
+          posterHtml: posterResult.ok
+            ? (posterResult.data?.html ?? 'none')
+            : null,
         });
       },
     );

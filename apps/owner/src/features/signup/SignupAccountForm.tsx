@@ -1,10 +1,12 @@
 import { Button, Input, Toast } from '@repo/ui';
 import { LockKeyhole, Mail } from 'lucide-react';
 
+import type { LoginResponse } from '@owner/api/auth';
+
 import { useSignupAccountForm } from './useSignupAccountForm';
 
 interface SignupAccountFormProps {
-  onSuccess: () => void;
+  onSuccess: (owner: LoginResponse) => void;
 }
 
 export const SignupAccountForm = ({ onSuccess }: SignupAccountFormProps) => {
@@ -42,7 +44,7 @@ export const SignupAccountForm = ({ onSuccess }: SignupAccountFormProps) => {
         name="password"
         onBlur={handleBlur('password')}
         onChange={handleChange('password')}
-        placeholder="8자 이상 20자 미만"
+        placeholder="10자 이상 20자 이하"
         type="password"
         value={values.password}
       />
