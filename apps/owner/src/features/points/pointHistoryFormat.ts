@@ -13,7 +13,7 @@ export const pointHistoryTypeLabels: Record<PointHistoryType, string> = {
 };
 
 // 집행일 하루의 예약, 소진, 예약 해제를 묶은 값. 예약 해제 전이면 released가 null이다.
-// 예약 해제 전의 소진은 오늘이면 소진 집계로 받고, 받지 못했거나 지난날(예약 해제가 늦어진 경우)이면 spent가 null이다
+// 예약 해제 전의 소진은 오늘이면 소진 집계로 받고, 받지 못했거나 지난날(다음 날 00:00 예약 해제가 아직 끝나지 않은 경우)이면 spent가 null이다
 export interface ServingSummary {
   reserved: number;
   spent: number | null;
@@ -162,6 +162,6 @@ export const formatServingSummary = ({
   }
 
   return spent === null
-    ? '남은 예약은 13:30에 해제돼요'
-    : `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 13:30에 해제돼요`;
+    ? '남은 예약은 내일 00:00에 해제돼요'
+    : `지금까지 소진 ${formatPoints(spent)} · 남은 예약은 내일 00:00에 해제돼요`;
 };
