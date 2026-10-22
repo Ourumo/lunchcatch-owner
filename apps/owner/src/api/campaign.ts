@@ -5,6 +5,7 @@ import {
   getCampaignPoster,
   isPosterComplete,
 } from './poster';
+import { getKstToday, splitPeriod } from './report';
 import { getMyStore } from './store';
 import type { ApiResult } from './types';
 
@@ -137,8 +138,6 @@ export interface Campaign extends CampaignValues {
   pausedReason: PausedReason | null;
   // ISO 8601
   createdAt: string;
-  // 한 번도 집행되지 않은 DRAFT, SCHEDULED는 null
-  performance: CampaignPerformance | null;
 }
 
 // 지금 집행 중인 캠페인(진행 중 또는 일시중지). 실적이 쌓이는 캠페인이다
@@ -356,7 +355,6 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   status: item.status,
   pausedReason: null,
   createdAt: item.createdAt,
-  performance: null,
   poster: null,
   coupon: {
     discountTarget: item.discountTargetType,
@@ -506,7 +504,6 @@ const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   status: data.status,
   pausedReason: data.pausedReason,
   createdAt: data.createdAt,
-  performance: null,
   poster: null,
   coupon: {
     discountTarget: data.discountTargetType,
@@ -543,6 +540,175 @@ export const getCampaign = async (id: string): Promise<ApiResult<Campaign>> => {
   } catch (error) {
     return toCampaignFailure(error);
   }
+};
+
+// 성과 조회, 쿠폰 수량, 소진 집계는 한 번에 최대 31일까지 조회한다
+const PERFORMANCE_MAX_DAYS = 31;
+
+interface PerformancePeriod {
+  // YYYY-MM-DD, 한국 날짜 기준 양 끝 포함
+  from: string;
+  to: string;
+}
+
+// 성과 조회. 이벤트 기록이라 늦거나 빠질 수 있어 찜만 쓰고, 발급·사용은 쿠폰 수량을 쓴다
+interface CampaignFunnelResponse {
+  // 피드 스와이프 찜만 센다. 가게 상세에서 누른 찜은 빠진다
+  wishCount: number;
+}
+
+// 쿠폰 수량. 기간 안의 회차 기준이라 기간을 나눠 받아 더해도 겹치지 않는다
+interface CouponSummaryResponse {
+  issuedCount: number;
+  usedCount: number;
+}
+
+interface SpendSummaryResponse {
+  items: { campaignId: number; spentPoint: number; reservedPoint: number }[];
+}
+
+const fetchCampaignFunnel = (id: string, period: PerformancePeriod) =>
+  request<CampaignFunnelResponse>(
+    `/v1/owner/campaigns/${encodeURIComponent(id)}/analytics/funnel?${new URLSearchParams({ ...period })}`,
+  );
+
+const fetchCouponSummary = (id: string, period: PerformancePeriod) =>
+  request<CouponSummaryResponse>(
+    `/v1/owner/campaigns/${encodeURIComponent(id)}/coupons/summary?${new URLSearchParams({ ...period })}`,
+  );
+
+// 기간 안의 이 캠페인 소진·예약 포인트. 소진이 없으면 줄이 오지 않아 0으로 본다
+const fetchSpendSummary = async (id: string, period: PerformancePeriod) => {
+  const params = new URLSearchParams({
+    ...period,
+    groupBy: 'CAMPAIGN',
+    campaignId: id,
+  });
+  const { items } = await request<SpendSummaryResponse>(
+    `/v1/owner/points/spend-summary?${params}`,
+  );
+  const item = items.find(({ campaignId }) => String(campaignId) === id);
+
+  return {
+    spentPoint: item?.spentPoint ?? 0,
+    reservedPoint: item?.reservedPoint ?? 0,
+  };
+};
+
+const sumBy = <T>(items: T[], getValue: (item: T) => number) =>
+  items.reduce((sum, item) => sum + getValue(item), 0);
+
+// 오늘 실적. 진행 중·일시중지이고 오늘이 집행 기간 안일 때만 있고, 아니면 null
+export const getCampaignTodayPerformance = async (
+  campaign: Pick<Campaign, 'id' | 'status' | 'budget'>,
+): Promise<ApiResult<CampaignTodayPerformance | null>> => {
+  const today = getKstToday();
+  const { budget, id } = campaign;
+
+  if (
+    !isCurrentCampaign(campaign) ||
+    !budget.startDate ||
+    today < budget.startDate ||
+    (budget.endDate && today > budget.endDate)
+  ) {
+    return { ok: true, data: null };
+  }
+
+  const period = { from: today, to: today };
+
+  try {
+    const [coupons, spend] = await Promise.all([
+      fetchCouponSummary(id, period),
+      fetchSpendSummary(id, period),
+    ]);
+
+    return {
+      ok: true,
+      data: {
+        issuedCount: coupons.issuedCount,
+        redeemedCount: coupons.usedCount,
+        reservedPoints: spend.reservedPoint,
+        spentPoints: spend.spentPoint,
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// 집행 시작일부터 오늘(끝난 캠페인은 종료일)까지의 누적. 31일씩 나눠 받아 더한다.
+// 아직 집행 전(작성 중, 대기 중)이면 null. 시작일이 지나도 서버가 진행 중으로 바꾸기 전에는 집행 전이다
+export const getCampaignTotalPerformance = async ({
+  budget,
+  id,
+  status,
+}: Pick<Campaign, 'id' | 'status' | 'budget'>): Promise<
+  ApiResult<CampaignTotalPerformance | null>
+> => {
+  const today = getKstToday();
+  const to = budget.endDate && budget.endDate < today ? budget.endDate : today;
+
+  if (
+    status === 'DRAFT' ||
+    status === 'SCHEDULED' ||
+    !budget.startDate ||
+    budget.startDate > to
+  ) {
+    return { ok: true, data: null };
+  }
+
+  const periods = splitPeriod(budget.startDate, to, PERFORMANCE_MAX_DAYS);
+
+  try {
+    // 긴 캠페인이나 지난 캠페인 카드가 여럿일 때 요청이 한꺼번에 몰리지 않게 구간은 차례로 받고,
+    // 한 구간 안의 세 API만 함께 보낸다
+    const results = [];
+
+    for (const period of periods) {
+      const [funnel, coupon, spend] = await Promise.all([
+        fetchCampaignFunnel(id, period),
+        fetchCouponSummary(id, period),
+        fetchSpendSummary(id, period),
+      ]);
+
+      results.push({ funnel, coupon, spend });
+    }
+
+    return {
+      ok: true,
+      data: {
+        savedCount: sumBy(results, ({ funnel }) => funnel.wishCount),
+        issuedCount: sumBy(results, ({ coupon }) => coupon.issuedCount),
+        redeemedCount: sumBy(results, ({ coupon }) => coupon.usedCount),
+        spentPoints: sumBy(results, ({ spend }) => spend.spentPoint),
+      },
+    };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// 오늘과 누적 성과를 함께 받는다. 아직 시작하지 않았으면 null
+export const getCampaignPerformance = async (
+  campaign: Pick<Campaign, 'id' | 'status' | 'budget'>,
+): Promise<ApiResult<CampaignPerformance | null>> => {
+  const [today, total] = await Promise.all([
+    getCampaignTodayPerformance(campaign),
+    getCampaignTotalPerformance(campaign),
+  ]);
+
+  if (!today.ok) {
+    return today;
+  }
+
+  if (!total.ok) {
+    return total;
+  }
+
+  return {
+    ok: true,
+    data: total.data && { today: today.data, total: total.data },
+  };
 };
 
 interface CouponSaveResponse {

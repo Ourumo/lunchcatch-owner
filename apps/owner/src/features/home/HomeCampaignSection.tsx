@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 
 import type { Campaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
 
@@ -38,6 +39,29 @@ const ContinueDraftLink = ({ campaignId }: { campaignId: string }) => (
   </div>
 );
 
+interface CurrentCampaignProps {
+  campaign: Campaign;
+  title: string;
+}
+
+// 현재 캠페인 카드. 오늘 실적은 캠페인과 따로 불러와, 못 받아도 카드는 그대로 보여준다
+const CurrentCampaign = ({ campaign, title }: CurrentCampaignProps) => {
+  const todayPerformance = useTodayPerformance(campaign);
+
+  return (
+    <CurrentCampaignCard
+      campaign={campaign}
+      footer={
+        campaign.status === 'DRAFT' && (
+          <ContinueDraftLink campaignId={campaign.id} />
+        )
+      }
+      title={title}
+      todayPerformance={todayPerformance}
+    />
+  );
+};
+
 export interface HomeCampaignSectionProps {
   campaigns: Campaign[];
   menus: StoreMenu[];
@@ -56,13 +80,8 @@ export const HomeCampaignSection = ({
         현재 캠페인
       </h2>
       {current ? (
-        <CurrentCampaignCard
+        <CurrentCampaign
           campaign={current}
-          footer={
-            current.status === 'DRAFT' && (
-              <ContinueDraftLink campaignId={current.id} />
-            )
-          }
           title={getCampaignTitle(current.coupon, menus)}
         />
       ) : (
