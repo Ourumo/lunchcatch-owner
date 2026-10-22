@@ -660,19 +660,27 @@ export const getCampaignTotalPerformance = async ({
   const periods = splitPeriod(budget.startDate, to, PERFORMANCE_MAX_DAYS);
 
   try {
-    const [funnels, coupons, spends] = await Promise.all([
-      Promise.all(periods.map((period) => fetchCampaignFunnel(id, period))),
-      Promise.all(periods.map((period) => fetchCouponSummary(id, period))),
-      Promise.all(periods.map((period) => fetchSpendSummary(id, period))),
-    ]);
+    // 긴 캠페인이나 지난 캠페인 카드가 여럿일 때 요청이 한꺼번에 몰리지 않게 구간은 차례로 받고,
+    // 한 구간 안의 세 API만 함께 보낸다
+    const results = [];
+
+    for (const period of periods) {
+      const [funnel, coupon, spend] = await Promise.all([
+        fetchCampaignFunnel(id, period),
+        fetchCouponSummary(id, period),
+        fetchSpendSummary(id, period),
+      ]);
+
+      results.push({ funnel, coupon, spend });
+    }
 
     return {
       ok: true,
       data: {
-        savedCount: sumBy(funnels, ({ wishCount }) => wishCount),
-        issuedCount: sumBy(coupons, ({ issuedCount }) => issuedCount),
-        redeemedCount: sumBy(coupons, ({ usedCount }) => usedCount),
-        spentPoints: sumBy(spends, ({ spentPoint }) => spentPoint),
+        savedCount: sumBy(results, ({ funnel }) => funnel.wishCount),
+        issuedCount: sumBy(results, ({ coupon }) => coupon.issuedCount),
+        redeemedCount: sumBy(results, ({ coupon }) => coupon.usedCount),
+        spentPoints: sumBy(results, ({ spend }) => spend.spentPoint),
       },
     };
   } catch {
