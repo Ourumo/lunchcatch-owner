@@ -130,12 +130,13 @@ export const getOwnerReport = async ({
   }
 };
 
-// 집행 기간을 최대 조회 일수씩 나눈 구간들. 마지막 구간은 짧을 수 있다
-const splitReportPeriod = (from: string, to: string) => {
+// 기간(YYYY-MM-DD, 양 끝 포함)을 최대 조회 일수씩 나눈 구간들. 마지막 구간은 짧을 수 있다.
+// 조회 기간이 정해진 API(리포트, 캠페인 성과)가 함께 쓴다
+export const splitPeriod = (from: string, to: string, maxDays: number) => {
   const periods: { from: string; to: string }[] = [];
 
-  for (let start = from; start <= to; start = addDays(start, REPORT_MAX_DAYS)) {
-    const end = addDays(start, REPORT_MAX_DAYS - 1);
+  for (let start = from; start <= to; start = addDays(start, maxDays)) {
+    const end = addDays(start, maxDays - 1);
     periods.push({ from: start, to: end < to ? end : to });
   }
 
@@ -162,7 +163,9 @@ export const getCampaignReport = async ({
   }
 
   const results = await Promise.all(
-    splitReportPeriod(startDate, to).map((period) => getOwnerReport(period)),
+    splitPeriod(startDate, to, REPORT_MAX_DAYS).map((period) =>
+      getOwnerReport(period),
+    ),
   );
   const failed = results.find((result) => !result.ok);
 

@@ -1,4 +1,3 @@
-import { mockCampaigns } from './campaigns';
 import { mockStore } from './store';
 
 // 손님이 받은 쿠폰 한 장. 서버가 쿠폰 이름(할인 내용)을 함께 내려준다고 가정한다
@@ -12,9 +11,8 @@ export interface MockIssuedCoupon {
   usableUntil: string;
 }
 
-const currentCampaignTitle =
-  mockCampaigns.find(({ status }) => status === 'ACTIVE')?.poster?.slots
-    .discountText ?? '할인 쿠폰';
+// 진행 중 목 캠페인(mockCampaigns)의 쿠폰 조건과 같은 이름
+const currentCampaignTitle = '전 메뉴 2,000원 할인';
 
 // 결과별로 확인하는 발급 쿠폰. 성공을 확인하는 쿠폰은 언제 열어도 쓸 수 있게 하루 종일 쓸 수 있다
 export const mockIssuedCoupons: MockIssuedCoupon[] = [

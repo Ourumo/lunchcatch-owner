@@ -7,8 +7,6 @@ import {
   isCouponStepComplete,
   ISSUE_OPEN_TIME,
   isValidTarget,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
 } from '@owner/api/campaign';
 import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
@@ -35,6 +33,7 @@ import { PosterPreview } from '../../PosterPreview';
 import {
   type CampaignStep,
   campaignSteps,
+  FROM_REVIEW_STATE,
   getCampaignEditPath,
 } from '../campaignSteps';
 import { PointSummary } from '../PointSummary';
@@ -52,7 +51,7 @@ interface ReviewSectionProps {
   children: ReactNode;
 }
 
-// 단계별 입력 요약 카드. 제목 옆 수정 링크로 그 단계로 돌아간다
+// 단계별 입력 요약 카드. 제목 옆 수정 링크로 그 단계로 가고, 저장하면 확인 단계로 돌아온다
 const ReviewSection = ({
   campaignId,
   children,
@@ -72,6 +71,7 @@ const ReviewSection = ({
       <Link
         aria-label={`${step.title} 수정`}
         className="-mr-2 flex h-9 items-center rounded-full px-2 text-body-sm-mobile font-semibold text-text-brand focus-visible:outline-2 focus-visible:outline-action-primary"
+        state={FROM_REVIEW_STATE}
         to={getCampaignEditPath(campaignId, step)}
       >
         수정
@@ -128,8 +128,7 @@ export const ReviewStep = () => {
   return (
     <div className="flex flex-col gap-3 px-page">
       <p className="mb-2 text-body-sm-mobile break-keep text-text-secondary">
-        입력한 내용을 확인하고 활성화를 요청해 주세요. 요청하면 포스터 자동
-        검수를 거쳐요.
+        입력한 내용을 확인하고 활성화를 요청해 주세요.
       </p>
 
       <ReviewSection
@@ -213,10 +212,6 @@ export const ReviewStep = () => {
           />
           <DetailRow label="성별" value={formatGender(target.gender)} />
           <DetailRow label="연령대" value={formatAgeGroups(target.ageGroups)} />
-          <DetailRow
-            label="노출 시간대"
-            value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
-          />
         </dl>
       </ReviewSection>
 

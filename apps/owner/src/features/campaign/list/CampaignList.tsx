@@ -5,6 +5,7 @@ import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
 import { type Campaign, isUnfinishedCampaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -178,6 +179,32 @@ interface CampaignSectionsProps {
   onChanged: () => void;
 }
 
+interface CurrentCampaignProps {
+  campaign: Campaign;
+  title: string;
+  onChanged: () => void;
+}
+
+// 현재 캠페인 카드. 오늘 실적은 캠페인과 따로 불러와, 못 받아도 카드는 그대로 보여준다
+const CurrentCampaign = ({
+  campaign,
+  onChanged,
+  title,
+}: CurrentCampaignProps) => {
+  const todayPerformance = useTodayPerformance(campaign);
+
+  return (
+    <CurrentCampaignCard
+      campaign={campaign}
+      footer={
+        <CurrentCampaignActions campaign={campaign} onChanged={onChanged} />
+      }
+      title={title}
+      todayPerformance={todayPerformance}
+    />
+  );
+};
+
 const CampaignSections = ({
   campaigns,
   menus,
@@ -191,14 +218,9 @@ const CampaignSections = ({
     <div className="flex flex-col gap-8 px-page py-5">
       <CampaignSection title="현재 캠페인">
         {current ? (
-          <CurrentCampaignCard
+          <CurrentCampaign
             campaign={current}
-            footer={
-              <CurrentCampaignActions
-                campaign={current}
-                onChanged={onChanged}
-              />
-            }
+            onChanged={onChanged}
             title={getTitle(current)}
           />
         ) : (
