@@ -202,15 +202,24 @@ export const isStoreStepComplete = (
   business: BusinessStepValues,
 ) => getStoreRequiredChecks(store, business).every(Boolean);
 
+interface StoreBasicSaveResponse extends OnboardingSaveResponse {
+  // 사업자등록번호 확인 결과. 서버는 Mock으로 확인한다(0000000000만 FAILED)
+  verificationStatus: 'VERIFIED' | 'FAILED';
+}
+
+// 사업자등록번호를 확인하지 못함. 서버는 200으로 돌려주지만 저장하지 않고 단계도 넘기지 않는다
+export const BUSINESS_VERIFICATION_FAILED_CODE = 'BUSINESS_VERIFICATION_FAILED';
+
 // 가게 기본 정보 저장. 처음 저장하면 서버가 가게 초안을 만들고, 다시 저장하면 덮어쓴다.
-// 전화번호와 사업자등록번호는 입력할 때부터 하이픈 없는 숫자만 받으므로 그대로 보낸다
+// 전화번호와 사업자등록번호는 입력할 때부터 하이픈 없는 숫자만 받으므로 그대로 보낸다.
+// 사업자등록번호 확인에 실패하면 버전이 그대로라 실패로 돌려주고 이 단계에 머물게 한다
 export const saveStoreStep = async (
   { category, name, ownerName, phone }: StoreStepValues,
   { registrationNumber }: BusinessStepValues,
   version: number,
 ): Promise<ApiResult<number>> => {
   try {
-    const data = await request<OnboardingSaveResponse>(
+    const data = await request<StoreBasicSaveResponse>(
       '/v1/owner/store/basic',
       {
         method: 'PUT',
@@ -224,6 +233,10 @@ export const saveStoreStep = async (
         },
       },
     );
+
+    if (data.verificationStatus === 'FAILED') {
+      return { ok: false, code: BUSINESS_VERIFICATION_FAILED_CODE };
+    }
 
     return { ok: true, data: data.version };
   } catch (error) {
