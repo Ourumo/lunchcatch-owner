@@ -67,9 +67,10 @@ const toServingItem = (
   group: PointHistoryEntry[],
   todaySpent: Record<string, number> | null,
 ): PointHistoryItem => {
-  const reserved = -(
-    group.find((entry) => entry.type === 'RESERVE')?.amount ?? 0
-  );
+  // 잔액이 모자라 적게 예약한 날은 충전 뒤 예약을 다시 잡아 예약이 여러 줄이라 모두 더한다
+  const reserved = -group
+    .filter((entry) => entry.type === 'RESERVE')
+    .reduce((sum, entry) => sum + entry.amount, 0);
   const isReleased = anchor.type === 'RELEASE';
   const released = isReleased ? anchor.amount : null;
   // 소진 집계는 오늘 것만 받으므로 오늘 묶음에만 쓴다
