@@ -32,6 +32,9 @@ export interface PointHistoryEntry {
   // 잔액의 증감(+/−)
   amount: number;
   occurredAt: string;
+  // 예약과 예약 해제가 어느 날 몫인지(YYYY-MM-DD). 전날 몫의 예약 해제는 다음 날 00:00에 기록된다.
+  // 충전, 환불, 조정은 null
+  businessDate: string | null;
   campaignId: string | null;
 }
 
@@ -148,7 +151,7 @@ interface OwnerLedgerItem {
   entryType: PointHistoryType;
   amount: number;
   campaignId: number | null;
-  businessDate: string;
+  businessDate: string | null;
   paymentId: number | null;
   createdAt: string;
 }
@@ -168,6 +171,7 @@ const getSignedAmount = (type: PointHistoryType, amount: number) => {
 
 const toHistoryEntry = ({
   amount,
+  businessDate,
   campaignId,
   createdAt,
   entryType,
@@ -177,6 +181,7 @@ const toHistoryEntry = ({
   type: entryType,
   amount: getSignedAmount(entryType, amount),
   occurredAt: createdAt,
+  businessDate,
   campaignId: campaignId === null ? null : String(campaignId),
 });
 
@@ -232,7 +237,7 @@ interface SpendSummaryItem {
   impressionCount: number;
 }
 
-// 오늘 캠페인별 소진 포인트(캠페인 ID → 포인트). 예약 해제(13:30) 전에는 원장만으로 소진을 알 수 없어 소진 집계로 받는다.
+// 오늘 캠페인별 소진 포인트(캠페인 ID → 포인트). 예약 해제(다음 날 00:00) 전에는 원장만으로 소진을 알 수 없어 소진 집계로 받는다.
 // 지난날의 소진은 원장의 예약 − 예약 해제로 계산하므로 오늘만 부른다 (소진 집계는 최대 31일까지만 조회된다)
 export const getTodaySpentPoints = async (
   campaignId: string | null,
