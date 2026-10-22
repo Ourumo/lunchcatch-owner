@@ -5,7 +5,8 @@ export interface PerformanceErrorProps {
   className?: string;
 }
 
-// 성과를 불러오지 못했을 때 성과 자리에만 보여주는 안내. 캠페인 정보는 그대로 두고 성과만 다시 불러온다
+// 성과를 불러오지 못했을 때 성과 자리에만 보여주는 안내. 캠페인 정보는 그대로 두고 성과만 다시 불러온다.
+// 캠페인 정보는 남아 있는 부가 안내이고 지난 캠페인 카드 여러 개에서 한꺼번에 날 수 있어, 끊고 읽는 alert 대신 status로 알린다
 export const PerformanceError = ({
   className,
   onRetry,
@@ -17,7 +18,7 @@ export const PerformanceError = ({
     ]
       .filter(Boolean)
       .join(' ')}
-    role="alert"
+    role="status"
   >
     <span className="text-caption-mobile break-keep text-text-secondary">
       성과를 불러오지 못했어요
