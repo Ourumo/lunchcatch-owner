@@ -285,10 +285,23 @@ const serverWeekdays: Record<Weekday, string> = {
 // 화면은 HH:mm, 서버는 HH:mm:ss만 받는다
 const toServerTime = (time: string) => `${time}:00`;
 
-// 영업시간 저장. 서버는 요일마다 시간을 받으므로 영업 요일마다 같은 시간을 월~일 순서로 보낸다.
-// 보내지 않은 요일은 서버가 휴무로 저장한다
+// 영업시간 저장 요청의 요일별 영업시간. 서버는 요일마다 시간을 받으므로 영업 요일마다 같은 시간을 월~일 순서로 보낸다.
+// 보내지 않은 요일은 서버가 휴무로 저장한다. 입점 신청과 가게 관리가 같이 쓴다
+export const toServerBusinessHours = ({
+  openDays,
+  openTime,
+  closeTime,
+}: HoursStepValues) =>
+  weekdays
+    .filter(({ value }) => openDays.includes(value))
+    .map(({ value }) => ({
+      dayOfWeek: serverWeekdays[value],
+      openTime: toServerTime(openTime),
+      closeTime: toServerTime(closeTime),
+    }));
+
 export const saveHoursStep = async (
-  { openDays, openTime, closeTime }: HoursStepValues,
+  hours: HoursStepValues,
   version: number,
 ): Promise<ApiResult<number>> => {
   try {
@@ -296,16 +309,7 @@ export const saveHoursStep = async (
       '/v1/owner/store/hours',
       {
         method: 'PUT',
-        body: {
-          version,
-          businessHours: weekdays
-            .filter(({ value }) => openDays.includes(value))
-            .map(({ value }) => ({
-              dayOfWeek: serverWeekdays[value],
-              openTime: toServerTime(openTime),
-              closeTime: toServerTime(closeTime),
-            })),
-        },
+        body: { version, businessHours: toServerBusinessHours(hours) },
       },
     );
 
