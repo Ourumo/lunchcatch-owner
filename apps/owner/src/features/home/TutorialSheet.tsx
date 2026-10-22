@@ -17,18 +17,18 @@ const tutorialSteps: TutorialStep[] = [
     icon: <Clock />,
     title: '런치캐치는 이렇게 동작해요',
     description:
-      '주변 직장인이 가게 캠페인을 찜해 두고, 11시 선착순 오픈에 쿠폰을 받아요. 피드에는 점심 시간대에만 보여요.',
+      '주변 직장인이 가게 캠페인을 찜해 두고, 11시 선착순 오픈에 쿠폰을 받아요. 캠페인은 피드에 하루 종일 보이고, 쿠폰은 11:00~14:00에만 받을 수 있어요.',
     timeline: [
-      { label: '10:00 노출 시작' },
+      { label: '00:00 노출 시작' },
       { label: '11:00 선착순 오픈', highlighted: true },
-      { label: '12:59 마감' },
+      { label: '14:00 발급 마감' },
     ],
   },
   {
     icon: <Ticket />,
     title: '캠페인으로 손님을 모아요',
     description:
-      '캠페인 탭에서 쿠폰 조건, 노출 대상, 하루 예산과 기간을 정하면 점심 피드에 가게 쿠폰이 올라가요.',
+      '캠페인 탭에서 쿠폰 조건, 노출 대상, 하루 예산과 기간을 정하면 피드에 가게 쿠폰이 올라가요.',
   },
   {
     icon: <Coins />,
@@ -116,7 +116,7 @@ export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
           {step.description}
         </p>
         {step.timeline && (
-          <ul aria-label="점심 시간표" className="mt-4 flex flex-wrap gap-2">
+          <ul aria-label="하루 시간표" className="mt-4 flex flex-wrap gap-2">
             {step.timeline.map(({ highlighted, label }) => (
               <li
                 className={`flex h-8 items-center rounded-full px-3 text-caption-mobile ${highlighted ? 'bg-surface-brand font-bold' : 'bg-surface-subtle font-medium'} text-text-primary`}
