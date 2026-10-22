@@ -33,6 +33,7 @@ import { PosterPreview } from '../../PosterPreview';
 import {
   type CampaignStep,
   campaignSteps,
+  FROM_REVIEW_STATE,
   getCampaignEditPath,
 } from '../campaignSteps';
 import { PointSummary } from '../PointSummary';
@@ -50,7 +51,7 @@ interface ReviewSectionProps {
   children: ReactNode;
 }
 
-// 단계별 입력 요약 카드. 제목 옆 수정 링크로 그 단계로 돌아간다
+// 단계별 입력 요약 카드. 제목 옆 수정 링크로 그 단계로 가고, 저장하면 확인 단계로 돌아온다
 const ReviewSection = ({
   campaignId,
   children,
@@ -70,6 +71,7 @@ const ReviewSection = ({
       <Link
         aria-label={`${step.title} 수정`}
         className="-mr-2 flex h-9 items-center rounded-full px-2 text-body-sm-mobile font-semibold text-text-brand focus-visible:outline-2 focus-visible:outline-action-primary"
+        state={FROM_REVIEW_STATE}
         to={getCampaignEditPath(campaignId, step)}
       >
         수정
