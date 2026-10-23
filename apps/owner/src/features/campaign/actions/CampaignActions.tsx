@@ -15,8 +15,10 @@ import { CampaignActionSheet } from './CampaignActionSheet';
 
 export interface CampaignActionsProps {
   campaign: Campaign;
-  // 취소, 중단처럼 캠페인을 바꾼 뒤 목록을 다시 불러온다
+  // 취소, 중단처럼 캠페인을 바꾼 뒤 목록이나 상세를 다시 불러온다
   onChanged: () => void;
+  // card: 캠페인 탭의 현재 캠페인 카드 아래, bar: 캠페인 상세 화면 아래에 붙는 버튼 영역
+  layout?: 'card' | 'bar';
 }
 
 type CampaignAction = 'cancel' | 'pause' | 'resume' | 'end';
@@ -94,21 +96,35 @@ const getActions = ({
   }
 };
 
-// 공통 Button의 secondary와 같은 모양의 링크
-const secondaryLinkClassName =
-  'flex h-11 w-full items-center justify-center rounded-md border border-action-primary bg-bg-surface text-body-sm-web font-medium text-action-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
+const layoutClassNames = {
+  card: { container: 'border-t border-border-subtle p-3', button: 'h-11' },
+  // StepActionBar와 같은 모양. sticky로 붙으므로 화면 높이를 채우는 세로 flex 레이아웃(min-h-dvh)의 마지막에 둔다
+  bar: {
+    container:
+      'sticky bottom-0 z-10 border-t border-border-subtle bg-bg-surface px-page pt-3 pb-[max(12px,env(safe-area-inset-bottom))]',
+    button: 'h-12',
+  },
+};
 
-// 캠페인 탭의 현재 캠페인 카드 아래 버튼. 작성 중이면 이어서 작성을, 그 밖에는 상태별 처리(getActions)를 둔다.
+// 이어서 작성 링크. 카드에서는 공통 Button의 secondary와, 상세 아래에서는 화면의 주 행동이라 primary와 같은 모양으로 둔다
+const continueLinkClassNames = {
+  card: 'flex h-11 w-full items-center justify-center rounded-md border border-action-primary bg-bg-surface text-body-sm-web font-medium text-action-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary',
+  bar: 'flex h-12 w-full items-center justify-center rounded-md border border-transparent bg-action-primary text-body-sm-web font-medium text-text-inverse transition-colors hover:bg-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary',
+};
+
+// 캠페인 탭의 현재 캠페인 카드와 캠페인 상세 아래 버튼. 작성 중이면 이어서 작성을, 그 밖에는 상태별 처리(getActions)를 둔다.
 // 작성 중 캠페인은 지우지 않고 남겨 두므로 삭제는 두지 않는다
 export const CampaignActions = ({
   campaign,
+  layout = 'card',
   onChanged,
 }: CampaignActionsProps) => {
   const { id, status } = campaign;
   const [openAction, setOpenAction] = useState<CampaignAction | null>(null);
-  // 처리하려는 사이 상태가 바뀌었거나 캠페인을 찾을 수 없어 목록이 지금과 다르다. 시트에서 안내를 읽고 닫으면 목록을 다시 불러온다
+  // 처리하려는 사이 상태가 바뀌었거나 캠페인을 찾을 수 없어 화면이 실제와 다르다. 시트에서 안내를 읽고 닫으면 다시 불러온다
   const [isStatusChanged, setIsStatusChanged] = useState(false);
   const actions = getActions(campaign);
+  const classNames = layoutClassNames[layout];
 
   const closeSheet = () => {
     setOpenAction(null);
@@ -119,7 +135,7 @@ export const CampaignActions = ({
     }
   };
 
-  // 처리가 끝나면 목록을 다시 불러와 바뀐 상태를 보여준다. 실패하면 시트에 안내를 남기고 상태는 그대로 둔다
+  // 처리가 끝나면 목록이나 상세를 다시 불러와 바뀐 상태를 보여준다. 실패하면 시트에 안내를 남기고 상태는 그대로 둔다
   const runAction = async (action: () => Promise<ApiResult<unknown>>) => {
     const result = await action();
 
@@ -137,9 +153,12 @@ export const CampaignActions = ({
 
   if (status === 'DRAFT') {
     return (
-      <div className="border-t border-border-subtle p-3">
+      <div className={classNames.container}>
         {/* 등록 화면은 저장된 입력값을 불러와 첫 단계부터 보여준다 */}
-        <Link className={secondaryLinkClassName} to={`/campaigns/${id}/edit`}>
+        <Link
+          className={continueLinkClassNames[layout]}
+          to={`/campaigns/${id}/edit`}
+        >
           이어서 작성
         </Link>
       </div>
@@ -154,10 +173,10 @@ export const CampaignActions = ({
 
   return (
     <>
-      <div className="flex gap-2 border-t border-border-subtle p-3">
+      <div className={`flex gap-2 ${classNames.container}`}>
         {actions.map((action) => (
           <Button
-            className="h-11 flex-1"
+            className={`${classNames.button} flex-1`}
             key={action}
             onClick={() => setOpenAction(action)}
             variant={actionConfigs[action].buttonVariant}
