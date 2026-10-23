@@ -21,6 +21,9 @@ export interface SignupFlowContextValue {
   setVersion: (version: number) => void;
   // 서버에 저장한 값과 진행 상태를 다시 불러와 이어갈 단계로 보낸다. 불러오지 못하면 false
   reload: () => Promise<boolean>;
+  // 서버가 확인하지 못한 사업자등록번호. 입력한 번호가 이 값과 같으면 입력 칸 아래에 안내한다
+  rejectedBusinessNumber: string | null;
+  setRejectedBusinessNumber: (registrationNumber: string | null) => void;
 }
 
 export const SignupFlowContext = createContext<SignupFlowContextValue | null>(

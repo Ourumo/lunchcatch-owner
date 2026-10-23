@@ -2,8 +2,10 @@ import { Link } from 'react-router';
 
 import type { Campaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import { getCurrentCampaign } from './homeCampaigns';
 
@@ -38,8 +40,35 @@ const ContinueDraftLink = ({ campaignId }: { campaignId: string }) => (
   </div>
 );
 
+interface CurrentCampaignProps {
+  campaign: Campaign;
+  title: string;
+}
+
+// 현재 캠페인 카드. 오늘 실적은 캠페인과 따로 불러와, 못 받아도 카드는 그대로 보여준다
+const CurrentCampaign = ({ campaign, title }: CurrentCampaignProps) => {
+  const todayPerformance = useTodayPerformance(campaign);
+
+  return (
+    <CurrentCampaignCard
+      campaign={campaign}
+      footer={
+        campaign.status === 'DRAFT' && (
+          <ContinueDraftLink campaignId={campaign.id} />
+        )
+      }
+      title={title}
+      todayPerformance={todayPerformance}
+    />
+  );
+};
+
+// 진행 중 캠페인 카드(오늘 실적 포함) 높이. 불러오는 동안 이 높이로 자리를 잡아 둔다
+const CAMPAIGN_CARD_HEIGHT = 280;
+
 export interface HomeCampaignSectionProps {
-  campaigns: Campaign[];
+  // 불러오는 중이면 null. 제목은 그대로 두고 카드 자리만 스켈레톤으로 둔다
+  campaigns: Campaign[] | null;
   menus: StoreMenu[];
 }
 
@@ -48,21 +77,18 @@ export const HomeCampaignSection = ({
   campaigns,
   menus,
 }: HomeCampaignSectionProps) => {
-  const current = getCurrentCampaign(campaigns);
+  const current = campaigns && getCurrentCampaign(campaigns);
 
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-body-mobile font-bold text-text-primary">
         현재 캠페인
       </h2>
-      {current ? (
-        <CurrentCampaignCard
+      {campaigns === null ? (
+        <SkeletonBlock height={CAMPAIGN_CARD_HEIGHT} />
+      ) : current ? (
+        <CurrentCampaign
           campaign={current}
-          footer={
-            current.status === 'DRAFT' && (
-              <ContinueDraftLink campaignId={current.id} />
-            )
-          }
           title={getCampaignTitle(current.coupon, menus)}
         />
       ) : (

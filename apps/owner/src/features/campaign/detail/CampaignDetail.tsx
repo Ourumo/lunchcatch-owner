@@ -1,15 +1,10 @@
 import { useLayoutEffect } from 'react';
 import { Link } from 'react-router';
-import { Button } from '@repo/ui';
 import { Info } from 'lucide-react';
 
-import {
-  type Campaign,
-  ISSUE_OPEN_TIME,
-  SERVING_TIME_END,
-  SERVING_TIME_START,
-} from '@owner/api/campaign';
+import { type Campaign, ISSUE_OPEN_TIME } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useCampaignPerformance } from '@owner/hooks/useCampaignPerformance';
 import { useGoBack } from '@owner/hooks/useGoBack';
 import {
   formatCreatedDate,
@@ -23,6 +18,9 @@ import {
   pausedNotices,
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
@@ -37,7 +35,7 @@ const StatusNotice = ({ campaign }: { campaign: Campaign }) => {
 
   const message =
     status === 'DRAFT'
-      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 자동 검수를 거쳐 대기 중 상태가 돼요.'
+      ? '작성 중인 캠페인이에요. 모든 단계를 마치고 활성화를 요청하면 대기 중 상태가 돼요.'
       : status === 'SCHEDULED' && budget.startDate
         ? `${formatShortDate(budget.startDate)} 00:00부터 피드에 노출돼요.`
         : status === 'PAUSED' && pausedReason
@@ -92,8 +90,13 @@ const CampaignContent = ({
   menus,
   posterHtml,
 }: CampaignContentProps) => {
-  const { budget, coupon, createdAt, pausedReason, performance, status } =
-    campaign;
+  const { budget, coupon, createdAt, pausedReason, status } = campaign;
+  const { retry: retryPerformance, state: performanceState } =
+    useCampaignPerformance(campaign);
+  // 작성 중·대기 중은 집행 전이라 성과가 없다
+  const canHavePerformance = status !== 'DRAFT' && status !== 'SCHEDULED';
+  const performance =
+    performanceState.status === 'success' ? performanceState.data : null;
   const menu = menus.find(({ id }) => id === coupon.menuId);
   const hasPeriod = Boolean(budget.startDate && budget.endDate);
   const periodDays = hasPeriod
@@ -159,10 +162,6 @@ const CampaignContent = ({
           label="연령대"
           value={formatAgeGroups(campaign.target.ageGroups)}
         />
-        <DetailRow
-          label="노출 시간대"
-          value={`점심 ${SERVING_TIME_START} ~ ${SERVING_TIME_END}`}
-        />
       </DetailSection>
 
       <DetailSection title="예산과 기간">
@@ -189,6 +188,17 @@ const CampaignContent = ({
           }
         />
       </DetailSection>
+
+      {canHavePerformance && performanceState.status === 'loading' && (
+        <SkeletonBlock className="h-40" label="실적을 불러오는 중" />
+      )}
+
+      {canHavePerformance && performanceState.status === 'error' && (
+        <section className="rounded-xl border border-border-subtle bg-bg-surface p-4">
+          <h2 className="text-body-mobile font-bold text-text-primary">실적</h2>
+          <PerformanceError className="mt-3" onRetry={retryPerformance} />
+        </section>
+      )}
 
       {today && (
         <DetailSection title="오늘 실적">
@@ -241,43 +251,8 @@ const CampaignDetailSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-3 px-page pt-5">
     <span className="sr-only">캠페인을 불러오는 중</span>
     {[64, 420, 200, 160].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
-  </div>
-);
-
-interface CampaignDetailErrorProps {
-  message?: string;
-  onRetry: () => void;
-}
-
-const CampaignDetailError = ({
-  message,
-  onRetry,
-}: CampaignDetailErrorProps) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      캠페인을 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      {message ?? '잠시 후 다시 시도해 주세요.'}
-    </p>
-    <div className="mt-2 flex gap-2">
-      <Button onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-      <Link
-        className="inline-flex min-h-10 items-center rounded-md px-4 text-body-sm-mobile font-medium text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
-        to={LIST_PATH}
-      >
-        목록으로
-      </Link>
-    </div>
   </div>
 );
 
@@ -302,7 +277,22 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
     }
 
     if (state.status === 'error') {
-      return <CampaignDetailError message={state.message} onRetry={retry} />;
+      return (
+        <StatusMessage
+          action={
+            <Link
+              className="inline-flex min-h-10 items-center rounded-md px-4 text-body-sm-mobile font-medium text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              to={LIST_PATH}
+            >
+              목록으로
+            </Link>
+          }
+          description={state.message ?? '잠시 후 다시 시도해 주세요.'}
+          fill
+          onRetry={retry}
+          title="캠페인을 불러오지 못했어요"
+        />
+      );
     }
 
     return (

@@ -171,3 +171,77 @@ export const getPayment = async (
     return toFailure(error);
   }
 };
+
+// 결제 내역 한 건. 결제창에서 승인을 시도하기 전에 닫은 주문은 없다
+export interface PaymentHistoryItem {
+  paymentId: string;
+  amount: number;
+  displayStatus: PaymentDisplayStatus;
+  // 실패 사유. 실패가 아니거나 사유가 없으면 null
+  failureReason: string | null;
+  // ISO 8601
+  requestedAt: string;
+  // 승인·취소 전이면 null
+  approvedAt: string | null;
+  canceledAt: string | null;
+}
+
+export interface PaymentHistoryPage {
+  items: PaymentHistoryItem[];
+  // 다음 구간을 받을 때 넘기는 값. 마지막 구간이면 null
+  nextCursor: string | null;
+}
+
+export const PAYMENT_HISTORY_PAGE_SIZE = 20;
+
+// 서버 결제 내역 응답 (GET /v1/owner/payments)
+interface PaymentHistoryResponse {
+  items: {
+    paymentId: number;
+    amount: number;
+    status: PaymentStatus;
+    displayStatus: PaymentDisplayStatus;
+    failureReason: string | null;
+    requestedAt: string;
+    approvedAt: string | null;
+    canceledAt: string | null;
+  }[];
+  nextPageToken: string | null;
+}
+
+// 결제 내역 한 구간. 최근 순이고, 다음 구간은 받은 커서로 이어서 부른다
+export const getPaymentHistoryPage = async ({
+  cursor,
+}: { cursor?: string } = {}): Promise<ApiResult<PaymentHistoryPage>> => {
+  const params = new URLSearchParams({
+    pageSize: String(PAYMENT_HISTORY_PAGE_SIZE),
+  });
+
+  if (cursor) {
+    params.set('pageToken', cursor);
+  }
+
+  try {
+    const data = await request<PaymentHistoryResponse>(
+      `/v1/owner/payments?${params}`,
+    );
+
+    return {
+      ok: true,
+      data: {
+        items: data.items.map((item) => ({
+          paymentId: String(item.paymentId),
+          amount: item.amount,
+          displayStatus: item.displayStatus,
+          failureReason: item.failureReason || null,
+          requestedAt: item.requestedAt,
+          approvedAt: item.approvedAt,
+          canceledAt: item.canceledAt,
+        })),
+        nextCursor: data.nextPageToken || null,
+      },
+    };
+  } catch (error) {
+    return toFailure(error);
+  }
+};

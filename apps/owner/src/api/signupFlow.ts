@@ -202,15 +202,24 @@ export const isStoreStepComplete = (
   business: BusinessStepValues,
 ) => getStoreRequiredChecks(store, business).every(Boolean);
 
+interface StoreBasicSaveResponse extends OnboardingSaveResponse {
+  // 사업자등록번호 확인 결과. 서버는 Mock으로 확인한다(0000000000만 FAILED)
+  verificationStatus: 'VERIFIED' | 'FAILED';
+}
+
+// 사업자등록번호를 확인하지 못함. 서버는 200으로 돌려주지만 저장하지 않고 단계도 넘기지 않는다
+export const BUSINESS_VERIFICATION_FAILED_CODE = 'BUSINESS_VERIFICATION_FAILED';
+
 // 가게 기본 정보 저장. 처음 저장하면 서버가 가게 초안을 만들고, 다시 저장하면 덮어쓴다.
-// 전화번호와 사업자등록번호는 입력할 때부터 하이픈 없는 숫자만 받으므로 그대로 보낸다
+// 전화번호와 사업자등록번호는 입력할 때부터 하이픈 없는 숫자만 받으므로 그대로 보낸다.
+// 사업자등록번호 확인에 실패하면 버전이 그대로라 실패로 돌려주고 이 단계에 머물게 한다
 export const saveStoreStep = async (
   { category, name, ownerName, phone }: StoreStepValues,
   { registrationNumber }: BusinessStepValues,
   version: number,
 ): Promise<ApiResult<number>> => {
   try {
-    const data = await request<OnboardingSaveResponse>(
+    const data = await request<StoreBasicSaveResponse>(
       '/v1/owner/store/basic',
       {
         method: 'PUT',
@@ -224,6 +233,10 @@ export const saveStoreStep = async (
         },
       },
     );
+
+    if (data.verificationStatus === 'FAILED') {
+      return { ok: false, code: BUSINESS_VERIFICATION_FAILED_CODE };
+    }
 
     return { ok: true, data: data.version };
   } catch (error) {
@@ -285,10 +298,23 @@ const serverWeekdays: Record<Weekday, string> = {
 // 화면은 HH:mm, 서버는 HH:mm:ss만 받는다
 const toServerTime = (time: string) => `${time}:00`;
 
-// 영업시간 저장. 서버는 요일마다 시간을 받으므로 영업 요일마다 같은 시간을 월~일 순서로 보낸다.
-// 보내지 않은 요일은 서버가 휴무로 저장한다
+// 영업시간 저장 요청의 요일별 영업시간. 서버는 요일마다 시간을 받으므로 영업 요일마다 같은 시간을 월~일 순서로 보낸다.
+// 보내지 않은 요일은 서버가 휴무로 저장한다. 입점 신청과 가게 관리가 같이 쓴다
+export const toServerBusinessHours = ({
+  openDays,
+  openTime,
+  closeTime,
+}: HoursStepValues) =>
+  weekdays
+    .filter(({ value }) => openDays.includes(value))
+    .map(({ value }) => ({
+      dayOfWeek: serverWeekdays[value],
+      openTime: toServerTime(openTime),
+      closeTime: toServerTime(closeTime),
+    }));
+
 export const saveHoursStep = async (
-  { openDays, openTime, closeTime }: HoursStepValues,
+  hours: HoursStepValues,
   version: number,
 ): Promise<ApiResult<number>> => {
   try {
@@ -296,16 +322,7 @@ export const saveHoursStep = async (
       '/v1/owner/store/hours',
       {
         method: 'PUT',
-        body: {
-          version,
-          businessHours: weekdays
-            .filter(({ value }) => openDays.includes(value))
-            .map(({ value }) => ({
-              dayOfWeek: serverWeekdays[value],
-              openTime: toServerTime(openTime),
-              closeTime: toServerTime(closeTime),
-            })),
-        },
+        body: { version, businessHours: toServerBusinessHours(hours) },
       },
     );
 

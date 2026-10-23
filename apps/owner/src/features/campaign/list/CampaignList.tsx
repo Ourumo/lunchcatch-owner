@@ -1,12 +1,14 @@
 import { type ReactNode, useState } from 'react';
 import { Link } from 'react-router';
-import { Button } from '@repo/ui';
 import { CalendarClock, ChevronRight, Megaphone, Plus } from 'lucide-react';
 
 import { type Campaign, isUnfinishedCampaign } from '@owner/api/campaign';
 import type { StoreMenu } from '@owner/api/store';
+import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { CurrentCampaignActions } from './CurrentCampaignActions';
@@ -148,27 +150,8 @@ const CampaignListSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-8 px-page py-5">
     <span className="sr-only">캠페인 목록을 불러오는 중</span>
     {[176, 96, 96].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
-  </div>
-);
-
-const CampaignListError = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      캠페인 목록을 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      잠시 후 다시 시도해 주세요
-    </p>
-    <Button className="mt-2" onClick={onRetry} variant="secondary">
-      다시 시도
-    </Button>
   </div>
 );
 
@@ -177,6 +160,32 @@ interface CampaignSectionsProps {
   menus: StoreMenu[];
   onChanged: () => void;
 }
+
+interface CurrentCampaignProps {
+  campaign: Campaign;
+  title: string;
+  onChanged: () => void;
+}
+
+// 현재 캠페인 카드. 오늘 실적은 캠페인과 따로 불러와, 못 받아도 카드는 그대로 보여준다
+const CurrentCampaign = ({
+  campaign,
+  onChanged,
+  title,
+}: CurrentCampaignProps) => {
+  const todayPerformance = useTodayPerformance(campaign);
+
+  return (
+    <CurrentCampaignCard
+      campaign={campaign}
+      footer={
+        <CurrentCampaignActions campaign={campaign} onChanged={onChanged} />
+      }
+      title={title}
+      todayPerformance={todayPerformance}
+    />
+  );
+};
 
 const CampaignSections = ({
   campaigns,
@@ -191,14 +200,9 @@ const CampaignSections = ({
     <div className="flex flex-col gap-8 px-page py-5">
       <CampaignSection title="현재 캠페인">
         {current ? (
-          <CurrentCampaignCard
+          <CurrentCampaign
             campaign={current}
-            footer={
-              <CurrentCampaignActions
-                campaign={current}
-                onChanged={onChanged}
-              />
-            }
+            onChanged={onChanged}
             title={getTitle(current)}
           />
         ) : (
@@ -252,7 +256,14 @@ export const CampaignList = () => {
     }
 
     if (state.status === 'error') {
-      return <CampaignListError onRetry={retry} />;
+      return (
+        <StatusMessage
+          description="잠시 후 다시 시도해 주세요"
+          fill
+          onRetry={retry}
+          title="캠페인 목록을 불러오지 못했어요"
+        />
+      );
     }
 
     if (state.campaigns.length === 0) {

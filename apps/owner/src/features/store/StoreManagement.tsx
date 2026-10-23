@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '@repo/ui';
 import { ChartNoAxesColumn, ChevronRight, Store } from 'lucide-react';
 
 import type { MyStore } from '@owner/api/store';
@@ -9,6 +8,8 @@ import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { LogoutSheet } from './LogoutSheet';
@@ -18,7 +19,10 @@ import {
   formatStoreImageCount,
 } from './storeFormat';
 import {
+  COUPON_USAGE_PATH,
+  PAYMENT_HISTORY_PATH,
   POINT_HISTORY_PATH,
+  POINT_REFUND_PATH,
   STORE_ANALYTICS_PATH,
   STORE_HOURS_PATH,
   STORE_IMAGES_PATH,
@@ -153,27 +157,8 @@ const StoreManagementSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-6 px-page py-5">
     <span className="sr-only">가게 관리 화면을 불러오는 중</span>
     {[56, 80, 136, 184].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
-  </div>
-);
-
-const StoreManagementError = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      가게 정보를 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      잠시 후 다시 시도해 주세요
-    </p>
-    <Button className="mt-2" onClick={onRetry} variant="secondary">
-      다시 시도
-    </Button>
   </div>
 );
 
@@ -193,7 +178,14 @@ export const StoreManagement = () => {
     }
 
     if (state.status === 'error') {
-      return <StoreManagementError onRetry={retry} />;
+      return (
+        <StatusMessage
+          description="잠시 후 다시 시도해 주세요"
+          fill
+          onRetry={retry}
+          title="가게 정보를 불러오지 못했어요"
+        />
+      );
     }
 
     const { balance, store } = state;
@@ -209,6 +201,12 @@ export const StoreManagement = () => {
             onCharge={() => setIsChargeOpen(true)}
           />
           <LinkRow label="포인트 내역" to={POINT_HISTORY_PATH} />
+          <LinkRow label="결제 내역" to={PAYMENT_HISTORY_PATH} />
+          <LinkRow label="포인트 환불" to={POINT_REFUND_PATH} />
+        </ManagementSection>
+
+        <ManagementSection title="쿠폰">
+          <LinkRow label="쿠폰 사용 이력" to={COUPON_USAGE_PATH} />
         </ManagementSection>
 
         <ManagementSection title="가게 정보">

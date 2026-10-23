@@ -62,7 +62,7 @@ export const ActivationComplete = ({ campaignId }: ActivationCompleteProps) => {
           활성화 요청을 마쳤어요
         </h1>
         <p className="mt-2 text-body-sm-mobile break-keep text-text-secondary">
-          자동 검수를 통과해 시작을 기다리고 있어요.
+          시작을 기다리고 있어요.
         </p>
 
         {campaign && startDate && (

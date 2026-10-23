@@ -3,6 +3,7 @@ import { Check, X } from 'lucide-react';
 
 import type { RedeemedCoupon, RedeemFailureCode } from '@owner/api/redeem';
 import type { ApiResult } from '@owner/api/types';
+import { formatNumber } from '@owner/ui/campaignFormat';
 
 // 사장님이 계산대에서 손님에게 바로 말할 수 있는 문구로 쓴다
 const failureContents: Record<
@@ -10,65 +11,69 @@ const failureContents: Record<
   { title: string; description: string }
 > = {
   QR_EXPIRED: {
-    title: 'QR이 만료됐어요',
+    title: 'QR이 만료됐거나 쓸 수 없어요',
     description: '손님 화면에서 QR을 새로 띄워 달라고 해 주세요.',
-  },
-  QR_ALREADY_USED: {
-    title: '이미 사용된 QR이에요',
-    description:
-      'QR은 한 번만 쓸 수 있어요. 손님 화면에서 QR을 새로 띄워 달라고 해 주세요.',
-  },
-  COUPON_ALREADY_REDEEMED: {
-    title: '이미 사용한 쿠폰이에요',
-    description:
-      '이 쿠폰은 사용 처리가 끝났어요. 같은 쿠폰은 한 번만 쓸 수 있어요.',
-  },
-  OTHER_STORE_COUPON: {
-    title: '다른 가게 쿠폰이에요',
-    description: '우리 가게에서 받은 쿠폰인지 손님께 확인해 주세요.',
-  },
-  OUTSIDE_USABLE_TIME: {
-    title: '지금은 쓸 수 없는 쿠폰이에요',
-    description: '쿠폰에 적힌 사용 가능 시간에만 쓸 수 있어요.',
   },
   INVALID_QR: {
     title: '쿠폰 QR이 아니에요',
     description: '손님 화면의 런치캐치 쿠폰 QR을 비춰 주세요.',
   },
+  INVALID_LOCATION: {
+    title: '가게 위치를 확인하지 못했어요',
+    description: '가게 위치를 다시 불러와 시도해 주세요.',
+  },
+  NETWORK: {
+    title: '사용 처리 결과를 받지 못했어요',
+    description:
+      '다시 시도해 주세요. 이미 처리됐다면 이미 사용한 쿠폰으로 나와요.',
+  },
 };
 
-// 사유 코드가 없거나 모르는 코드일 때 (서버 오류, 연결 끊김 등)
-const unknownFailure = {
-  title: '사용 처리하지 못했어요',
-  description: '잠시 후 다시 스캔해 주세요.',
+// 손님이 QR을 다시 띄우지 않아도 같은 QR로 다시 보낼 수 있는 실패. 위치 오류는 가게 위치를 다시 불러와 보낸다
+const isRetryable = (code?: string) =>
+  code === 'NETWORK' || code === 'INVALID_LOCATION';
+
+// 서버가 사유 코드 없이 거절하면(이미 사용한 쿠폰, 다른 가게 쿠폰 등) 서버 문구를 보여준다
+const getFailureContent = (code?: string, message?: string) => {
+  if (code && code in failureContents) {
+    return failureContents[code as RedeemFailureCode];
+  }
+
+  return {
+    title: '사용 처리하지 못했어요',
+    description: message ?? '잠시 후 다시 스캔해 주세요.',
+  };
 };
 
-const getFailureContent = (code?: string) =>
-  code && code in failureContents
-    ? failureContents[code as RedeemFailureCode]
-    : unknownFailure;
-
-// 오후 12:34
-const formatRedeemedTime = (redeemedAt: string) =>
-  new Date(redeemedAt).toLocaleTimeString('ko-KR', {
+// 오후 12:34. 가게 시각으로 보여준다
+const formatUsedTime = (usedAt: string) =>
+  new Date(usedAt).toLocaleTimeString('ko-KR', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'Asia/Seoul',
   });
 
 interface RedeemResultProps {
   result: ApiResult<RedeemedCoupon>;
   // 다음 손님 스캔, 다시 스캔. 화면을 나가지 않고 바로 다시 읽는다
   onScanAgain: () => void;
+  // 같은 QR로 다시 보낸다
+  onRetry: () => void;
 }
 
 // 사용 처리 결과. 계산대에서 한눈에 알 수 있게 크게 보여준다
-export const RedeemResult = ({ onScanAgain, result }: RedeemResultProps) => {
+export const RedeemResult = ({
+  onRetry,
+  onScanAgain,
+  result,
+}: RedeemResultProps) => {
+  const canRetry = !result.ok && isRetryable(result.code);
   const content = result.ok
     ? {
         title: '사용 처리했어요',
-        description: result.data.couponTitle,
+        description: `${formatNumber(result.data.discountAmount)}원 할인`,
       }
-    : getFailureContent(result.code);
+    : getFailureContent(result.code, result.message);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-bg-inverse/70 px-page">
@@ -109,14 +114,29 @@ export const RedeemResult = ({ onScanAgain, result }: RedeemResultProps) => {
           </p>
           {result.ok && (
             <p className="mt-1 text-body-sm-mobile text-text-secondary">
-              {formatRedeemedTime(result.data.redeemedAt)} 사용 처리
+              {formatUsedTime(result.data.usedAt)} 사용 처리
             </p>
           )}
         </div>
-        {/* 다음 손님을 바로 받도록 버튼에 초점을 둔다 */}
-        <Button autoFocus className="mt-8 h-12 w-full" onClick={onScanAgain}>
-          {result.ok ? '다음 손님 스캔' : '다시 스캔'}
-        </Button>
+        {/* 다음 손님을 바로 받거나 바로 다시 시도하도록 주 버튼에 초점을 둔다 */}
+        {canRetry ? (
+          <div className="mt-8 flex w-full gap-2">
+            <Button
+              className="h-12 flex-1"
+              onClick={onScanAgain}
+              variant="neutral"
+            >
+              다시 스캔
+            </Button>
+            <Button autoFocus className="h-12 flex-1" onClick={onRetry}>
+              다시 시도
+            </Button>
+          </div>
+        ) : (
+          <Button autoFocus className="mt-8 h-12 w-full" onClick={onScanAgain}>
+            {result.ok ? '다음 손님 스캔' : '다시 스캔'}
+          </Button>
+        )}
       </section>
     </div>
   );

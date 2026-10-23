@@ -3,7 +3,10 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { Toast } from '@repo/ui';
 
 import { getMe, logout } from '@owner/api/auth';
-import { completeSignup } from '@owner/api/signupFlow';
+import {
+  BUSINESS_VERIFICATION_FAILED_CODE,
+  completeSignup,
+} from '@owner/api/signupFlow';
 import { useAuth } from '@owner/auth/useAuth';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
@@ -42,7 +45,8 @@ const stayMessages: Record<string, string> = {
 export const SignupFlowLayout = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { reload, setVersion, values, version } = useSignupFlow();
+  const { reload, setRejectedBusinessNumber, setVersion, values, version } =
+    useSignupFlow();
   const { clearOwner, setOwner } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<{ title: string; description: string }>();
@@ -87,6 +91,12 @@ export const SignupFlowLayout = () => {
 
   // 저장 실패를 이유별로 안내한다. 응답을 받지 못했거나 화면 검사로 미리 막는 값이 거절되면(400) 입력값을 그대로 둔다
   const handleSaveFailure = async (code?: string) => {
+    // 사업자등록번호를 확인하지 못했다. 이 단계에 머물고 입력 칸 아래에 안내한다
+    if (code === BUSINESS_VERIFICATION_FAILED_CODE) {
+      setRejectedBusinessNumber(values.business.registrationNumber);
+      return;
+    }
+
     // 입점 신청 중이 아니다. 내 정보로 상태를 다시 받으면, 이미 ACTIVE면 RequireAuth가 홈으로 보낸다
     if (code === 'OWNER-002') {
       const result = await getMe();

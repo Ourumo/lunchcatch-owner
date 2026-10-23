@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { CircleAlert } from 'lucide-react';
 
-import type { Campaign } from '@owner/api/campaign';
+import type { Campaign, CampaignTodayPerformance } from '@owner/api/campaign';
 import {
   formatCreatedDate,
   formatNumber,
@@ -13,10 +13,20 @@ import {
   pausedNotices,
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
+import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+
+// 오늘 실적을 불러온 상태. 오늘이 집행 대상이 아니면 data가 null이다
+export type TodayPerformanceState =
+  | { status: 'loading' }
+  | { status: 'error'; retry: () => void }
+  | { status: 'success'; data: CampaignTodayPerformance | null };
 
 export interface CurrentCampaignCardProps {
   campaign: Campaign;
   title: string;
+  // 카드를 쓰는 화면이 성과를 캠페인과 따로 불러와 넘긴다. 넘기지 않으면 오늘 실적을 보여주지 않는다
+  todayPerformance?: TodayPerformanceState;
   // 카드 아래에 붙이는 버튼 영역 (대기 중 취소 등). 링크 안에는 버튼을 둘 수 없어 따로 받는다
   footer?: ReactNode;
 }
@@ -50,9 +60,15 @@ export const CurrentCampaignCard = ({
   campaign,
   footer,
   title,
+  todayPerformance,
 }: CurrentCampaignCardProps) => {
-  const { budget, coupon, pausedReason, performance, status } = campaign;
-  const today = performance?.today;
+  const { budget, coupon, pausedReason, status } = campaign;
+  const today =
+    todayPerformance?.status === 'success' ? todayPerformance.data : null;
+  // 진행 중·일시중지만 오늘 실적이 있을 수 있어, 불러오는 동안 그 자리를 잡아 둔다
+  const isTodayLoading =
+    todayPerformance?.status === 'loading' &&
+    (status === 'ACTIVE' || status === 'PAUSED');
   const issueLimit = coupon.issueLimit ?? 0;
   const issuedCount = today?.issuedCount ?? 0;
   // 사용은 발급된 쿠폰 중에서만 나오므로 발급 막대를 넘지 않게 한다
@@ -86,6 +102,14 @@ export const CurrentCampaignCard = ({
             />
             {pausedNotices[pausedReason]}
           </p>
+        )}
+
+        {isTodayLoading && (
+          <SkeletonBlock
+            className="mt-4 h-36"
+            label="오늘 실적을 불러오는 중"
+            rounded="lg"
+          />
         )}
 
         {today && (
@@ -159,6 +183,13 @@ export const CurrentCampaignCard = ({
           </div>
         )}
       </Link>
+      {/* 다시 시도 버튼은 링크 안에 둘 수 없어 링크 아래에 둔다 */}
+      {todayPerformance?.status === 'error' && (
+        <PerformanceError
+          className="mx-4 mb-4"
+          onRetry={todayPerformance.retry}
+        />
+      )}
       {footer}
     </div>
   );

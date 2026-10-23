@@ -32,6 +32,9 @@ export interface PointHistoryEntry {
   // 잔액의 증감(+/−)
   amount: number;
   occurredAt: string;
+  // 예약과 예약 해제가 어느 날 몫인지(YYYY-MM-DD). 전날 몫의 예약 해제는 다음 날 00:00에 기록된다.
+  // 충전, 환불, 조정은 null
+  businessDate: string | null;
   campaignId: string | null;
 }
 
@@ -107,15 +110,25 @@ export const getPointBalance = async (): Promise<ApiResult<PointBalance>> => {
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 // 한국 날짜(YYYY-MM-DD). UTC 시각에 9시간을 더한 뒤 UTC 날짜를 읽는다
-const toKstDate = (date: Date) =>
+export const toKstDate = (date: Date) =>
   new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 
 // 조회 기간 첫날의 한국 날짜. 브라우저 시간대와 상관없이 한국 날짜로 기간을 자른다
-const getPeriodStartDate = (period: PointHistoryPeriod) => {
+export const getPeriodStartDate = (period: PointHistoryPeriod) => {
   const start = new Date(Date.now() + KST_OFFSET_MS);
 
   if (period === '3M') {
+    // 그 달에 없는 날(5월 31일의 3개월 전인 2월 31일 등)이 다음 달로 넘어가지 않게 그 달 말일로 맞춘다
+    const day = start.getUTCDate();
+
+    start.setUTCDate(1);
     start.setUTCMonth(start.getUTCMonth() - 3);
+
+    const lastDay = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+
+    start.setUTCDate(Math.min(day, lastDay));
   } else {
     start.setUTCDate(start.getUTCDate() - (period === '7D' ? 6 : 29));
   }
@@ -138,7 +151,7 @@ interface OwnerLedgerItem {
   entryType: PointHistoryType;
   amount: number;
   campaignId: number | null;
-  businessDate: string;
+  businessDate: string | null;
   paymentId: number | null;
   createdAt: string;
 }
@@ -158,6 +171,7 @@ const getSignedAmount = (type: PointHistoryType, amount: number) => {
 
 const toHistoryEntry = ({
   amount,
+  businessDate,
   campaignId,
   createdAt,
   entryType,
@@ -167,6 +181,7 @@ const toHistoryEntry = ({
   type: entryType,
   amount: getSignedAmount(entryType, amount),
   occurredAt: createdAt,
+  businessDate,
   campaignId: campaignId === null ? null : String(campaignId),
 });
 
@@ -222,7 +237,7 @@ interface SpendSummaryItem {
   impressionCount: number;
 }
 
-// 오늘 캠페인별 소진 포인트(캠페인 ID → 포인트). 예약 해제(13:30) 전에는 원장만으로 소진을 알 수 없어 소진 집계로 받는다.
+// 오늘 캠페인별 소진 포인트(캠페인 ID → 포인트). 예약 해제(다음 날 00:00) 전에는 원장만으로 소진을 알 수 없어 소진 집계로 받는다.
 // 지난날의 소진은 원장의 예약 − 예약 해제로 계산하므로 오늘만 부른다 (소진 집계는 최대 31일까지만 조회된다)
 export const getTodaySpentPoints = async (
   campaignId: string | null,

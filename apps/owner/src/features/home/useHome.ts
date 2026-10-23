@@ -19,7 +19,8 @@ type HomeState =
       recentDays: ServingDayPerformance[];
     };
 
-// 홈 대시보드에 필요한 가게 정보, 포인트 잔액, 캠페인 목록, 최근 집행일 실적을 함께 불러온다
+// 홈 대시보드에 필요한 가게 정보, 포인트 잔액, 캠페인 목록, 최근 집행일 실적을 불러온다.
+// 최근 집행일 실적은 가게 ID와 캠페인 집행 기간이 있어야 해 나머지를 받은 뒤에 부른다
 export const useHome = () => {
   const [state, setState] = useState<HomeState>({ status: 'loading' });
   // 값이 바뀌면 다시 불러온다
@@ -28,23 +29,27 @@ export const useHome = () => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([
-      getMyStore(),
-      getPointBalance(),
-      getCampaigns(),
-      getRecentServingDays(),
-    ]).then(
-      ([storeResult, balanceResult, campaignsResult, recentDaysResult]) => {
+    Promise.all([getMyStore(), getPointBalance(), getCampaigns()]).then(
+      async ([storeResult, balanceResult, campaignsResult]) => {
         if (ignore) {
           return;
         }
 
-        if (
-          !storeResult.ok ||
-          !balanceResult.ok ||
-          !campaignsResult.ok ||
-          !recentDaysResult.ok
-        ) {
+        if (!storeResult.ok || !balanceResult.ok || !campaignsResult.ok) {
+          setState({ status: 'error' });
+          return;
+        }
+
+        const recentDaysResult = await getRecentServingDays({
+          campaigns: campaignsResult.data,
+          storeId: storeResult.data.id,
+        });
+
+        if (ignore) {
+          return;
+        }
+
+        if (!recentDaysResult.ok) {
           setState({ status: 'error' });
           return;
         }

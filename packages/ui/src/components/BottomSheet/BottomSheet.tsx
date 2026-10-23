@@ -2,6 +2,8 @@ import type { PointerEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 export interface BottomSheetProps {
+  // 제목을 화면에 두지 않을 때 화면 읽기 프로그램에 알려 줄 이름
+  ariaLabel?: string;
   children: ReactNode;
   closeOnBackdrop?: boolean;
   isOpen: boolean;
@@ -10,6 +12,7 @@ export interface BottomSheetProps {
 }
 
 export function BottomSheet({
+  ariaLabel,
   children,
   closeOnBackdrop = true,
   isOpen,
@@ -115,6 +118,7 @@ export function BottomSheet({
       }}
     >
       <section
+        aria-label={title ? undefined : ariaLabel}
         aria-labelledby={title ? titleId : undefined}
         aria-modal="true"
         // 모바일 화면 폭(360~480px)에 맞추고, 넓은 화면에서는 가운데에 둔다

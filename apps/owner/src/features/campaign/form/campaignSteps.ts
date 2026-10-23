@@ -63,7 +63,7 @@ export const campaignSteps: CampaignStep[] = [
         ? '템플릿을 골라 주세요'
         : isPosterComplete(poster)
           ? '포스터를 모두 채웠어요'
-          : '할인 내용과 가게명을 입력해 주세요',
+          : '포스터 이미지를 올려 주세요',
   },
   { id: 'target', path: 'target', title: '노출 대상' },
   {
@@ -94,6 +94,15 @@ export const isValueStep = (
 
 export const getCampaignEditPath = (campaignId: string, step: CampaignStep) =>
   `/campaigns/${campaignId}/edit/${step.path}`;
+
+// 확인 단계의 수정 링크가 붙이는 이동 상태. 이 상태로 들어온 단계는 저장하면 다음 단계 대신 확인 단계로 돌아간다
+export const FROM_REVIEW_STATE = { fromReview: true };
+
+export const isFromReview = (state: unknown) =>
+  typeof state === 'object' &&
+  state !== null &&
+  'fromReview' in state &&
+  state.fromReview === true;
 
 // 아직 서버에 DRAFT가 없는 새 캠페인의 주소 자리 값. 1단계를 처음 저장하면 서버가 DRAFT를 만들고 ID를 준다
 export const NEW_CAMPAIGN_ID = 'new';

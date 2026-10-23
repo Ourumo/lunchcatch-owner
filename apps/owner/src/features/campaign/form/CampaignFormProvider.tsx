@@ -14,6 +14,7 @@ import {
   type PlatformSettings,
 } from '@owner/api/platform';
 import type { ApiResult } from '@owner/api/types';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { takeCampaignDraft } from './campaignDraftStorage';
@@ -181,12 +182,7 @@ export const CampaignFormProvider = ({
         >
           <span className="sr-only">작성 중인 캠페인을 불러오는 중</span>
           {[48, 120, 120].map((height, index) => (
-            <div
-              aria-hidden="true"
-              className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-              key={index}
-              style={{ height }}
-            />
+            <SkeletonBlock height={height} key={index} />
           ))}
         </main>
       )}

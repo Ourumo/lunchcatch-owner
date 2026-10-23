@@ -3,9 +3,9 @@ import { Button } from '@repo/ui';
 import { X } from 'lucide-react';
 
 import { redeemCoupon, type RedeemedCoupon } from '@owner/api/redeem';
+import { getMyStore, type StoreLocation } from '@owner/api/store';
 import type { ApiResult } from '@owner/api/types';
 
-import { DevTestQrButtons } from './DevTestQrButtons';
 import { RedeemResult } from './RedeemResult';
 import { type CameraErrorStatus, useCamera } from './useCamera';
 import { useQrDetector } from './useQrDetector';
@@ -13,7 +13,8 @@ import { useQrDetector } from './useQrDetector';
 type ScanState =
   | { status: 'scanning' }
   | { status: 'processing' }
-  | { status: 'done'; result: ApiResult<RedeemedCoupon> };
+  // 응답을 받지 못했을 때 같은 QR로 다시 보내도록 읽은 토큰을 둔다
+  | { status: 'done'; result: ApiResult<RedeemedCoupon>; qrToken: string };
 
 const cameraErrorContents: Record<
   CameraErrorStatus,
@@ -73,6 +74,13 @@ const CameraError = ({ onRetry, status }: CameraErrorProps) => {
   );
 };
 
+// 사용 처리 요청에 보낼 가게 위치. 불러오지 못했거나 가게에 좌표가 없으면 null
+const loadStoreLocation = async () => {
+  const result = await getMyStore();
+
+  return result.ok ? result.data.location : null;
+};
+
 interface QrScanProps {
   onClose: () => void;
 }
@@ -85,10 +93,14 @@ export const QrScan = ({ onClose }: QrScanProps) => {
   const [scan, setScan] = useState<ScanState>({ status: 'scanning' });
   // 처리 중에 화면을 나가면 결과를 버린다
   const ignoreResultRef = useRef(false);
+  // 스캔할 때 기다리지 않도록 화면을 열 때 가게 위치를 불러와 둔다.
+  // 불러오지 못했거나 서버가 위치를 거절하면 비워 두어 다음 스캔에서 다시 불러온다
+  const storeLocationRef = useRef<Promise<StoreLocation | null> | null>(null);
   const stream = camera.state.status === 'active' ? camera.state.stream : null;
 
   useEffect(() => {
     ignoreResultRef.current = false;
+    storeLocationRef.current = loadStoreLocation();
 
     return () => {
       ignoreResultRef.current = true;
@@ -109,13 +121,29 @@ export const QrScan = ({ onClose }: QrScanProps) => {
     };
   }, [stream]);
 
-  const handleDetect = (token: string) => {
-    if (scan.status !== 'scanning') {
-      return;
+  const redeem = async (
+    qrToken: string,
+  ): Promise<ApiResult<RedeemedCoupon>> => {
+    storeLocationRef.current ??= loadStoreLocation();
+    const location = await storeLocationRef.current;
+
+    if (!location) {
+      storeLocationRef.current = null;
+      return { ok: false, code: 'INVALID_LOCATION' };
     }
 
+    const result = await redeemCoupon({ location, qrToken });
+
+    if (!result.ok && result.code === 'INVALID_LOCATION') {
+      storeLocationRef.current = null;
+    }
+
+    return result;
+  };
+
+  const submitQr = (qrToken: string) => {
     setScan({ status: 'processing' });
-    redeemCoupon(token).then((result) => {
+    redeem(qrToken).then((result) => {
       if (ignoreResultRef.current) {
         return;
       }
@@ -125,8 +153,14 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         navigator.vibrate(200);
       }
 
-      setScan({ status: 'done', result });
+      setScan({ status: 'done', result, qrToken });
     });
+  };
+
+  const handleDetect = (qrToken: string) => {
+    if (scan.status === 'scanning') {
+      submitQr(qrToken);
+    }
   };
 
   const detector = useQrDetector({
@@ -136,21 +170,13 @@ export const QrScan = ({ onClose }: QrScanProps) => {
   });
 
   const renderContent = () => {
-    // 개발용 테스트 QR은 카메라 없이도 누를 수 있어 결과를 카메라 상태보다 먼저 본다
     if (scan.status === 'done') {
       return (
         <RedeemResult
+          onRetry={() => submitQr(scan.qrToken)}
           onScanAgain={() => setScan({ status: 'scanning' })}
           result={scan.result}
         />
-      );
-    }
-
-    if (scan.status === 'processing' && camera.state.status !== 'active') {
-      return (
-        <p className="m-auto text-body-mobile" role="status">
-          쿠폰을 확인하는 중이에요
-        </p>
       );
     }
 
@@ -226,9 +252,6 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         </button>
       </header>
       {renderContent()}
-      {import.meta.env.DEV && scan.status === 'scanning' && (
-        <DevTestQrButtons onScan={handleDetect} />
-      )}
     </main>
   );
 };

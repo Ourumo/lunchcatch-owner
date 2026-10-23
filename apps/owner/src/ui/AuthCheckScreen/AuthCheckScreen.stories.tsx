@@ -16,7 +16,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 앱을 열고 내 정보 조회 응답을 기다리는 동안
+// 앱을 열고 내 정보 조회 응답을 기다리는 동안. 1초가 지나야 문구가 보인다
 export const Checking: Story = {};
 
 // 서버가 응답하지 않거나 네트워크가 끊겨 로그인 상태를 확인하지 못했을 때
