@@ -13,7 +13,7 @@ import type { ApiResult } from '@owner/api/types';
 
 import { CampaignActionSheet } from './CampaignActionSheet';
 
-export interface CurrentCampaignActionsProps {
+export interface CampaignActionsProps {
   campaign: Campaign;
   // 취소, 중단처럼 캠페인을 바꾼 뒤 목록을 다시 불러온다
   onChanged: () => void;
@@ -100,10 +100,10 @@ const secondaryLinkClassName =
 
 // 캠페인 탭의 현재 캠페인 카드 아래 버튼. 작성 중이면 이어서 작성을, 그 밖에는 상태별 처리(getActions)를 둔다.
 // 작성 중 캠페인은 지우지 않고 남겨 두므로 삭제는 두지 않는다
-export const CurrentCampaignActions = ({
+export const CampaignActions = ({
   campaign,
   onChanged,
-}: CurrentCampaignActionsProps) => {
+}: CampaignActionsProps) => {
   const { id, status } = campaign;
   const [openAction, setOpenAction] = useState<CampaignAction | null>(null);
   // 처리하려는 사이 상태가 바뀌었거나 캠페인을 찾을 수 없어 목록이 지금과 다르다. 시트에서 안내를 읽고 닫으면 목록을 다시 불러온다
