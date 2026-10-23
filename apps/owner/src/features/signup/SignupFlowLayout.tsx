@@ -8,6 +8,7 @@ import {
   completeSignup,
 } from '@owner/api/signupFlow';
 import { useAuth } from '@owner/auth/useAuth';
+import { LogoutSheet } from '@owner/ui/LogoutSheet/LogoutSheet';
 import { StepActionBar } from '@owner/ui/StepActionBar/StepActionBar';
 import { StepIndicator } from '@owner/ui/StepIndicator/StepIndicator';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -50,6 +51,8 @@ export const SignupFlowLayout = () => {
   const { clearOwner, setOwner } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<{ title: string; description: string }>();
+  // 첫 단계에서 뒤로 가면 입점 신청을 멈출지 묻는다
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false);
 
   const currentIndex = signupSteps.findIndex(
     (step) => getSignupStepPath(step) === pathname,
@@ -65,7 +68,7 @@ export const SignupFlowLayout = () => {
   const nextStep = signupSteps.at(currentIndex + 1);
   const canProceed = currentStep.canProceed?.(values) ?? true;
 
-  const goPrevious = async () => {
+  const goPrevious = () => {
     setError(undefined);
 
     if (previousStep) {
@@ -73,20 +76,20 @@ export const SignupFlowLayout = () => {
       return;
     }
 
-    // 첫 단계에서 뒤로 가면 입점 신청을 멈추고 로그인 화면으로 돌아간다.
-    // 로그인한 채로는 로그인 화면에 들어갈 수 없어 로그아웃한다
+    setIsLeaveOpen(true);
+  };
+
+  // 첫 단계에서 뒤로 가면 입점 신청을 멈추고 로그인 화면으로 돌아간다.
+  // 로그인한 채로는 로그인 화면에 들어갈 수 없어 로그아웃한다. 실패하면 시트에 안내한다
+  const leaveSignup = async () => {
     const result = await logout();
 
-    if (!result.ok) {
-      setError({
-        title: '로그아웃에 실패했습니다',
-        description: result.message ?? '잠시 후 다시 시도해 주세요.',
-      });
-      return;
+    if (result.ok) {
+      clearOwner();
+      navigate('/login', { replace: true });
     }
 
-    clearOwner();
-    navigate('/login', { replace: true });
+    return result;
   };
 
   // 저장 실패를 이유별로 안내한다. 응답을 받지 못했거나 화면 검사로 미리 막는 값이 거절되면(400) 입력값을 그대로 둔다
@@ -220,6 +223,14 @@ export const SignupFlowLayout = () => {
           onPrevious={previousStep ? goPrevious : undefined}
         />
       </div>
+      {isLeaveOpen && (
+        <LogoutSheet
+          description="로그아웃하고 로그인 화면으로 돌아가요. 저장한 내용은 남아 있어 다시 로그인하면 이어서 할 수 있어요."
+          onClose={() => setIsLeaveOpen(false)}
+          onLogout={leaveSignup}
+          title="입점 신청을 멈출까요?"
+        />
+      )}
     </div>
   );
 };

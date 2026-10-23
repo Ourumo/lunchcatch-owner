@@ -1,36 +1,42 @@
 import { useState } from 'react';
 import { BottomSheet, Button } from '@repo/ui';
 
-import { logout } from '@owner/api/auth';
-
 const DEFAULT_ERROR_MESSAGE =
   '로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
+// 로그아웃 요청 결과. 실패하면 시트 안에 문구를 보여준다
+export type LogoutResult = { ok: true } | { ok: false; message?: string };
+
 export interface LogoutSheetProps {
-  // 로그아웃에 성공하면 부른다. 로그인 화면으로 보내는 일은 부른 쪽이 맡는다
-  onLogout: () => void;
+  title: string;
+  description: string;
+  // 로그아웃을 요청한다. 성공하면 로그인 화면으로 보내는 일까지 부른 쪽이 맡는다 (ui는 요청 함수를 가져오지 않는다)
+  onLogout: () => Promise<LogoutResult>;
   onClose: () => void;
 }
 
-// 로그아웃을 한 번 더 확인하는 시트.
+// 로그아웃을 한 번 더 확인하는 시트. 가게 관리의 로그아웃과 입점 신청을 멈출 때 쓴다.
 // 열 때마다 새로 그려 오류 문구를 초기화하므로 열려 있을 때만 렌더링한다
-export const LogoutSheet = ({ onClose, onLogout }: LogoutSheetProps) => {
+export const LogoutSheet = ({
+  description,
+  onClose,
+  onLogout,
+  title,
+}: LogoutSheetProps) => {
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
 
+  // 성공하면 부른 쪽이 화면을 옮겨 시트가 사라지므로 실패할 때만 처리 중 표시를 푼다
   const handleLogout = async () => {
     setIsPending(true);
     setErrorMessage(undefined);
 
-    const result = await logout();
+    const result = await onLogout();
 
-    if (result.ok) {
-      onLogout();
-      return;
+    if (!result.ok) {
+      setIsPending(false);
+      setErrorMessage(result.message ?? DEFAULT_ERROR_MESSAGE);
     }
-
-    setIsPending(false);
-    setErrorMessage(result.message ?? DEFAULT_ERROR_MESSAGE);
   };
 
   return (
@@ -43,10 +49,10 @@ export const LogoutSheet = ({ onClose, onLogout }: LogoutSheetProps) => {
           onClose();
         }
       }}
-      title="로그아웃할까요?"
+      title={title}
     >
       <p className="text-center text-body-sm-mobile break-keep text-text-secondary">
-        다시 이용하려면 이메일과 비밀번호로 로그인해야 해요.
+        {description}
       </p>
 
       {errorMessage && (
