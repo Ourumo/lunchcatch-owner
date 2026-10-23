@@ -173,12 +173,7 @@ export const HomeDashboard = () => {
         )}
         {/* 다시 볼 때는 완료를 저장하지 않고 닫기만 한다. 튜토리얼을 봤는지(tutorialViewed)는 바꾸지 않는다 */}
         {isTutorialOpen && (
-          <TutorialSheet
-            onFinish={async () => {
-              setIsTutorialOpen(false);
-              return true;
-            }}
-          />
+          <TutorialSheet onClose={() => setIsTutorialOpen(false)} />
         )}
       </div>
     );
