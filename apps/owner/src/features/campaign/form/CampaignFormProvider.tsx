@@ -13,6 +13,7 @@ import {
   getPlatformSettings,
   type PlatformSettings,
 } from '@owner/api/platform';
+import { getCampaignPoster } from '@owner/api/poster';
 import type { ApiResult } from '@owner/api/types';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
@@ -26,16 +27,38 @@ import { NEW_CAMPAIGN_ID } from './campaignSteps';
 
 const LIST_PATH = '/campaigns';
 
-// 새 캠페인은 1단계를 처음 저장할 때 서버가 DRAFT를 만들므로, 그 전까지는 기본값으로 쓴다
-const loadCampaign = (
+// 새 캠페인은 1단계를 처음 저장할 때 서버가 DRAFT를 만들므로, 그 전까지는 기본값으로 쓴다.
+// 이어서 쓰는 캠페인은 저장된 포스터를 함께 받아 2단계를 채운다. 캠페인 조회는 포스터를 주지 않는다.
+// 포스터를 받지 못하면 빈 포스터 위에 덮어쓰지 않도록 불러오기 실패로 본다.
+// 작성 중이 아니면 상세로 보내므로 포스터 결과는 보지 않는다
+const loadCampaign = async (
   campaignId: string,
-): Promise<ApiResult<Pick<Campaign, keyof CampaignValues | 'status'>>> =>
-  campaignId === NEW_CAMPAIGN_ID
-    ? Promise.resolve({
-        ok: true,
-        data: { ...createInitialCampaignValues(), status: 'DRAFT' },
-      })
-    : getCampaign(campaignId);
+): Promise<ApiResult<Pick<Campaign, keyof CampaignValues | 'status'>>> => {
+  if (campaignId === NEW_CAMPAIGN_ID) {
+    return {
+      ok: true,
+      data: { ...createInitialCampaignValues(), status: 'DRAFT' },
+    };
+  }
+
+  const [campaignResult, posterResult] = await Promise.all([
+    getCampaign(campaignId),
+    getCampaignPoster(campaignId),
+  ]);
+
+  if (!campaignResult.ok || campaignResult.data.status !== 'DRAFT') {
+    return campaignResult;
+  }
+
+  if (!posterResult.ok) {
+    return { ok: false };
+  }
+
+  return {
+    ok: true,
+    data: { ...campaignResult.data, poster: posterResult.data?.poster ?? null },
+  };
+};
 
 type LoadState =
   | { status: 'loading' }
