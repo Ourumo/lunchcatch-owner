@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { Button } from '@repo/ui';
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, RotateCw } from 'lucide-react';
 
 import type { PointBalance } from '@owner/api/points';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
@@ -21,18 +21,31 @@ const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
   </div>
 );
 
+// 잔액이 모자랄 때의 안내. 하루 예산 단계는 저장은 되고, 확인 단계는 충전해야 활성화를 요청할 수 있다
+const shortageNotices = {
+  budget:
+    '잔액이 모자라도 저장할 수 있어요. 활성화를 요청하기 전에 충전해 주세요.',
+  review: '충전하면 활성화를 요청할 수 있어요.',
+};
+
 export interface PointSummaryProps {
   requiredPoints: number;
   balance: Loadable<PointBalance>;
+  // 어느 단계에서 보여주는지. 잔액이 모자랄 때의 안내가 다르다
+  step: keyof typeof shortageNotices;
+  // 잔액을 불러오지 못했을 때 다시 부른다
+  onRetry: () => void;
 }
 
 // 필요 포인트(하루 예산 x 집행 일수)와 잔액을 비교한다. 하루 예산 단계와 확인 단계에서 함께 쓴다.
-// 잔액이 모자라도 저장과 활성화는 막지 않고 부족분과 충전 버튼만 보여준다.
+// 잔액이 모자라면 부족분과 충전 버튼을 보여준다. 저장은 막지 않고, 활성화 요청은 확인 단계 레이아웃이 막는다.
 // 충전은 결제 화면을 거쳐 이 단계로 돌아온다. 떠나기 전에 작성 중인 값을 저장해 두고,
 // 돌아오면 그 값으로 이어 쓰며 잔액을 다시 불러와 부족분을 다시 계산한다
 export const PointSummary = ({
   balance,
+  onRetry,
   requiredPoints,
+  step,
 }: PointSummaryProps) => {
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const chargePolicy = useChargePolicy();
@@ -72,8 +85,7 @@ export const PointSummary = ({
             </strong>
           </p>
           <p className="mt-1 text-caption-mobile break-keep text-text-primary">
-            잔액이 모자라도 저장할 수 있어요. 집행일 00:00에 잔액만큼만 예약돼
-            노출되고, 잔액이 노출 단가보다 적으면 노출이 멈춰요.
+            {shortageNotices[step]}
           </p>
           <Button
             className="mt-2 w-full"
@@ -91,9 +103,23 @@ export const PointSummary = ({
         </p>
       )}
       {balance === null && (
-        <p className="mt-3 text-caption-mobile text-text-secondary">
-          잔액을 불러오지 못해 부족한 포인트를 계산하지 못했어요.
-        </p>
+        // 누르는 영역은 높이 44px로 두되 줄 높이가 커지지 않도록 바깥 여백을 당긴다
+        <div
+          className="mt-1 -mb-2 flex items-center justify-between gap-2"
+          role="status"
+        >
+          <span className="text-caption-mobile text-text-secondary">
+            잔액을 불러오지 못했어요
+          </span>
+          <button
+            className="flex h-11 shrink-0 items-center gap-1 rounded-full px-2 text-caption-mobile font-semibold text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-action-primary"
+            onClick={onRetry}
+            type="button"
+          >
+            <RotateCw aria-hidden="true" className="size-3.5" />
+            다시 시도
+          </button>
+        </div>
       )}
       {balance && isChargeOpen && (
         <PointChargeSheet

@@ -93,7 +93,7 @@ export const ReviewStep = () => {
   const [savedPoster, setSavedPoster] =
     useState<Loadable<SavedPoster | 'none'>>();
   // 활성화를 막을지 판단하는 레이아웃이 불러온 잔액을 그대로 보여준다
-  const { balance } = useOutletContext<ReviewOutletContext>();
+  const { balance, retryBalance } = useOutletContext<ReviewOutletContext>();
 
   useEffect(() => {
     let ignore = false;
@@ -236,7 +236,9 @@ export const ReviewStep = () => {
       {isBudgetComplete && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
+          onRetry={retryBalance}
           requiredPoints={budget.dailyBudget * periodDays}
+          step="review"
         />
       )}
 

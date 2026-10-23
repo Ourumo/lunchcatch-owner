@@ -57,6 +57,8 @@ export const BudgetStep = () => {
   const { platformSettings, updateStepValues, values } = useCampaignForm();
   const { budget } = values;
   const [balance, setBalance] = useState<Loadable<PointBalance>>();
+  // 값이 바뀌면 잔액을 다시 불러온다
+  const [balanceRequestId, setBalanceRequestId] = useState(0);
   const tomorrow = getDateValueFromToday(1);
 
   useEffect(() => {
@@ -72,7 +74,12 @@ export const BudgetStep = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [balanceRequestId]);
+
+  const retryBalance = () => {
+    setBalance(undefined);
+    setBalanceRequestId((id) => id + 1);
+  };
 
   const update = (patch: Partial<BudgetStepValues>) =>
     updateStepValues('budget', patch);
@@ -165,7 +172,9 @@ export const BudgetStep = () => {
       {hasBudget && hasPeriod && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
+          onRetry={retryBalance}
           requiredPoints={budget.dailyBudget * periodDays}
+          step="budget"
         />
       )}
     </div>
