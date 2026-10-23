@@ -17,7 +17,7 @@ export const useCampaignList = () => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getCampaigns(), getMyStore()]).then(
+    Promise.all([getCampaigns({ fillEndedMenus: true }), getMyStore()]).then(
       ([campaignsResult, storeResult]) => {
         if (ignore) {
           return;

@@ -330,7 +330,8 @@ const fetchCampaignDetail = async (id: string): Promise<Campaign> =>
   );
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
-// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다.
+// 제목에 필요한 할인 메뉴는 이름을 보여주는 화면에서만 fillEndedMenuCampaign으로 채운다
 const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   id: String(item.campaignId),
   status: item.status,
@@ -356,18 +357,43 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   },
 });
 
-// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
-export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
+// 목록에는 할인 메뉴가 없어 특정 메뉴 할인인 종료 캠페인은 이름에 쓸 메뉴를 알 수 없다. 그 캠페인만 상세를 받아 채운다.
+// 상세를 받지 못하면 목록 값으로 두어 그 캠페인만 "특정 메뉴"로 보여주고, 목록은 실패로 보지 않는다
+const fillEndedMenuCampaign = async (campaign: Campaign): Promise<Campaign> => {
+  if (
+    campaign.status !== 'ENDED' ||
+    campaign.coupon.discountTarget !== 'MENU' ||
+    campaign.coupon.menuId !== null
+  ) {
+    return campaign;
+  }
+
+  try {
+    return await fetchCampaignDetail(campaign.id);
+  } catch {
+    return campaign;
+  }
+};
+
+// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다.
+// 종료 캠페인 이름을 보여주는 화면만 fillEndedMenus로 특정 메뉴 할인의 메뉴를 채운다(캠페인마다 상세 요청이 늘어난다)
+export const getCampaigns = async ({
+  fillEndedMenus = false,
+}: { fillEndedMenus?: boolean } = {}): Promise<ApiResult<Campaign[]>> => {
   try {
     const { items } = await request<CampaignListResponse>(
       `/v1/owner/campaigns?pageSize=${CAMPAIGN_LIST_PAGE_SIZE}`,
     );
     const campaigns = await Promise.all(
-      items.map((item) =>
-        item.status === 'ENDED'
-          ? toListedCampaign(item)
-          : fetchCampaignDetail(String(item.campaignId)),
-      ),
+      items.map((item) => {
+        if (item.status !== 'ENDED') {
+          return fetchCampaignDetail(String(item.campaignId));
+        }
+
+        const campaign = toListedCampaign(item);
+
+        return fillEndedMenus ? fillEndedMenuCampaign(campaign) : campaign;
+      }),
     );
 
     return { ok: true, data: campaigns };
@@ -426,7 +452,14 @@ export const getEndedCampaignPage = async ({
       nextCursor = data.nextPageToken;
     } while (campaigns.length === 0 && nextCursor);
 
-    return { ok: true, data: { campaigns, nextCursor } };
+    // 지난 캠페인 전체 목록은 이름을 보여주므로 받은 구간마다 특정 메뉴 할인의 메뉴를 채운다
+    return {
+      ok: true,
+      data: {
+        campaigns: await Promise.all(campaigns.map(fillEndedMenuCampaign)),
+        nextCursor,
+      },
+    };
   } catch {
     return { ok: false, message: ENDED_PAGE_FAILED_MESSAGE };
   }

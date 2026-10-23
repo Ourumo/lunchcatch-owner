@@ -127,7 +127,7 @@ export const usePointHistory = (initialFilter: PointHistoryFilter) => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getCampaigns(), getMyStore()]).then(
+    Promise.all([getCampaigns({ fillEndedMenus: true }), getMyStore()]).then(
       ([campaignsResult, storeResult]) => {
         if (ignore || !campaignsResult.ok || !storeResult.ok) {
           return;
