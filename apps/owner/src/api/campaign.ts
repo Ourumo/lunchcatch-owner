@@ -1,10 +1,6 @@
 import { ApiError, request } from './client';
 import type { PlatformSettings } from './platform';
-import {
-  type CampaignPoster,
-  getCampaignPoster,
-  isPosterComplete,
-} from './poster';
+import { type CampaignPoster, isPosterComplete } from './poster';
 import { getKstToday, splitPeriod } from './report';
 import { getMyStore } from './store';
 import type { ApiResult } from './types';
@@ -324,27 +320,14 @@ interface CampaignListResponse {
 // 서버 목록 한 번에 받는 최대 개수
 const CAMPAIGN_LIST_PAGE_SIZE = 100;
 
-// 작성 중이면 이어서 작성할 수 있게 저장된 포스터도 불러온다.
-// 다른 상태는 포스터를 고칠 수 없어, 캠페인 상세가 완성 HTML을 따로 불러온다
-const fetchCampaignDetail = async (id: string): Promise<Campaign> => {
-  const campaign = toCampaign(
+// 포스터는 함께 받지 않는다. 포스터 조회가 실패해도 캠페인 목록과 상세는 보여줄 수 있게,
+// 포스터가 필요한 화면(등록 화면의 이어서 작성, 캠페인 상세의 완성 포스터)이 따로 불러온다
+const fetchCampaignDetail = async (id: string): Promise<Campaign> =>
+  toCampaign(
     await request<CampaignDetailResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}`,
     ),
   );
-
-  if (campaign.status !== 'DRAFT') {
-    return campaign;
-  }
-
-  const posterResult = await getCampaignPoster(id);
-
-  if (!posterResult.ok) {
-    throw new Error('포스터를 불러오지 못했습니다');
-  }
-
-  return { ...campaign, poster: posterResult.data?.poster ?? null };
-};
 
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
 // 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
@@ -496,7 +479,7 @@ const toServerAgeGroups = (ageGroups: AgeGroup[]) =>
     .filter(([, group]) => ageGroups.length === 0 || ageGroups.includes(group))
     .map(([serverGroup]) => serverGroup);
 
-// 상세 응답에는 포스터와 성과가 없어 비워 둔다. 작성 중이면 포스터는 fetchCampaignDetail에서 채운다
+// 상세 응답에는 포스터와 성과가 없어 비워 둔다. 포스터가 필요한 화면은 따로 불러온다
 const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   id: String(data.campaignId),
   status: data.status,

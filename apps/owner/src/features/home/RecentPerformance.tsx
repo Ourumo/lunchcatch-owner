@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import type { ServingDayPerformance } from '@owner/api/report';
 import { STORE_ANALYTICS_PATH } from '@owner/features/store/storePaths';
 import { formatNumber, formatShortDate } from '@owner/ui/campaignFormat';
+import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 // 가장 많이 쓴 날의 막대 높이(px). 나머지는 이 높이에 비례한다
@@ -78,13 +79,18 @@ const ServingDayChart = ({ days }: { days: ServingDayPerformance[] }) => {
 const CHART_HEIGHT = 114;
 
 export interface RecentPerformanceProps {
-  // 최근 집행일 5회, 오래된 날짜부터. 불러오는 중이면 null이고 제목은 그대로 두고 차트 자리만 스켈레톤으로 둔다
-  days: ServingDayPerformance[] | null;
+  // 최근 집행일 5회, 오래된 날짜부터. 불러오는 중이면 null이고 제목은 그대로 두고 차트 자리만 스켈레톤으로 둔다. 실패하면 'error'
+  days: ServingDayPerformance[] | 'error' | null;
+  // 실패했을 때 다시 부른다. 캠페인 목록을 받지 못해 실패했으면 캠페인 목록부터 다시 부른다
+  onRetry: () => void;
 }
 
 // 쿠폰 사용 추이. 여러 캠페인에 걸친 가게 단위 기록이라 자세한 분석은 가게 관리 > 분석에 둔다.
 // 캠페인이 매일 열리지 않아 날짜 간격이 일정하지 않으므로 막대마다 날짜를 붙인다
-export const RecentPerformance = ({ days }: RecentPerformanceProps) => (
+export const RecentPerformance = ({
+  days,
+  onRetry,
+}: RecentPerformanceProps) => (
   <section className="flex flex-col gap-3">
     <div className="flex items-center justify-between gap-2">
       <h2 className="flex items-baseline gap-1.5 text-body-mobile font-bold text-text-primary">
@@ -103,6 +109,11 @@ export const RecentPerformance = ({ days }: RecentPerformanceProps) => (
     </div>
     {days === null ? (
       <SkeletonBlock height={CHART_HEIGHT} />
+    ) : days === 'error' ? (
+      <PerformanceError
+        message="쿠폰 사용 추이를 불러오지 못했어요"
+        onRetry={onRetry}
+      />
     ) : (
       <div className="rounded-xl border border-border-subtle bg-bg-surface px-3 pt-5 pb-4">
         {days.length > 0 ? (
