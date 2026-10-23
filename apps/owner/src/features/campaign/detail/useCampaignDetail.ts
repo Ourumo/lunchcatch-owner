@@ -60,5 +60,10 @@ export const useCampaignDetail = (id: string) => {
     setRequestId((value) => value + 1);
   };
 
-  return { retry, state };
+  // 중단, 종료처럼 캠페인을 바꾼 뒤 다시 불러온다. 지금 화면을 그대로 둔 채 결과가 오면 바꾼다
+  const reload = () => {
+    setRequestId((value) => value + 1);
+  };
+
+  return { reload, retry, state };
 };

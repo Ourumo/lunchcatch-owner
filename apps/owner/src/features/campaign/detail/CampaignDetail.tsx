@@ -23,6 +23,7 @@ import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
+import { CampaignActions } from '../actions/CampaignActions';
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
 import { PosterPreview } from '../PosterPreview';
 import { DetailNote, DetailRow, DetailSection } from './DetailSection';
@@ -260,10 +261,10 @@ export interface CampaignDetailProps {
   id: string;
 }
 
-// 캠페인 상세 조회. 상태별 액션(중단, 재개, 하루 예산 변경 등)은 이후 하단에 추가한다
+// 캠페인 상세 조회. 화면 아래에 상태별 처리(중단, 다시 시작, 종료, 대기 중 취소, 이어서 작성)를 붙이고, 처리한 뒤 다시 불러온다
 export const CampaignDetail = ({ id }: CampaignDetailProps) => {
   const goBack = useGoBack(LIST_PATH);
-  const { retry, state } = useCampaignDetail(id);
+  const { reload, retry, state } = useCampaignDetail(id);
 
   // 앱이 화면을 옮길 때 스크롤을 되돌리지 않아, 길게 내린 목록(지난 캠페인 전체 등)에서 들어오면 중간부터 보인다.
   // 상세는 항상 맨 위에서 시작한다
@@ -310,6 +311,13 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
         <TopBar onBack={goBack} title="캠페인 상세" />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
+      {state.status === 'success' && (
+        <CampaignActions
+          campaign={state.campaign}
+          layout="bar"
+          onChanged={reload}
+        />
+      )}
     </>
   );
 };
