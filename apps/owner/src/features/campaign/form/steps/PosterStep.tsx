@@ -24,6 +24,7 @@ import {
 } from '@owner/api/poster';
 import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
 import { ACCEPTED_IMAGE_TYPES, getImageFileError } from '@owner/ui/imageFile';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
@@ -103,8 +104,10 @@ interface FieldGroupProps {
   children: ReactNode;
 }
 
+// fieldset은 기본으로 내용 너비보다 줄어들지 않아(min-width: min-content), 가로로 넘기는 템플릿 목록이
+// 화면을 넓히지 않도록 min-w-0을 둔다
 const FieldGroup = ({ children, description, legend }: FieldGroupProps) => (
-  <fieldset className="flex flex-col gap-3">
+  <fieldset className="flex min-w-0 flex-col gap-3">
     <legend className="mb-3 text-body-mobile font-bold text-text-primary">
       {legend}
     </legend>
@@ -136,7 +139,8 @@ const TemplateOptions = ({
   return (
     <div className="-mx-page flex gap-3 overflow-x-auto px-page pb-1">
       {templates.map((template) => (
-        <label className="shrink-0 cursor-pointer" key={template.id}>
+        // 숨긴 라디오(sr-only)는 절대 위치라, label을 기준으로 두어야 가로로 넘긴 위치만큼 페이지가 넓어지지 않는다
+        <label className="relative shrink-0 cursor-pointer" key={template.id}>
           <input
             checked={selectedId === template.id}
             className="peer sr-only"
@@ -328,12 +332,7 @@ export const PosterStep = () => {
       <div aria-busy="true" className="flex flex-col gap-3 px-page">
         <span className="sr-only">포스터 템플릿을 불러오는 중</span>
         {[160, 420].map((height, index) => (
-          <div
-            aria-hidden="true"
-            className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-            key={index}
-            style={{ height }}
-          />
+          <SkeletonBlock height={height} key={index} />
         ))}
       </div>
     );

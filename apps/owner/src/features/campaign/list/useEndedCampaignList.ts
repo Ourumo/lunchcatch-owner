@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { type Campaign, getEndedCampaignPage } from '@owner/api/campaign';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
+import type { LoadMoreStatus } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 
 import { readEndedList, saveEndedList } from './endedListStorage';
-
-// 이어서 불러오기 상태. 처음 불러오기와 따로 두어 실패해도 이미 불러온 목록은 그대로 둔다
-export type LoadMoreStatus = 'idle' | 'loading' | 'error';
 
 export type EndedCampaignListState =
   | { status: 'loading' }

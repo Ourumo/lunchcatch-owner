@@ -1,6 +1,5 @@
 import { useLayoutEffect } from 'react';
 import { Link } from 'react-router';
-import { Button } from '@repo/ui';
 import { Info } from 'lucide-react';
 
 import { type Campaign, ISSUE_OPEN_TIME } from '@owner/api/campaign';
@@ -20,6 +19,8 @@ import {
 } from '@owner/ui/campaignFormat';
 import { CampaignStatusBadge } from '@owner/ui/CampaignStatusBadge/CampaignStatusBadge';
 import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
@@ -189,12 +190,7 @@ const CampaignContent = ({
       </DetailSection>
 
       {canHavePerformance && performanceState.status === 'loading' && (
-        <div
-          aria-busy="true"
-          className="h-40 animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        >
-          <span className="sr-only">실적을 불러오는 중</span>
-        </div>
+        <SkeletonBlock className="h-40" label="실적을 불러오는 중" />
       )}
 
       {canHavePerformance && performanceState.status === 'error' && (
@@ -255,43 +251,8 @@ const CampaignDetailSkeleton = () => (
   <div aria-busy="true" className="flex flex-col gap-3 px-page pt-5">
     <span className="sr-only">캠페인을 불러오는 중</span>
     {[64, 420, 200, 160].map((height, index) => (
-      <div
-        aria-hidden="true"
-        className="animate-pulse rounded-xl bg-surface-subtle motion-reduce:animate-none"
-        key={index}
-        style={{ height }}
-      />
+      <SkeletonBlock height={height} key={index} />
     ))}
-  </div>
-);
-
-interface CampaignDetailErrorProps {
-  message?: string;
-  onRetry: () => void;
-}
-
-const CampaignDetailError = ({
-  message,
-  onRetry,
-}: CampaignDetailErrorProps) => (
-  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-page pb-16 text-center">
-    <p className="text-body-mobile font-bold text-text-primary">
-      캠페인을 불러오지 못했어요
-    </p>
-    <p className="text-body-sm-mobile text-text-secondary">
-      {message ?? '잠시 후 다시 시도해 주세요.'}
-    </p>
-    <div className="mt-2 flex gap-2">
-      <Button onClick={onRetry} variant="secondary">
-        다시 시도
-      </Button>
-      <Link
-        className="inline-flex min-h-10 items-center rounded-md px-4 text-body-sm-mobile font-medium text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
-        to={LIST_PATH}
-      >
-        목록으로
-      </Link>
-    </div>
   </div>
 );
 
@@ -316,7 +277,22 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
     }
 
     if (state.status === 'error') {
-      return <CampaignDetailError message={state.message} onRetry={retry} />;
+      return (
+        <StatusMessage
+          action={
+            <Link
+              className="inline-flex min-h-10 items-center rounded-md px-4 text-body-sm-mobile font-medium text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              to={LIST_PATH}
+            >
+              목록으로
+            </Link>
+          }
+          description={state.message ?? '잠시 후 다시 시도해 주세요.'}
+          fill
+          onRetry={retry}
+          title="캠페인을 불러오지 못했어요"
+        />
+      );
     }
 
     return (

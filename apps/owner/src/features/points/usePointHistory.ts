@@ -11,14 +11,12 @@ import {
 } from '@owner/api/points';
 import { getMyStore } from '@owner/api/store';
 import { formatPeriod, getCampaignTitle } from '@owner/ui/campaignFormat';
+import type { LoadMoreStatus } from '@owner/ui/LoadMoreFooter/LoadMoreFooter';
 
 type BalanceState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'success'; balance: PointBalance };
-
-// 이어서 불러오기 상태. 처음 불러오기와 따로 두어 실패해도 이미 불러온 내역은 그대로 둔다
-export type LoadMoreStatus = 'idle' | 'loading' | 'error';
 
 type HistoryState =
   | { status: 'loading' }

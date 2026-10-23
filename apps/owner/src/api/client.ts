@@ -96,17 +96,18 @@ const send = async <T>(
   // 204는 본문과 봉투가 없다
   if (response.status === 204) return undefined as T;
 
-  // 요청 제한(429)은 본문 없이 오므로 읽지 않는다
+  const envelope = await readEnvelope<T>(response);
+
+  // 요청 제한(429). 로그인 요청 제한은 본문 없이 오고, 캠페인 활성화처럼 서비스가 거절하면
+  // 오류 코드와 문구가 함께 와서 있으면 읽는다
   if (response.status === 429) {
     throw new ApiError(
       429,
-      null,
-      '요청이 너무 많습니다 (429)',
+      envelope?.code ?? null,
+      envelope?.message ?? '요청이 너무 많습니다 (429)',
       readRetryAfterSeconds(response),
     );
   }
-
-  const envelope = await readEnvelope<T>(response);
 
   if (!response.ok || envelope?.code !== 'SUCCESS') {
     throw new ApiError(

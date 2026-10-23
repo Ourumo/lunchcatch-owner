@@ -161,7 +161,7 @@ const toCampaignPoster = ({
   };
 };
 
-// 캠페인에 저장된 포스터. 아직 만들지 않았으면(POSTER-021) null
+// 캠페인에 저장된 포스터. 아직 만들지 않았으면(POSTER-020) null
 export const getCampaignPoster = async (
   campaignId: string,
 ): Promise<ApiResult<SavedPoster | null>> => {
@@ -175,7 +175,7 @@ export const getCampaignPoster = async (
       data: { html: data.html, poster: toCampaignPoster(data) },
     };
   } catch (error) {
-    if (error instanceof ApiError && error.code === 'POSTER-021') {
+    if (error instanceof ApiError && error.code === 'POSTER-020') {
       return { ok: true, data: null };
     }
 

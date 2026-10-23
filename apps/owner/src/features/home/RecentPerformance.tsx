@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import type { ServingDayPerformance } from '@owner/api/report';
 import { STORE_ANALYTICS_PATH } from '@owner/features/store/storePaths';
 import { formatNumber, formatShortDate } from '@owner/ui/campaignFormat';
+import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 // 가장 많이 쓴 날의 막대 높이(px). 나머지는 이 높이에 비례한다
 const MAX_BAR_HEIGHT = 96;
@@ -73,9 +74,12 @@ const ServingDayChart = ({ days }: { days: ServingDayPerformance[] }) => {
   );
 };
 
+// 막대 차트 상자 높이. 불러오는 동안 이 높이로 자리를 잡아 둔다
+const CHART_HEIGHT = 114;
+
 export interface RecentPerformanceProps {
-  // 최근 집행일 5회, 오래된 날짜부터
-  days: ServingDayPerformance[];
+  // 최근 집행일 5회, 오래된 날짜부터. 불러오는 중이면 null이고 제목은 그대로 두고 차트 자리만 스켈레톤으로 둔다
+  days: ServingDayPerformance[] | null;
 }
 
 // 쿠폰 사용 추이. 여러 캠페인에 걸친 가게 단위 기록이라 자세한 분석은 가게 관리 > 분석에 둔다.
@@ -97,22 +101,26 @@ export const RecentPerformance = ({ days }: RecentPerformanceProps) => (
         <ChevronRight aria-hidden="true" className="size-4" />
       </Link>
     </div>
-    <div className="rounded-xl border border-border-subtle bg-bg-surface px-3 pt-5 pb-4">
-      {days.length > 0 ? (
-        <>
-          {/* 막대는 보조 표시라 숨기고, 스크린 리더에는 날짜별 수치를 목록으로 읽어 준다 */}
-          <ul className="sr-only">
-            {days.map((day) => (
-              <li key={day.date}>{getDayLabel(day)}</li>
-            ))}
-          </ul>
-          <ServingDayChart days={days} />
-        </>
-      ) : (
-        <p className="py-6 text-center text-body-sm-mobile text-text-secondary">
-          캠페인을 집행하면 날짜별 쿠폰 사용 수가 여기에 보여요
-        </p>
-      )}
-    </div>
+    {days === null ? (
+      <SkeletonBlock height={CHART_HEIGHT} />
+    ) : (
+      <div className="rounded-xl border border-border-subtle bg-bg-surface px-3 pt-5 pb-4">
+        {days.length > 0 ? (
+          <>
+            {/* 막대는 보조 표시라 숨기고, 스크린 리더에는 날짜별 수치를 목록으로 읽어 준다 */}
+            <ul className="sr-only">
+              {days.map((day) => (
+                <li key={day.date}>{getDayLabel(day)}</li>
+              ))}
+            </ul>
+            <ServingDayChart days={days} />
+          </>
+        ) : (
+          <p className="py-6 text-center text-body-sm-mobile text-text-secondary">
+            캠페인을 집행하면 날짜별 쿠폰 사용 수가 여기에 보여요
+          </p>
+        )}
+      </div>
+    )}
   </section>
 );

@@ -1,17 +1,13 @@
 import { request } from './client';
-import { mockDelay } from './mocks/delay';
-import { mockStore } from './mocks/store';
 import {
   type HoursStepValues,
-  isHoursStepComplete,
   type ServerBusinessHour,
   toHoursStepValues,
-  weekdays,
+  toServerBusinessHours,
 } from './signupFlow';
 import type { ApiResult } from './types';
 
 // 로그인한 점주의 가게 정보. 점주 계정 1개에 가게 1개만 등록된다
-// 조회는 서버 API를 쓰고, 영업시간 수정은 API 연동 전까지 mock 데이터로 동작한다. 연동할 때는 이 파일의 함수 내부만 교체한다
 
 export interface StoreMenu {
   id: string;
@@ -23,10 +19,17 @@ export interface StoreMenu {
   imageUrl: string | null;
 }
 
+export interface StoreLocation {
+  latitude: number;
+  longitude: number;
+}
+
 export interface MyStore {
   id: string;
   name: string;
   roadAddress: string;
+  // 입점 신청 때 고른 가게 위치. 쿠폰 사용 처리에 매장 스캔 기기 위치로 보낸다. 서버에 좌표가 없으면 null
+  location: StoreLocation | null;
   // 가게 대표 이미지(로고). 올리기 전이면 null
   logoImageUrl: string | null;
   // 매장 이미지. 0~3장 (입점 등록 MAX_INTERIOR_IMAGES)
@@ -36,8 +39,6 @@ export interface MyStore {
   // 대표 메뉴. 선택, 최대 3개 (입점 등록 MAX_MENUS)
   menus: StoreMenu[];
 }
-
-const INVALID_BUSINESS_HOURS_MESSAGE = '영업 요일과 시간을 다시 확인해 주세요.';
 
 interface StoreImageResponse {
   objectKey: string;
@@ -50,6 +51,8 @@ interface StoreResponse {
   storeId: number | null;
   name: string | null;
   roadAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
   businessHours: ServerBusinessHour[];
   logoImage: StoreImageResponse | null;
   interiorImages: StoreImageResponse[];
@@ -81,6 +84,10 @@ export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
         id: String(data.storeId),
         name: data.name ?? '',
         roadAddress: data.roadAddress ?? '',
+        location:
+          data.latitude !== null && data.longitude !== null
+            ? { latitude: data.latitude, longitude: data.longitude }
+            : null,
         logoImageUrl: data.logoImage?.url ?? null,
         interiorImageUrls: [...data.interiorImages]
           .sort(bySortOrder)
@@ -101,28 +108,19 @@ export const getMyStore = async (): Promise<ApiResult<MyStore>> => {
 };
 
 // 영업시간 수정 (docs/requirements-owner.md "영업시간 등록/수정").
-// 같은 요일 중복, 영업 요일 없음, 시각 누락, 시작 시각보다 이르거나 같은 종료 시각은 받지 않는다.
-// 요일은 고른 순서와 상관없이 월~일 순서로 저장한다
+// 입점 신청과 같은 API지만 ACTIVE 점주는 version을 보내지 않는다.
+// 응답에 저장한 영업시간이 없어, 화면은 가게 정보를 다시 불러와 보여준다
 export const updateBusinessHours = async (
   hours: HoursStepValues,
-): Promise<ApiResult<HoursStepValues>> => {
-  await mockDelay();
+): Promise<ApiResult<null>> => {
+  try {
+    await request('/v1/owner/store/hours', {
+      method: 'PUT',
+      body: { businessHours: toServerBusinessHours(hours) },
+    });
 
-  const hasDuplicateDay =
-    new Set(hours.openDays).size !== hours.openDays.length;
-
-  if (hasDuplicateDay || !isHoursStepComplete(hours)) {
-    return { ok: false, message: INVALID_BUSINESS_HOURS_MESSAGE };
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false };
   }
-
-  const savedHours: HoursStepValues = {
-    ...hours,
-    openDays: weekdays
-      .map(({ value }) => value)
-      .filter((day) => hours.openDays.includes(day)),
-  };
-
-  mockStore.businessHours = savedHours;
-
-  return { ok: true, data: structuredClone(savedHours) };
 };
