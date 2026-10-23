@@ -2,17 +2,18 @@ import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ChartNoAxesColumn, ChevronRight, RotateCw, Store } from 'lucide-react';
 
+import { logout } from '@owner/api/auth';
 import type { MyStore } from '@owner/api/store';
 import { useAuth } from '@owner/auth/useAuth';
 import { useChargePolicy } from '@owner/hooks/useChargePolicy';
 import { usePointCharge } from '@owner/hooks/usePointCharge';
 import { formatPoints } from '@owner/ui/campaignFormat';
+import { LogoutSheet } from '@owner/ui/LogoutSheet/LogoutSheet';
 import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { LogoutSheet } from './LogoutSheet';
 import {
   formatBusinessHours,
   formatMenuCount,
@@ -303,12 +304,20 @@ export const StoreManagement = () => {
       {/* 가게 정보를 불러오지 못한 화면에서도 열 수 있도록 내용 밖에 둔다 */}
       {isLogoutOpen && (
         <LogoutSheet
+          description="다시 이용하려면 이메일과 비밀번호로 로그인해야 해요."
           onClose={() => setIsLogoutOpen(false)}
-          // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
-          onLogout={() => {
-            clearOwner();
-            navigate(LOGIN_PATH, { replace: true });
+          onLogout={async () => {
+            const result = await logout();
+
+            if (result.ok) {
+              clearOwner();
+              // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
+              navigate(LOGIN_PATH, { replace: true });
+            }
+
+            return result;
           }}
+          title="로그아웃할까요?"
         />
       )}
     </>
