@@ -48,14 +48,28 @@ export const getBalanceBlockReason = (
 };
 
 // 확인 단계에 들어올 때마다 잔액을 새로 불러온다. 충전하러 다녀오면 새 기록 항목이 되어 다시 불러온다.
-// 불러온 결과는 어느 요청의 결과인지(requestKey) 함께 두어, 다른 요청의 결과면 불러오는 중으로 본다
+// 불러온 결과는 어느 요청의 결과인지(requestKey) 함께 두어, 다른 요청의 결과면 불러오는 중으로 본다.
+// 수정하러 갔다가 이전·뒤로 가기로 돌아오면 같은 기록 항목(locationKey)이라, 들어온 횟수(visitCount)도 함께 넣어
+// 지난 결과를 쓰지 않는다
 export const useReviewBalance = (isReview: boolean, locationKey: string) => {
   const [retryCount, setRetryCount] = useState(0);
+  const [visitCount, setVisitCount] = useState(0);
+  const [wasReview, setWasReview] = useState(isReview);
   const [result, setResult] = useState<{
     requestKey: string;
     balance: PointBalance | null;
   }>();
-  const requestKey = `${locationKey}:${retryCount}`;
+
+  // 확인 단계에 다시 들어온 렌더링에서 바로 바꿔, 새 결과가 오기 전까지 지난 잔액을 보여주지 않는다
+  if (isReview !== wasReview) {
+    setWasReview(isReview);
+
+    if (isReview) {
+      setVisitCount((count) => count + 1);
+    }
+  }
+
+  const requestKey = `${locationKey}:${visitCount}:${retryCount}`;
 
   useEffect(() => {
     if (!isReview) {
