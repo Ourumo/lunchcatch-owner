@@ -261,7 +261,7 @@ export interface CampaignDetailProps {
   id: string;
 }
 
-// 캠페인 상세 조회. 화면 아래에 상태별 처리(중단, 다시 시작, 종료, 대기 중 취소, 이어서 작성)를 붙이고, 처리한 뒤 다시 불러온다
+// 캠페인 상세 조회. 화면 아래에 상태별 처리(중단, 다시 시작, 종료, 대기 중 취소, 이어서 작성, 하루 예산 변경)를 붙이고, 처리한 뒤 다시 불러온다
 export const CampaignDetail = ({ id }: CampaignDetailProps) => {
   const goBack = useGoBack(LIST_PATH);
   const { reload, retry, state } = useCampaignDetail(id);
@@ -314,6 +314,7 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
       {state.status === 'success' && (
         <CampaignActions
           campaign={state.campaign}
+          canChangeDailyBudget
           layout="bar"
           onChanged={reload}
         />
