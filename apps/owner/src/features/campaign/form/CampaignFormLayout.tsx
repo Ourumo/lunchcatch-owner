@@ -25,6 +25,12 @@ import {
   NEW_CAMPAIGN_ID,
 } from './campaignSteps';
 import { useCampaignForm } from './useCampaignForm';
+import {
+  getBalanceBlockReason,
+  getRequiredPoints,
+  type ReviewOutletContext,
+  useReviewBalance,
+} from './useReviewBalance';
 
 const SAVE_FAILED_MESSAGE = '잠시 후 다시 시도해 주세요.';
 const POSTER_REFRESH_FAILED_MESSAGE =
@@ -42,7 +48,7 @@ interface ActionError {
 // 마지막 확인 단계에서는 활성화를 요청하고 완료 화면으로 간다
 export const CampaignFormLayout = () => {
   const navigate = useNavigate();
-  const { pathname, state } = useLocation();
+  const { key: locationKey, pathname, state } = useLocation();
   const {
     campaignId,
     platformSettings,
@@ -66,6 +72,8 @@ export const CampaignFormLayout = () => {
     isFromReview(state) &&
     isValueStep(currentStep.id);
   const isReview = currentStep?.id === 'review';
+  // 확인 단계에서 활성화를 요청해도 되는지 보려고 잔액을 불러온다. 확인 단계 화면도 이 값을 받아 보여준다
+  const { balance, retryBalance } = useReviewBalance(isReview, locationKey);
 
   // 이전 버튼, 상단 뒤로 가기, 브라우저 뒤로 가기 어느 쪽으로 돌아와도 고친 값을 버린다.
   // 확인 단계가 고친 값으로 한 번 그려지지 않도록 그리기 전에 되돌린다
@@ -104,6 +112,14 @@ export const CampaignFormLayout = () => {
     currentIndex > 0 ? campaignSteps.at(currentIndex - 1) : undefined;
   const nextStep = campaignSteps.at(currentIndex + 1);
   const canProceed = currentStep.canProceed?.(values, platformSettings) ?? true;
+  const requiredPoints = getRequiredPoints(values.budget, platformSettings);
+  // 서버는 활성화 요청에서 잔액을 검사하지 않아, 확인 단계에서 앞 단계를 다 채웠으면 잔액을 보고 화면에서 막는다.
+  // 1~4단계의 저장과 다음은 잔액과 상관없이 둔다
+  const balanceBlockReason =
+    isReview && canProceed && requiredPoints !== null
+      ? getBalanceBlockReason(balance, requiredPoints)
+      : null;
+  const canGoNext = canProceed && balanceBlockReason === null;
 
   const clearMessages = () => setActionError(undefined);
 
@@ -246,7 +262,7 @@ export const CampaignFormLayout = () => {
   };
 
   const handleNext = async () => {
-    if (!canProceed || isSaving) {
+    if (!canGoNext || isSaving) {
       return;
     }
 
@@ -315,7 +331,9 @@ export const CampaignFormLayout = () => {
         <h2 className="px-page text-h2-mobile font-bold text-text-primary">
           {currentStep.title}
         </h2>
-        <Outlet />
+        <Outlet
+          context={{ balance, retryBalance } satisfies ReviewOutletContext}
+        />
         {actionError && (
           <div className="px-page">
             <Toast
@@ -329,8 +347,11 @@ export const CampaignFormLayout = () => {
         )}
       </main>
       <StepActionBar
-        hint={currentStep.progressHint?.(values, platformSettings)}
-        isNextDisabled={!canProceed}
+        hint={
+          balanceBlockReason ??
+          currentStep.progressHint?.(values, platformSettings)
+        }
+        isNextDisabled={!canGoNext}
         isNextLoading={isSaving}
         nextLabel={
           isEditingFromReview ? '저장' : nextStep ? '다음' : '활성화 요청'

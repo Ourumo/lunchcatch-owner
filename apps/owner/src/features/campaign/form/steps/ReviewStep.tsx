@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
 import { Info } from 'lucide-react';
 
 import {
@@ -8,7 +8,6 @@ import {
   ISSUE_OPEN_TIME,
   isValidTarget,
 } from '@owner/api/campaign';
-import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
   getCampaignPoster,
   isPosterComplete,
@@ -38,6 +37,7 @@ import {
 } from '../campaignSteps';
 import { PointSummary } from '../PointSummary';
 import { useCampaignForm } from '../useCampaignForm';
+import type { ReviewOutletContext } from '../useReviewBalance';
 
 const POSTER_PREVIEW_WIDTH = 200;
 
@@ -92,7 +92,8 @@ export const ReviewStep = () => {
   // 서버가 만든 완성 포스터. 아직 만들지 않았으면 'none'
   const [savedPoster, setSavedPoster] =
     useState<Loadable<SavedPoster | 'none'>>();
-  const [balance, setBalance] = useState<Loadable<PointBalance>>();
+  // 활성화를 막을지 판단하는 레이아웃이 불러온 잔액을 그대로 보여준다
+  const { balance } = useOutletContext<ReviewOutletContext>();
 
   useEffect(() => {
     let ignore = false;
@@ -105,11 +106,6 @@ export const ReviewStep = () => {
     getCampaignPoster(campaignId).then((result) => {
       if (!ignore) {
         setSavedPoster(result.ok ? (result.data ?? 'none') : null);
-      }
-    });
-    getPointBalance().then((result) => {
-      if (!ignore) {
-        setBalance(result.ok ? result.data : null);
       }
     });
 
