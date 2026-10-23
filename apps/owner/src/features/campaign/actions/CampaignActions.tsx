@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Button, type ButtonVariant } from '@repo/ui';
+import { Button, type ButtonVariant, Toast } from '@repo/ui';
 
 import {
   type Campaign,
   cancelScheduledCampaign,
+  changeDailyBudget,
   endCampaign,
+  getDateValueFromToday,
   pauseCampaign,
   resumeCampaign,
 } from '@owner/api/campaign';
 import type { ApiResult } from '@owner/api/types';
+import { formatPoints } from '@owner/ui/campaignFormat';
 
 import { CampaignActionSheet } from './CampaignActionSheet';
+import { DailyBudgetSheet } from './DailyBudgetSheet';
 
 export interface CampaignActionsProps {
   campaign: Campaign;
@@ -19,6 +23,8 @@ export interface CampaignActionsProps {
   onChanged: () => void;
   // card: 캠페인 탭의 현재 캠페인 카드 아래, bar: 캠페인 상세 화면 아래에 붙는 버튼 영역
   layout?: 'card' | 'bar';
+  // 진행 중 캠페인의 하루 예산 변경을 둘지. 캠페인 상세에서만 켠다
+  canChangeDailyBudget?: boolean;
 }
 
 type CampaignAction = 'cancel' | 'pause' | 'resume' | 'end';
@@ -112,18 +118,42 @@ const continueLinkClassNames = {
   bar: 'flex h-12 w-full items-center justify-center rounded-md border border-transparent bg-action-primary text-body-sm-web font-medium text-text-inverse transition-colors hover:bg-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary',
 };
 
+// 진행 중 캠페인의 하루 예산 변경 버튼. 확인 시트 대신 금액을 입력하는 시트를 연다
+const DAILY_BUDGET_BUTTON = {
+  label: '하루 예산 변경',
+  variant: 'secondary',
+} satisfies { label: string; variant: ButtonVariant };
+
+// 하루 예산을 바꿀 수 있는지. 바꾼 값은 다음 날 00:00부터 적용되어, 진행 중이어도 집행 마지막 날이면 적용할 날이 없다
+const canChangeDailyBudgetOf = ({
+  budget,
+  status,
+}: Pick<Campaign, 'budget' | 'status'>) =>
+  status === 'ACTIVE' &&
+  budget.dailyBudget !== null &&
+  budget.endDate > getDateValueFromToday(0);
+
 // 캠페인 탭의 현재 캠페인 카드와 캠페인 상세 아래 버튼. 작성 중이면 이어서 작성을, 그 밖에는 상태별 처리(getActions)를 둔다.
 // 작성 중 캠페인은 지우지 않고 남겨 두므로 삭제는 두지 않는다
 export const CampaignActions = ({
   campaign,
+  canChangeDailyBudget = false,
   layout = 'card',
   onChanged,
 }: CampaignActionsProps) => {
-  const { id, status } = campaign;
-  const [openAction, setOpenAction] = useState<CampaignAction | null>(null);
+  const { budget, id, status } = campaign;
+  const [openAction, setOpenAction] = useState<
+    CampaignAction | 'dailyBudget' | null
+  >(null);
+  // 하루 예산을 바꾼 뒤의 안내. 서버가 바꾼 값을 주지 않아 상세에서 볼 수 없으므로 점주가 닫거나 다른 처리를 할 때까지 둔다
+  const [dailyBudgetNotice, setDailyBudgetNotice] = useState<string | null>(
+    null,
+  );
   // 처리하려는 사이 상태가 바뀌었거나 캠페인을 찾을 수 없어 화면이 실제와 다르다. 시트에서 안내를 읽고 닫으면 다시 불러온다
   const [isStatusChanged, setIsStatusChanged] = useState(false);
   const actions = getActions(campaign);
+  const showDailyBudget =
+    canChangeDailyBudget && canChangeDailyBudgetOf(campaign);
   const classNames = layoutClassNames[layout];
 
   const closeSheet = () => {
@@ -135,18 +165,41 @@ export const CampaignActions = ({
     }
   };
 
+  const markIfStatusChanged = (result: ApiResult<unknown>) => {
+    if (
+      !result.ok &&
+      (result.code === 'CAMPAIGN-006' || result.code === 'CAMPAIGN-005')
+    ) {
+      setIsStatusChanged(true);
+    }
+  };
+
   // 처리가 끝나면 목록이나 상세를 다시 불러와 바뀐 상태를 보여준다. 실패하면 시트에 안내를 남기고 상태는 그대로 둔다
   const runAction = async (action: () => Promise<ApiResult<unknown>>) => {
     const result = await action();
 
     if (result.ok) {
+      // 중단하면 바꾼 하루 예산이 00:00에 적용되지 않을 수 있어 안내를 지운다
+      setDailyBudgetNotice(null);
       onChanged();
-    } else if (
-      result.code === 'CAMPAIGN-006' ||
-      result.code === 'CAMPAIGN-005'
-    ) {
-      setIsStatusChanged(true);
     }
+
+    markIfStatusChanged(result);
+
+    return result;
+  };
+
+  // 바꾼 하루 예산은 다음 날부터 적용되고 지금 화면의 값은 그대로라 다시 불러오지 않는다
+  const saveDailyBudget = async (dailyBudget: number) => {
+    const result = await changeDailyBudget(id, dailyBudget);
+
+    if (result.ok) {
+      setDailyBudgetNotice(
+        `내일 00:00부터 하루 예산이 ${formatPoints(dailyBudget)}로 바뀌어요.`,
+      );
+    }
+
+    markIfStatusChanged(result);
 
     return result;
   };
@@ -169,21 +222,44 @@ export const CampaignActions = ({
     return null;
   }
 
-  const openConfig = openAction && actionConfigs[openAction];
+  const openConfig =
+    openAction && openAction !== 'dailyBudget' && actionConfigs[openAction];
 
   return (
     <>
-      <div className={`flex gap-2 ${classNames.container}`}>
-        {actions.map((action) => (
-          <Button
-            className={`${classNames.button} flex-1`}
-            key={action}
-            onClick={() => setOpenAction(action)}
-            variant={actionConfigs[action].buttonVariant}
-          >
-            {actionConfigs[action].buttonLabel}
-          </Button>
-        ))}
+      <div className={`flex flex-col gap-2 ${classNames.container}`}>
+        {/* 다시 불러와 진행 중이 아니게 되면(그사이 중단 등) 00:00에 적용되지 않을 수 있어 안내를 숨긴다 */}
+        {showDailyBudget && dailyBudgetNotice && (
+          <Toast
+            className="break-keep"
+            description={dailyBudgetNotice}
+            onClose={() => setDailyBudgetNotice(null)}
+            style={{ maxWidth: 'none' }}
+            title="하루 예산을 바꿨어요"
+            variant="success"
+          />
+        )}
+        <div className="flex gap-2">
+          {actions.map((action) => (
+            <Button
+              className={`${classNames.button} flex-1`}
+              key={action}
+              onClick={() => setOpenAction(action)}
+              variant={actionConfigs[action].buttonVariant}
+            >
+              {actionConfigs[action].buttonLabel}
+            </Button>
+          ))}
+          {showDailyBudget && (
+            <Button
+              className={`${classNames.button} flex-1`}
+              onClick={() => setOpenAction('dailyBudget')}
+              variant={DAILY_BUDGET_BUTTON.variant}
+            >
+              {DAILY_BUDGET_BUTTON.label}
+            </Button>
+          )}
+        </div>
       </div>
 
       {openConfig && (
@@ -194,6 +270,14 @@ export const CampaignActions = ({
           onClose={closeSheet}
           onConfirm={() => runAction(() => openConfig.run(id))}
           title={openConfig.sheetTitle}
+        />
+      )}
+
+      {openAction === 'dailyBudget' && budget.dailyBudget !== null && (
+        <DailyBudgetSheet
+          currentDailyBudget={budget.dailyBudget}
+          onClose={closeSheet}
+          onSave={saveDailyBudget}
         />
       )}
     </>

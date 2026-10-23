@@ -887,6 +887,51 @@ export const saveBudgetStep = async (
   }
 };
 
+// 409 CAMPAIGN-006. 그사이 진행 중이 아니게 되어 하루 예산을 바꿀 수 없다
+const DAILY_BUDGET_STATUS_CHANGED_MESSAGE =
+  '캠페인 상태가 바뀌어 하루 예산을 바꿀 수 없습니다. 진행 중인 캠페인만 바꿀 수 있습니다.';
+const INVALID_DAILY_BUDGET_MESSAGE = '하루 예산을 다시 확인해 주세요.';
+
+// 진행 중(ACTIVE) 캠페인의 하루 예산 변경. 서버는 다음 영업일 00:00부터 적용할 값으로만 저장하고 오늘 하루 예산은 그대로 둔다.
+// 저장 응답과 상세 조회는 지금 적용 중인 하루 예산만 주고, 저장해 둔 값은 주지 않는다
+export const changeDailyBudget = async (
+  id: string,
+  dailyBudget: number,
+): Promise<ApiResult<null>> => {
+  try {
+    await patchCampaign(id, { dailyBudget });
+
+    return { ok: true, data: null };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
+
+    switch (error.code) {
+      // 상태가 바뀌었거나(006) 캠페인을 찾을 수 없다(005). 화면이 code를 보고 상세를 다시 불러온다
+      case 'CAMPAIGN-006':
+        return {
+          ok: false,
+          code: error.code,
+          message: DAILY_BUDGET_STATUS_CHANGED_MESSAGE,
+        };
+      case 'CAMPAIGN-005':
+        return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
+      case 'CAMPAIGN-001':
+        return { ok: false, message: NOT_ACTIVE_OWNER_ACTION_MESSAGE };
+    }
+
+    // CAMPAIGN-007(최소 하루 예산 미만)은 화면 검사로 미리 막는다. 관리자가 기준을 바꿔 거절되면 서버 문구로 이유를 보여준다
+    if (error.status === 422 && error.message) {
+      return { ok: false, message: error.message };
+    }
+
+    return error.status === 400
+      ? { ok: false, message: INVALID_DAILY_BUDGET_MESSAGE }
+      : { ok: false };
+  }
+};
+
 // 포스터 생성 응답. 슬롯이 모두 채워진 완성 HTML이다
 interface PosterCreateResponse {
   posterId: number;
