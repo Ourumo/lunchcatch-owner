@@ -10,7 +10,7 @@ export interface AuthContextValue {
   setOwner: (owner: LoginResponse) => void;
   // 로그아웃하면 로그인 전으로 되돌린다
   clearOwner: () => void;
-  // 최초 튜토리얼 완료를 서버에 저장한다. 성공해야 tutorialViewed가 true로 바뀐다. 실패하면 부른 쪽이 안내한다
+  // 최초 튜토리얼 완료를 서버에 저장한다. 결과와 상관없이 tutorialViewed를 먼저 true로 바꿔 이번 접속에서는 다시 보여주지 않는다
   completeTutorial: () => Promise<ApiResult<null>>;
 }
 

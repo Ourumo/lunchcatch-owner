@@ -60,18 +60,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [checkRequestId]);
 
-  // 튜토리얼 완료를 서버에 저장하고, 성공한 뒤에만 로그인 상태의 tutorialViewed를 바꾼다.
-  // 실패했는데 화면에서만 완료로 바꾸지 않는다. 브라우저 저장소에도 따로 두지 않고 서버 값을 기준으로 한다.
+  // 로그인 상태의 tutorialViewed를 먼저 바꿔 튜토리얼을 내리고, 완료를 서버에 저장한다.
+  // 저장이 계속 실패해도 튜토리얼에 막혀 앱을 못 쓰는 일이 없게, 이번 접속에서는 결과와 상관없이 본 것으로 둔다.
+  // 브라우저 저장소에는 따로 두지 않아, 저장에 실패했으면 새로고침이나 다시 로그인할 때 서버 값으로 다시 보여준다.
   // ACTIVE가 아니라고 거절되면(OWNER-002) 내 정보 조회로 상태를 다시 받아, RequireAuth가 상태에 맞는 화면으로 보낸다
   const completeOwnerTutorial = async (): Promise<ApiResult<null>> => {
+    setOwner((prev) => prev && { ...prev, tutorialViewed: true });
+
     const result = await completeTutorial();
 
-    if (result.ok) {
-      setOwner((prev) => prev && { ...prev, tutorialViewed: true });
-      return result;
-    }
-
-    if (result.code === 'OWNER-002') {
+    if (!result.ok && result.code === 'OWNER-002') {
       const me = await getMe();
 
       if (me.ok) {
