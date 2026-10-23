@@ -1,21 +1,23 @@
-import { Lightbulb } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 import { getTimeRangeError, weekdays } from '@owner/api/signupFlow';
 import { BusinessHoursFields } from '@owner/ui/BusinessHoursFields/BusinessHoursFields';
 
 import { useSignupFlow } from '../useSignupFlow';
 
-// 점심 시간대 추천 안내. 지역별 피크 타임 데이터가 없어 시안 문구를 그대로 쓰는 더미
-const LunchPeakTimeTip = () => (
+// 쿠폰을 쓰는 시간 안내. 피드는 하루 종일 보이지만 쿠폰은 발급 시간에만 받고, 캠페인에서 정한 사용 시간에 매장에서 쓴다.
+// 이 시간에 영업하지 않으면 손님이 쿠폰을 쓸 수 없어 영업시간을 정할 때 알린다
+const CouponTimeNotice = () => (
   <aside className="rounded-xl border border-dashed border-brand-200 bg-surface-brand px-4 py-4">
     <p className="flex items-center gap-1.5 text-body-sm-mobile font-medium text-text-secondary">
-      <Lightbulb aria-hidden="true" className="size-4 text-text-brand" />
-      점심특가 최적 시간대 추천
+      <Clock aria-hidden="true" className="size-4 text-text-brand" />
+      쿠폰 발급 시간
     </p>
     <p className="mt-2 text-body-sm-mobile break-keep text-text-primary">
-      직장인 밀집 지역인 역삼동의 평균 점심 피크 타임은{' '}
-      <strong className="font-bold text-text-brand">11:00 ~ 14:00</strong>
-      입니다. 이 시간대에 노출이 집중됩니다.
+      쿠폰은 매일{' '}
+      <strong className="font-bold text-text-brand">11:00~14:00</strong>에
+      발급돼요. 손님은 캠페인에서 정한 사용 시간(11:30~15:00 안)에 매장에서
+      써요. 이 시간에 영업하는지 확인해 주세요.
     </p>
   </aside>
 );
@@ -33,7 +35,7 @@ export const HoursStep = () => {
         value={values.hours}
         weekdays={weekdays}
       />
-      <LunchPeakTimeTip />
+      <CouponTimeNotice />
     </div>
   );
 };
