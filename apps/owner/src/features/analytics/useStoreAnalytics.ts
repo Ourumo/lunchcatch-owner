@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { type Campaign, getCampaign, getCampaigns } from '@owner/api/campaign';
+import { type Campaign, getCampaigns } from '@owner/api/campaign';
 import type { CampaignDayReport } from '@owner/api/report';
 import { getMyStore, type StoreMenu } from '@owner/api/store';
 
@@ -24,25 +24,6 @@ type ReportState =
       report: CampaignDayReport[];
     };
 
-// 목록에는 할인 메뉴가 없어 특정 메뉴 할인의 메뉴 이름을 알 수 없다. 진행 중·일시중지 캠페인은 목록을 받을 때 상세로 채워지므로
-// 특정 메뉴 할인인 종료 캠페인만 상세를 다시 받는다. 상세를 받지 못하면 목록 값으로 두어 "특정 메뉴"로 보여준다
-const fillEndedMenuCampaigns = (campaigns: Campaign[]) =>
-  Promise.all(
-    campaigns.map(async (campaign) => {
-      if (
-        campaign.status !== 'ENDED' ||
-        campaign.coupon.discountTarget !== 'MENU' ||
-        campaign.coupon.menuId !== null
-      ) {
-        return campaign;
-      }
-
-      const result = await getCampaign(campaign.id);
-
-      return result.ok ? result.data : campaign;
-    }),
-  );
-
 // 가게 분석에 필요한 캠페인 목록과 가게 메뉴를 불러오고, 고른 캠페인의 리포트를 불러온다
 export const useStoreAnalytics = (campaignId: string | null) => {
   const [campaignsState, setCampaignsState] = useState<CampaignsState>({
@@ -57,8 +38,9 @@ export const useStoreAnalytics = (campaignId: string | null) => {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getCampaigns(), getMyStore()]).then(
-      async ([campaignsResult, storeResult]) => {
+    // 캠페인 이름을 보여주므로 종료된 특정 메뉴 캠페인의 메뉴도 채워 받는다
+    Promise.all([getCampaigns({ fillEndedMenus: true }), getMyStore()]).then(
+      ([campaignsResult, storeResult]) => {
         if (ignore) {
           return;
         }
@@ -68,17 +50,9 @@ export const useStoreAnalytics = (campaignId: string | null) => {
           return;
         }
 
-        const campaigns = await fillEndedMenuCampaigns(
-          getAnalyzableCampaigns(campaignsResult.data),
-        );
-
-        if (ignore) {
-          return;
-        }
-
         setCampaignsState({
           status: 'success',
-          campaigns,
+          campaigns: getAnalyzableCampaigns(campaignsResult.data),
           menus: storeResult.data.menus,
         });
       },
