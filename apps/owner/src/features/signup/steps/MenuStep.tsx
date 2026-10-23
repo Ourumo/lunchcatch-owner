@@ -23,7 +23,10 @@ import { useSignupFlow } from '../useSignupFlow';
 
 // 등록 요청이 오류 코드 없이 실패했는지. 시간 초과나 연결 끊김처럼 응답을 받지 못했으면 서버가 저장했는지 알 수 없다.
 // 오류 코드가 있으면 서버가 거절한 것이라 저장되지 않았다
-const isUnknownRegisterFailure = ({ id, image }: MenuItemValues) =>
+const isUnknownRegisterFailure = ({
+  id,
+  image,
+}: Pick<MenuItemValues, 'id' | 'image'>) =>
   !id && image?.status === 'failed' && !image.code;
 
 // 응답을 받지 못한 등록이 서버에 저장된 메뉴. 이름과 가격이 같고 화면에 아직 없는 메뉴 중 서버 순서가 앞선 것을 고른다.
@@ -49,7 +52,9 @@ const findRegisteredMenu = (
 // 대표 메뉴 목록과 추가. 선택 단계라 메뉴 없이도 등록 신청을 완료할 수 있다.
 // 시트에서 확인하면 바로 메뉴를 등록하고 그 메뉴 사진을 올린다 ("다음"에서는 등록하지 않는다).
 // 메뉴 수정·삭제 API가 없어 등록한 메뉴는 바꾸거나 지울 수 없다.
-// 등록하지 못한 메뉴는 서버에 없어 고치거나 지울 수 있다 (서버가 계속 거절해도 빼고 넘어갈 수 있게)
+// 등록하지 못한 메뉴는 서버에 없어 고치거나 지울 수 있다 (서버가 계속 거절해도 빼고 넘어갈 수 있게).
+// 등록 응답을 받지 못한 메뉴는 서버에 있을 수 있어, 화면에서 고치거나 지우면 서버 메뉴가 중복되거나 사진 없이 남는다.
+// 그래서 다시 시도로 서버를 확인한 뒤에만 고치거나 지울 수 있다
 export const MenuStep = () => {
   const { updateStepValues, values } = useSignupFlow();
   const { menus } = values.menu;
@@ -159,8 +164,10 @@ export const MenuStep = () => {
   return (
     <div className="px-page pt-6 pb-8">
       <MenuListFields<ImageValue | null>
-        // 등록하지 못한 메뉴만 고치거나 지울 수 있다. 다른 메뉴를 처리하는 중에는 한 번에 하나만 돌도록 막는다
-        canEdit={({ id }) => !id && !isUploading}
+        // 서버가 거절해 등록하지 못한 메뉴만 고치거나 지울 수 있다. 다른 메뉴를 처리하는 중에는 한 번에 하나만 돌도록 막는다
+        canEdit={(menu) =>
+          !menu.id && !isUnknownRegisterFailure(menu) && !isUploading
+        }
         disabled={isUploading}
         maxMenus={MAX_MENUS}
         menus={menus}
