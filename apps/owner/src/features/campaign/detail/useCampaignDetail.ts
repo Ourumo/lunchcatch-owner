@@ -10,7 +10,8 @@ type CampaignDetailState =
   | {
       status: 'success';
       campaign: Campaign;
-      menus: StoreMenu[];
+      // 가게 메뉴. 불러오지 못했으면 null
+      menus: StoreMenu[] | null;
       // 서버가 만든 완성 포스터 HTML. 아직 만들지 않았으면 'none', 불러오지 못했으면 null
       posterHtml: string | 'none' | null;
     };
@@ -41,7 +42,7 @@ export const useCampaignDetail = (id: string) => {
         setState({
           status: 'success',
           campaign: campaignResult.data,
-          menus: storeResult.ok ? storeResult.data.menus : [],
+          menus: storeResult.ok ? storeResult.data.menus : null,
           posterHtml: posterResult.ok
             ? (posterResult.data?.html ?? 'none')
             : null,

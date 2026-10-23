@@ -24,7 +24,12 @@ import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
 import { CampaignActions } from '../actions/CampaignActions';
-import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
+import {
+  formatAgeGroups,
+  formatGender,
+  formatRadius,
+  getDiscountTargetValue,
+} from '../campaignFormat';
 import { PosterPreview } from '../PosterPreview';
 import { DetailNote, DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
@@ -82,7 +87,8 @@ const PosterSection = ({
 
 interface CampaignContentProps {
   campaign: Campaign;
-  menus: StoreMenu[];
+  // 가게 메뉴. 불러오지 못했으면 null
+  menus: StoreMenu[] | null;
   posterHtml: string | 'none' | null;
 }
 
@@ -98,7 +104,7 @@ const CampaignContent = ({
   const canHavePerformance = status !== 'DRAFT' && status !== 'SCHEDULED';
   const performance =
     performanceState.status === 'success' ? performanceState.data : null;
-  const menu = menus.find(({ id }) => id === coupon.menuId);
+  const discountTarget = getDiscountTargetValue(coupon, menus);
   const hasPeriod = Boolean(budget.startDate && budget.endDate);
   const periodDays = hasPeriod
     ? getPeriodDays(budget.startDate, budget.endDate)
@@ -116,7 +122,8 @@ const CampaignContent = ({
           </span>
         </div>
         <h2 className="mt-2 text-h1 font-bold break-keep text-text-primary">
-          {getCampaignTitle(coupon, menus)}
+          {/* 메뉴를 불러오지 못하면 제목은 "특정 메뉴"로 두고, 할인 대상에서 이유를 보여준다 */}
+          {getCampaignTitle(coupon, menus ?? [])}
         </h2>
       </div>
 
@@ -125,12 +132,9 @@ const CampaignContent = ({
 
       <DetailSection title="쿠폰 조건">
         <DetailRow
+          isMuted={discountTarget?.isMuted}
           label="할인 대상"
-          value={
-            coupon.discountTarget === 'ALL'
-              ? '전 메뉴'
-              : menu && `${menu.name} (${formatNumber(menu.price)}원)`
-          }
+          value={discountTarget?.text}
         />
         <DetailRow isHighlighted label="할인" value={formatDiscount(coupon)} />
         <DetailRow

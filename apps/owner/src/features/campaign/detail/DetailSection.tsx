@@ -18,9 +18,16 @@ interface DetailRowProps {
   // 값이 없으면(작성 중인 캠페인의 미입력 항목) '입력 전'으로 보여준다
   value?: ReactNode;
   isHighlighted?: boolean;
+  // 값 대신 이유를 보여줄 때(불러오는 중, 불러오지 못함) 미입력과 같은 흐린 글자로 둔다
+  isMuted?: boolean;
 }
 
-export const DetailRow = ({ isHighlighted, label, value }: DetailRowProps) => {
+export const DetailRow = ({
+  isHighlighted,
+  isMuted,
+  label,
+  value,
+}: DetailRowProps) => {
   // 조건부 값(cond && 값)이 false로 넘어와도 미입력으로 본다
   const isEmpty =
     value === undefined || value === null || value === false || value === '';
@@ -30,7 +37,7 @@ export const DetailRow = ({ isHighlighted, label, value }: DetailRowProps) => {
       <dt className="shrink-0 text-text-secondary">{label}</dt>
       <dd
         className={`text-right break-keep ${
-          isEmpty
+          isEmpty || isMuted
             ? 'text-text-secondary'
             : isHighlighted
               ? 'font-bold text-text-brand'

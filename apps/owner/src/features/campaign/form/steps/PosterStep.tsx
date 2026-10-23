@@ -25,6 +25,7 @@ import {
 import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
 import { ACCEPTED_IMAGE_TYPES, getImageFileError } from '@owner/ui/imageFile';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
+import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 
 import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
@@ -302,6 +303,8 @@ export const PosterStep = () => {
   const { budget, coupon, poster } = values;
   const [templates, setTemplates] = useState<Loadable<PosterTemplate[]>>();
   const [store, setStore] = useState<Loadable<MyStore>>();
+  // 값이 바뀌면 템플릿과 가게 정보를 다시 불러온다
+  const [requestId, setRequestId] = useState(0);
   // 이미지 칸의 업로드 상태. 이미 올린 이미지는 미리보기 주소로 보여준다
   const [image, setImage] = useState<ImageValue | null>(() =>
     poster?.imageUrl ? toSavedImage(poster.imageUrl) : null,
@@ -325,7 +328,14 @@ export const PosterStep = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [requestId]);
+
+  // 둘 중 하나만 실패해도 포스터를 만들 수 없어 함께 다시 부른다
+  const retry = () => {
+    setTemplates(undefined);
+    setStore(undefined);
+    setRequestId((id) => id + 1);
+  };
 
   if (templates === undefined || store === undefined) {
     return (
@@ -340,9 +350,11 @@ export const PosterStep = () => {
 
   if (templates === null || store === null) {
     return (
-      <p className="mx-page rounded-xl bg-surface-subtle px-4 py-6 text-center text-body-sm-mobile text-text-secondary">
-        포스터 템플릿을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
-      </p>
+      <StatusMessage
+        description="잠시 후 다시 시도해 주세요."
+        onRetry={retry}
+        title="포스터를 만들 정보를 불러오지 못했어요"
+      />
     );
   }
 
