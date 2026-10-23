@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ChartNoAxesColumn, ChevronRight, Store } from 'lucide-react';
+import { ChartNoAxesColumn, ChevronRight, RotateCw, Store } from 'lucide-react';
 
 import type { MyStore } from '@owner/api/store';
 import { useAuth } from '@owner/auth/useAuth';
@@ -131,17 +131,46 @@ const LinkRow = ({ label, to, value }: LinkRowProps) => (
 );
 
 interface BalanceRowProps {
-  balance: number;
+  state: ReturnType<typeof useStoreManagement>['balanceState'];
   onCharge: () => void;
+  onRetry: () => void;
 }
 
-const BalanceRow = ({ balance, onCharge }: BalanceRowProps) => (
+// 잔액을 불러오지 못해도 충전은 할 수 있어 충전 버튼은 그대로 둔다. 실패하면 금액 자리에만 안내와 다시 시도를 둔다
+const BalanceRow = ({ onCharge, onRetry, state }: BalanceRowProps) => (
   <div className="flex items-center justify-between gap-3 px-4 py-3">
-    <div>
+    <div className="min-w-0">
       <p className="text-caption-mobile text-text-secondary">잔액</p>
-      <p className="mt-0.5 text-h3-mobile font-bold text-text-primary">
-        {formatPoints(balance)}
-      </p>
+      {state.status === 'success' && (
+        <p className="mt-0.5 text-h3-mobile font-bold text-text-primary">
+          {formatPoints(state.balance)}
+        </p>
+      )}
+      {/* 불러오는 중과 실패도 금액 줄과 같은 높이(h-lh)로 두어 잔액이 바뀔 때 줄 높이가 튀지 않게 한다 */}
+      {state.status === 'loading' && (
+        <div className="mt-0.5 flex h-lh items-center text-h3-mobile">
+          <SkeletonBlock className="h-6 w-24" label="잔액을 불러오는 중" />
+        </div>
+      )}
+      {state.status === 'error' && (
+        // 다시 시도는 누르는 영역을 높이 44px로 두고 줄 밖으로 넘치게 둔다
+        <div
+          className="mt-0.5 flex h-lh items-center gap-1 text-h3-mobile"
+          role="status"
+        >
+          <span className="text-body-sm-mobile font-medium text-text-primary">
+            불러오지 못했어요
+          </span>
+          <button
+            className="flex h-11 shrink-0 items-center gap-1 rounded-full px-2 text-caption-mobile font-semibold text-text-secondary hover:bg-surface-subtle hover:text-text-primary focus-visible:outline-2 focus-visible:outline-action-primary"
+            onClick={onRetry}
+            type="button"
+          >
+            <RotateCw aria-hidden="true" className="size-3.5" />
+            다시 시도
+          </button>
+        </div>
+      )}
     </div>
     <button
       className="flex h-9 shrink-0 items-center rounded-full border border-action-primary px-4 text-body-sm-mobile font-bold text-text-brand transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
@@ -166,20 +195,32 @@ const StoreManagementSkeleton = () => (
 export const StoreManagement = () => {
   const navigate = useNavigate();
   const { clearOwner } = useAuth();
-  const { retry, state } = useStoreManagement();
+  const { balanceState, retry, retryBalance, storeState } =
+    useStoreManagement();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const chargePolicy = useChargePolicy();
   const startCharge = usePointCharge();
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const openLogout = () => setIsLogoutOpen(true);
 
   const renderContent = () => {
-    if (state.status === 'loading') {
+    if (storeState.status === 'loading') {
       return <StoreManagementSkeleton />;
     }
 
-    if (state.status === 'error') {
+    // 로그아웃 버튼이 이 화면에만 있어, 불러오지 못해도 로그아웃은 할 수 있게 둔다
+    if (storeState.status === 'error') {
       return (
         <StatusMessage
+          action={
+            <button
+              className="inline-flex min-h-10 items-center rounded-md px-4 text-body-sm-mobile font-medium text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              onClick={openLogout}
+              type="button"
+            >
+              로그아웃
+            </button>
+          }
           description="잠시 후 다시 시도해 주세요"
           fill
           onRetry={retry}
@@ -188,7 +229,7 @@ export const StoreManagement = () => {
       );
     }
 
-    const { balance, store } = state;
+    const { store } = storeState;
 
     return (
       <div className="flex flex-col gap-6 px-page py-5">
@@ -197,8 +238,9 @@ export const StoreManagement = () => {
 
         <ManagementSection title="포인트">
           <BalanceRow
-            balance={balance}
             onCharge={() => setIsChargeOpen(true)}
+            onRetry={retryBalance}
+            state={balanceState}
           />
           <LinkRow label="포인트 내역" to={POINT_HISTORY_PATH} />
           <LinkRow label="결제 내역" to={PAYMENT_HISTORY_PATH} />
@@ -230,7 +272,7 @@ export const StoreManagement = () => {
         {/* 자주 쓰지 않고 잘못 누르면 다시 로그인해야 하므로 맨 아래 작은 글씨로 둔다 */}
         <button
           className="mx-auto flex h-11 items-center rounded-full px-4 text-body-sm-mobile text-text-secondary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-action-primary"
-          onClick={() => setIsLogoutOpen(true)}
+          onClick={openLogout}
           type="button"
         >
           로그아웃
@@ -238,20 +280,14 @@ export const StoreManagement = () => {
 
         {isChargeOpen && (
           <PointChargeSheet
-            balance={balance}
+            balance={
+              balanceState.status === 'success'
+                ? balanceState.balance
+                : undefined
+            }
             policy={chargePolicy}
             onCharge={startCharge}
             onClose={() => setIsChargeOpen(false)}
-          />
-        )}
-        {isLogoutOpen && (
-          <LogoutSheet
-            onClose={() => setIsLogoutOpen(false)}
-            // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
-            onLogout={() => {
-              clearOwner();
-              navigate(LOGIN_PATH, { replace: true });
-            }}
           />
         )}
       </div>
@@ -264,6 +300,17 @@ export const StoreManagement = () => {
         <TopBar title="가게 관리" />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
+      {/* 가게 정보를 불러오지 못한 화면에서도 열 수 있도록 내용 밖에 둔다 */}
+      {isLogoutOpen && (
+        <LogoutSheet
+          onClose={() => setIsLogoutOpen(false)}
+          // 뒤로 가기로 가게 관리에 돌아오지 않도록 지금 기록을 로그인 화면으로 바꾼다
+          onLogout={() => {
+            clearOwner();
+            navigate(LOGIN_PATH, { replace: true });
+          }}
+        />
+      )}
     </>
   );
 };
