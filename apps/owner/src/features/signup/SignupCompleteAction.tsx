@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@repo/ui';
 
 import { getMe } from '@owner/api/auth';
 import { useAuth } from '@owner/auth/useAuth';
@@ -33,20 +34,18 @@ export const SignupCompleteAction = () => {
   };
 
   return (
-    <>
-      <button
-        className="type-body-sm font-semibold text-text-primary underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={isLoading}
-        onClick={goHome}
-        type="button"
-      >
-        홈으로
-      </button>
+    <div className="flex flex-col gap-3">
       {hasFailed && (
-        <p className="type-body-sm text-status-danger-fg" role="alert">
+        <p
+          className="text-center text-body-sm-mobile break-keep text-status-danger-fg"
+          role="alert"
+        >
           홈으로 가지 못했어요. 잠시 후 다시 시도해 주세요.
         </p>
       )}
-    </>
+      <Button className="h-12 w-full" isLoading={isLoading} onClick={goHome}>
+        홈으로
+      </Button>
+    </div>
   );
 };
