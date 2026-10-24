@@ -22,7 +22,8 @@ export const CampaignSelectSheet = ({
   selectedId,
 }: CampaignSelectSheetProps) => (
   <BottomSheet isOpen onClose={onClose} title="캠페인 선택">
-    <ul className="flex flex-col gap-2">
+    {/* 캠페인이 쌓여도 제목이 화면 밖으로 밀리지 않게 목록만 스크롤한다. 항목의 포커스 테두리가 잘리지 않게 안쪽 여백을 두고 바깥 여백으로 되돌린다 */}
+    <ul className="-m-1 flex max-h-[60dvh] flex-col gap-2 overflow-y-auto p-1">
       {campaigns.map((campaign) => {
         const isSelected = campaign.id === selectedId;
 
