@@ -65,18 +65,18 @@ export const countPosterTextLength = (text: string) => [...text].length;
 export const toPosterTextInput = (value: string, maxLength: number) =>
   [...value.replace(/[\r\n\t]/g, ' ')].slice(0, maxLength).join('');
 
-// 고친 문구가 서버 검사 범위 안인지. 앞뒤 공백을 자른 뒤 센다. 고치지 않았으면 서버가 채운 값이라 통과한다
+// 고친 문구가 서버 검사 범위 안인지. 앞뒤 공백을 자른 뒤 센다. 고치지 않았으면 서버가 채운 값이라 통과한다.
+// 가게명은 입력에서 최대 글자 수로 자르므로 비었는지만 본다. 가게 이름이 30자를 넘는 가게는 서버가 채운 가게명이
+// 30자를 넘을 수 있는데, 고치지 않았으면 수정 요청에 보내지 않아(getPosterTextPatch) 막지 않는다
 export const isPosterTextValid = (text: PosterTextValues | null) => {
   if (!text) {
     return true;
   }
 
   const { discount, eventName } = POSTER_TEXT_RULES;
-  const eventNameLength = countPosterTextLength(text.eventName.trim());
 
   return (
-    eventNameLength >= eventName.minLength &&
-    eventNameLength <= eventName.maxLength &&
+    countPosterTextLength(text.eventName.trim()) >= eventName.minLength &&
     countPosterTextLength(text.discountSuffix.trim()) <= discount.maxLength
   );
 };

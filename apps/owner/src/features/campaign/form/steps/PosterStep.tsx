@@ -20,10 +20,12 @@ import {
   getPosterTemplates,
   getTemplateFontSizes,
   joinDiscountText,
+  POSTER_TEXT_RULES,
   type PosterSlotValues,
   type PosterTemplate,
   type PosterTextValues,
   preparePosterImageUpload,
+  toPosterTextInput,
 } from '@owner/api/poster';
 import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
 import { ACCEPTED_IMAGE_TYPES, getImageFileError } from '@owner/ui/imageFile';
@@ -376,9 +378,14 @@ export const PosterStep = () => {
   const templateFontSizes = selectedTemplate
     ? getTemplateFontSizes(selectedTemplate.html)
     : { eventName: null, discount: null };
+  // 가게 이름은 100자까지인데 포스터 가게명은 30자까지라, 편집 칸의 처음 값과 되돌리기는 30자로 맞춘다
+  const storeEventName = toPosterTextInput(
+    store.name,
+    POSTER_TEXT_RULES.eventName.maxLength,
+  );
   // 편집 칸에 보여주는 지금 값. 고치지 않은 칸은 서버가 채우는 값(가게 이름, 빈 문구, 템플릿 크기)이다
   const textValues: PosterTextValues = {
-    eventName: text?.eventName ?? store.name,
+    eventName: text?.eventName ?? storeEventName,
     eventNameFontSizePx:
       text?.eventNameFontSizePx ?? templateFontSizes.eventName,
     discountSuffix: text?.discountSuffix ?? '',
@@ -515,7 +522,7 @@ export const PosterStep = () => {
           baseDiscountText={baseDiscountText}
           onChange={updateText}
           periodText={toPosterPeriod(coupon)}
-          storeName={store.name}
+          storeName={storeEventName}
           value={textValues}
         />
       )}
