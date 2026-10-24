@@ -155,7 +155,7 @@ export const TimePicker = ({
         aria-describedby={errorMessage ? errorId : undefined}
         aria-haspopup="dialog"
         aria-labelledby={`${labelId} ${valueId}`}
-        className={`flex h-10 w-full items-center gap-2 rounded-md border bg-bg-surface px-3 text-left text-caption-web focus:outline-none disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg ${
+        className={`group flex h-10 w-full items-center gap-2 rounded-md border bg-bg-surface px-3 text-left text-caption-web focus:outline-none disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg ${
           errorMessage
             ? 'border-status-danger-border'
             : 'border-border-subtle focus-visible:border-action-primary'
@@ -164,12 +164,13 @@ export const TimePicker = ({
         onClick={open}
         type="button"
       >
+        {/* 아이콘과 값은 색을 따로 정해 버튼의 비활성 글자색을 받지 않으므로 비활성일 때 직접 맞춘다 */}
         <Clock
           aria-hidden="true"
-          className="size-4 shrink-0 text-text-secondary"
+          className="size-4 shrink-0 text-text-secondary group-disabled:text-action-disabled-fg"
         />
         <span
-          className={value ? 'text-text-primary' : 'text-text-secondary'}
+          className={`${value ? 'text-text-primary' : 'text-text-secondary'} group-disabled:text-action-disabled-fg`}
           id={valueId}
         >
           {value ? formatTimeLabel(value) : placeholder}

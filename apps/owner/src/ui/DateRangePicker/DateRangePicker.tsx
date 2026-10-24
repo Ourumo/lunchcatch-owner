@@ -161,17 +161,18 @@ export const DateRangePicker = ({
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={ariaLabel}
-        className="flex h-10 w-full items-center gap-2 rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors hover:border-border-subtle focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg"
+        className="group flex h-10 w-full items-center gap-2 rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors hover:border-border-subtle focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg"
         disabled={disabled}
         onClick={handleOpen}
         type="button"
       >
+        {/* 아이콘과 안내 문구는 색을 따로 정해 버튼의 비활성 글자색을 받지 않으므로 비활성일 때 직접 맞춘다 */}
         <CalendarDays
           aria-hidden="true"
-          className="size-4 shrink-0 text-text-secondary"
+          className="size-4 shrink-0 text-text-secondary group-disabled:text-action-disabled-fg"
         />
         <span
-          className={`min-w-0 truncate ${hasSelectedRange ? '' : 'text-text-secondary'}`}
+          className={`min-w-0 truncate ${hasSelectedRange ? '' : 'text-text-secondary'} group-disabled:text-action-disabled-fg`}
         >
           {hasSelectedRange
             ? `${selectedRange.startDate ? formatDateLabel(selectedRange.startDate) : '시작일'} ~ ${selectedRange.endDate ? formatDateLabel(selectedRange.endDate) : '종료일'}`
