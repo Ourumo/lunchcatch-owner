@@ -380,6 +380,8 @@ export const PosterStep = () => {
       templateId: poster?.templateId ?? '',
       imageObjectKey: poster?.imageObjectKey ?? null,
       imageUrl: poster?.imageUrl ?? null,
+      // 충전하러 가기 전에 임시 저장한 값에는 없을 수 있다
+      text: poster?.text ?? null,
       ...patch,
     });
   };

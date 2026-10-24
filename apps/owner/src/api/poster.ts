@@ -26,7 +26,17 @@ export interface PosterSlotValues {
   imageUrl: string | null;
 }
 
-// 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워 점주가 고르는 것은 템플릿과 이미지뿐이다
+// 점주가 고친 포스터 문구. 가게명은 글과 크기를, 할인은 쿠폰 조건으로 만든 기본 문구 뒤에 붙일 말과 크기를 고친다.
+// 시간과 이미지는 고칠 수 없다. 글자 크기는 px이고, 템플릿이 px로 정하지 않았으면 null이다
+export interface PosterTextValues {
+  eventName: string;
+  eventNameFontSizePx: number | null;
+  discountSuffix: string;
+  discountFontSizePx: number | null;
+}
+
+// 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채우고, 점주는 템플릿과 이미지를 고른 뒤
+// 가게명과 할인 문구를 고칠 수 있다
 export interface CampaignPoster {
   // 처음 만들 때는 빈 문자열이고, 저장하면 서버가 정한다
   posterId: string;
@@ -35,6 +45,8 @@ export interface CampaignPoster {
   imageObjectKey: string | null;
   // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
   imageUrl: string | null;
+  // 고친 문구. 고치지 않았으면 null이고 서버가 채운 글과 템플릿의 크기를 그대로 쓴다
+  text: PosterTextValues | null;
 }
 
 // 포스터 생성에 필요한 값(템플릿, 이미지)이 모두 있는지
@@ -115,8 +127,17 @@ export const preparePosterImageUpload = (
     { method: 'POST', body: { contentType, fileSize } },
   );
 
-// 저장된 포스터. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채운 값이다
-interface PosterResponse {
+// 점주용 포스터 응답의 슬롯별 현재 값. 편집 입력칸을 HTML을 읽지 않고 채운다
+export interface PosterSlotsResponse {
+  eventName: { text: string; fontSizePx: number | null };
+  // 할인 문구는 baseText + 공백 + suffix다. 붙인 말이 없으면 suffix는 빈 문자열
+  discount: { baseText: string; suffix: string; fontSizePx: number | null };
+  period: { text: string };
+}
+
+// 저장된 포스터. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채운 값이고, 점주가 고친 문구가 반영돼 있다.
+// 포스터 생성·수정 응답도 같은 모양이다
+export interface PosterResponse {
   posterId: number;
   campaignId: number;
   templateId: number;
@@ -124,7 +145,60 @@ interface PosterResponse {
   title: string;
   // 슬롯이 모두 채워진 완성 HTML
   html: string;
+  slots: PosterSlotsResponse;
 }
+
+export const toPosterTextValues = ({
+  discount,
+  eventName,
+}: PosterSlotsResponse): PosterTextValues => ({
+  eventName: eventName.text,
+  eventNameFontSizePx: eventName.fontSizePx,
+  discountSuffix: discount.suffix,
+  discountFontSizePx: discount.fontSizePx,
+});
+
+// 포스터 문구 수정 요청 본문. 바꾸지 않은 필드는 보내지 않는다
+export interface PosterTextPatch {
+  eventName?: { text?: string; fontSizePx?: number };
+  discount?: { suffix?: string; fontSizePx?: number };
+}
+
+// 화면 값과 서버에 저장된 슬롯 값이 다른 필드만 모은다. 바꿀 것이 없으면 null.
+// 글은 서버처럼 앞뒤 공백을 자른 값으로 견주고, 크기를 정하지 않았으면(null) 보내지 않는다
+export const getPosterTextPatch = (
+  text: PosterTextValues | null,
+  slots: PosterSlotsResponse,
+): PosterTextPatch | null => {
+  if (!text) {
+    return null;
+  }
+
+  const eventNameText = text.eventName.trim();
+  const discountSuffix = text.discountSuffix.trim();
+  const eventName = {
+    ...(eventNameText !== slots.eventName.text && { text: eventNameText }),
+    ...(text.eventNameFontSizePx !== null &&
+      text.eventNameFontSizePx !== slots.eventName.fontSizePx && {
+        fontSizePx: text.eventNameFontSizePx,
+      }),
+  };
+  const discount = {
+    ...(discountSuffix !== slots.discount.suffix && {
+      suffix: discountSuffix,
+    }),
+    ...(text.discountFontSizePx !== null &&
+      text.discountFontSizePx !== slots.discount.fontSizePx && {
+        fontSizePx: text.discountFontSizePx,
+      }),
+  };
+  const patch: PosterTextPatch = {
+    ...(Object.keys(eventName).length > 0 && { eventName }),
+    ...(Object.keys(discount).length > 0 && { discount }),
+  };
+
+  return Object.keys(patch).length > 0 ? patch : null;
+};
 
 export interface SavedPoster {
   // 확인 단계와 캠페인 상세에 그대로 보여주는 완성 HTML
@@ -146,6 +220,7 @@ const toObjectKey = (imageUrl: string) => {
 const toCampaignPoster = ({
   html,
   posterId,
+  slots,
   templateId,
 }: PosterResponse): CampaignPoster => {
   const imageUrl =
@@ -158,6 +233,7 @@ const toCampaignPoster = ({
     templateId: String(templateId),
     imageObjectKey: imageUrl ? toObjectKey(imageUrl) : null,
     imageUrl,
+    text: toPosterTextValues(slots),
   };
 };
 
