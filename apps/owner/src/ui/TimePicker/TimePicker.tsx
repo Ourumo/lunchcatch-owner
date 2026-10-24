@@ -155,7 +155,7 @@ export const TimePicker = ({
         aria-describedby={errorMessage ? errorId : undefined}
         aria-haspopup="dialog"
         aria-labelledby={`${labelId} ${valueId}`}
-        className={`flex h-10 w-full items-center gap-2 rounded-md border bg-bg-surface px-3 text-left text-caption-web focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled ${
+        className={`flex h-10 w-full items-center gap-2 rounded-md border bg-bg-surface px-3 text-left text-caption-web focus:outline-none disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg ${
           errorMessage
             ? 'border-status-danger-border'
             : 'border-border-subtle focus-visible:border-action-primary'

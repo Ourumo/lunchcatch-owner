@@ -245,9 +245,9 @@ interface IssueLimitStepperProps {
 const IssueLimitStepper = ({ onChange, value }: IssueLimitStepperProps) => {
   const current = value ?? 0;
   const buttonClassName =
-    'flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface-brand text-action-primary transition-colors hover:bg-brand-200 focus-visible:outline-2 focus-visible:outline-action-primary disabled:bg-surface-subtle disabled:text-text-disabled';
+    'flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface-brand text-action-primary transition-colors hover:bg-brand-200 focus-visible:outline-2 focus-visible:outline-action-primary disabled:bg-action-primary-disabled disabled:text-action-disabled-fg';
   const quickButtonClassName =
-    'flex h-9 min-w-0 items-center justify-center rounded-full border text-caption-mobile font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:border-border-subtle disabled:bg-surface-subtle disabled:text-text-disabled';
+    'flex h-9 min-w-0 items-center justify-center rounded-full border text-caption-mobile font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:border-border-subtle disabled:bg-action-primary-disabled disabled:text-action-disabled-fg';
 
   // 0 아래로는 내려가지 않고, 0이 되면 미입력(null)으로 둔다
   const adjust = (delta: number) => {
