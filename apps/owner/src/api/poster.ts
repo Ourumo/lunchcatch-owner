@@ -24,6 +24,9 @@ export interface PosterSlotValues {
   period: string;
   // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
   imageUrl: string | null;
+  // 가게명과 할인 칸의 글자 크기(px). 없거나 null이면 템플릿이 정한 크기 그대로 둔다
+  eventNameFontSizePx?: number | null;
+  discountFontSizePx?: number | null;
 }
 
 // 점주가 고친 포스터 문구. 가게명은 글과 크기를, 할인은 쿠폰 조건으로 만든 기본 문구 뒤에 붙일 말과 크기를 고친다.
@@ -34,6 +37,25 @@ export interface PosterTextValues {
   discountSuffix: string;
   discountFontSizePx: number | null;
 }
+
+// 포스터 문구 수정의 서버 검사 범위. 글자 수는 앞뒤 공백을 자른 뒤 코드 포인트로 센다.
+// defaultFontSizePx는 템플릿이 크기를 px로 정하지 않았을 때 크기를 처음 바꾸는 값이다
+export const POSTER_TEXT_RULES = {
+  eventName: {
+    minLength: 1,
+    maxLength: 30,
+    minFontSizePx: 16,
+    maxFontSizePx: 48,
+    defaultFontSizePx: 28,
+  },
+  discount: {
+    minLength: 0,
+    maxLength: 20,
+    minFontSizePx: 14,
+    maxFontSizePx: 40,
+    defaultFontSizePx: 22,
+  },
+} as const;
 
 // 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채우고, 점주는 템플릿과 이미지를 고른 뒤
 // 가게명과 할인 문구를 고칠 수 있다
@@ -92,9 +114,53 @@ const textSlots = {
 const parsePosterHtml = (html: string) =>
   new DOMParser().parseFromString(html, 'text/html');
 
-// 템플릿 HTML 구조는 그대로 두고 data-slot 자리의 글과 이미지만 바꾼다.
-// 글은 textContent로 넣어 점주가 입력한 값이 태그로 해석되지 않는다. 이미지를 고르기 전이면 템플릿 그대로 둔다
-export const fillPosterTemplate = (html: string, slots: PosterSlotValues) => {
+// 점주가 고칠 수 있는 글 칸. 2단계 미리보기에서 점선으로 표시한다
+const EDITABLE_SLOTS = ['eventName', 'discount'] as const;
+
+// 인라인 style의 font-size가 px이면 정수로 돌려준다. 없거나 px가 아니면 null. 서버가 읽는 방식과 같다
+const toFontSizePx = (style: string | null) => {
+  const declaration = (style ?? '')
+    .split(';')
+    .map((part) => part.split(':'))
+    .find(([property]) => property?.trim().toLowerCase() === 'font-size');
+  const value = declaration?.slice(1).join(':').trim().toLowerCase();
+
+  if (!value?.endsWith('px')) {
+    return null;
+  }
+
+  const size = Number(value.slice(0, -2));
+
+  return Number.isFinite(size) ? Math.round(size) : null;
+};
+
+// 템플릿이 정한 가게명과 할인 칸의 글자 크기. 포스터를 아직 만들지 않았을 때 편집 칸의 처음 값으로 쓴다
+export const getTemplateFontSizes = (html: string) => {
+  const document = parsePosterHtml(html);
+  const sizeOf = (slot: string) =>
+    toFontSizePx(
+      document.querySelector(`[data-slot="${slot}"]`)?.getAttribute('style') ??
+        null,
+    );
+
+  return {
+    eventName: sizeOf('eventName'),
+    discount: sizeOf('discount'),
+  };
+};
+
+// 할인 칸의 글. 쿠폰 조건으로 만든 기본 문구 뒤에 붙일 말이 있으면 공백 하나로 잇는다. 서버가 잇는 방식과 같다
+export const joinDiscountText = (baseText: string, suffix: string) =>
+  suffix ? `${baseText} ${suffix}` : baseText;
+
+// 템플릿 HTML 구조는 그대로 두고 data-slot 자리의 글, 글자 크기, 이미지만 바꾼다.
+// 글은 textContent로 넣어 점주가 입력한 값이 태그로 해석되지 않는다. 이미지를 고르기 전이면 템플릿 그대로 둔다.
+// markEditable이면 점주가 고칠 수 있는 칸을 점선으로 표시한다
+export const fillPosterTemplate = (
+  html: string,
+  slots: PosterSlotValues,
+  { markEditable = false }: { markEditable?: boolean } = {},
+) => {
   const document = parsePosterHtml(html);
 
   // 광고 표시는 없어져 서버가 만든 포스터에도 없다. 템플릿에 남은 광고 라벨 자리는 미리보기에서도 지운다
@@ -107,6 +173,33 @@ export const fillPosterTemplate = (html: string, slots: PosterSlotValues) => {
       element.textContent = slots[key];
     });
   });
+
+  // 서버처럼 칸의 인라인 font-size만 바꾸고 다른 스타일은 그대로 둔다
+  const fontSizes = {
+    eventName: slots.eventNameFontSizePx,
+    discount: slots.discountFontSizePx,
+  };
+
+  Object.entries(fontSizes).forEach(([slot, size]) => {
+    if (size) {
+      document
+        .querySelectorAll<HTMLElement>(`[data-slot="${slot}"]`)
+        .forEach((element) => {
+          element.style.fontSize = `${size}px`;
+        });
+    }
+  });
+
+  if (markEditable) {
+    EDITABLE_SLOTS.forEach((slot) => {
+      document
+        .querySelectorAll<HTMLElement>(`[data-slot="${slot}"]`)
+        .forEach((element) => {
+          element.style.outline = '2px dashed #f56b20';
+          element.style.outlineOffset = '3px';
+        });
+    });
+  }
 
   if (slots.imageUrl) {
     document

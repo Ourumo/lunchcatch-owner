@@ -12,6 +12,8 @@ export interface PosterPreviewProps {
   slots?: PosterSlotValues;
   // 넘기면 이 폭(px)으로 줄여서 보여준다. 없으면 감싼 요소의 폭을 채운다
   width?: number;
+  // 템플릿에서 점주가 고칠 수 있는 칸(가게명, 할인)을 점선으로 표시한다
+  markEditable?: boolean;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export interface PosterPreviewProps {
 export const PosterPreview = ({
   className,
   html,
+  markEditable,
   slots,
   width,
 }: PosterPreviewProps) => {
@@ -29,7 +32,7 @@ export const PosterPreview = ({
         .filter(Boolean)
         .join(' ')}
       sandbox=""
-      srcDoc={slots ? fillPosterTemplate(html, slots) : html}
+      srcDoc={slots ? fillPosterTemplate(html, slots, { markEditable }) : html}
       tabIndex={-1}
       title="포스터 미리보기"
     />

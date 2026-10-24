@@ -18,8 +18,11 @@ import {
 import {
   type CampaignPoster,
   getPosterTemplates,
+  getTemplateFontSizes,
+  joinDiscountText,
   type PosterSlotValues,
   type PosterTemplate,
+  type PosterTextValues,
   preparePosterImageUpload,
 } from '@owner/api/poster';
 import { getMyStore, type MyStore, type StoreMenu } from '@owner/api/store';
@@ -28,6 +31,7 @@ import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 
 import { PosterPreview } from '../../PosterPreview';
+import { PosterTextFields } from '../PosterTextFields';
 import { useCampaignForm } from '../useCampaignForm';
 
 const THUMBNAIL_WIDTH = 96;
@@ -218,6 +222,7 @@ const PosterImagePicker = ({
           />
           <PosterPreview
             html={html}
+            markEditable
             slots={{
               ...slots,
               imageUrl: slots.imageUrl ?? IMAGE_PLACEHOLDER_URL,
@@ -292,8 +297,8 @@ const PosterImagePicker = ({
   );
 };
 
-// 등록 2단계: 관리자가 게시한 템플릿을 고르고 포스터 이미지를 올린다.
-// 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워, 미리보기도 같은 값으로 보여준다
+// 등록 2단계: 관리자가 게시한 템플릿을 고르고 포스터 이미지를 올린 뒤, 가게명과 할인 문구를 고칠 수 있다.
+// 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채우고, 고친 문구와 글자 크기를 미리보기에 바로 보여준다
 export const PosterStep = () => {
   const { campaignId, setPoster, values } = useCampaignForm();
   const { coupon, poster } = values;
@@ -363,16 +368,38 @@ export const PosterStep = () => {
     );
   }
 
-  // 미리보기와 썸네일의 글. 서버가 포스터를 만들 때 채우는 값과 같다
-  const slots: PosterSlotValues = {
-    eventName: store.name,
-    discountText: toPosterDiscountText(coupon, store.menus),
-    period: toPosterPeriod(coupon),
-    imageUrl: poster?.imageUrl ?? null,
-  };
   const selectedTemplate = templates.find(
     ({ id }) => id === poster?.templateId,
   );
+  const text = poster?.text ?? null;
+  const baseDiscountText = toPosterDiscountText(coupon, store.menus);
+  const templateFontSizes = selectedTemplate
+    ? getTemplateFontSizes(selectedTemplate.html)
+    : { eventName: null, discount: null };
+  // 편집 칸에 보여주는 지금 값. 고치지 않은 칸은 서버가 채우는 값(가게 이름, 빈 문구, 템플릿 크기)이다
+  const textValues: PosterTextValues = {
+    eventName: text?.eventName ?? store.name,
+    eventNameFontSizePx:
+      text?.eventNameFontSizePx ?? templateFontSizes.eventName,
+    discountSuffix: text?.discountSuffix ?? '',
+    discountFontSizePx: text?.discountFontSizePx ?? templateFontSizes.discount,
+  };
+  // 썸네일의 글. 서버가 포스터를 만들 때 채우는 값에 고친 글을 더하고, 크기는 템플릿마다 그대로 둔다
+  const slots: PosterSlotValues = {
+    eventName: textValues.eventName.trim(),
+    discountText: joinDiscountText(
+      baseDiscountText,
+      textValues.discountSuffix.trim(),
+    ),
+    period: toPosterPeriod(coupon),
+    imageUrl: poster?.imageUrl ?? null,
+  };
+  // 고른 템플릿의 큰 미리보기에는 고친 글자 크기까지 넣는다
+  const previewSlots: PosterSlotValues = {
+    ...slots,
+    eventNameFontSizePx: text?.eventNameFontSizePx,
+    discountFontSizePx: text?.discountFontSizePx,
+  };
 
   const updatePoster = (patch: Partial<CampaignPoster>) => {
     setPoster({
@@ -385,6 +412,29 @@ export const PosterStep = () => {
       ...patch,
     });
   };
+
+  // 고친 칸만 바꾼다. 크기는 점주가 바꾼 값만 담아, 바꾸지 않은 크기는 템플릿 크기를 따르게 한다
+  const updateText = (patch: Partial<PosterTextValues>) =>
+    updatePoster({
+      text: {
+        eventName: textValues.eventName,
+        eventNameFontSizePx: text?.eventNameFontSizePx ?? null,
+        discountSuffix: textValues.discountSuffix,
+        discountFontSizePx: text?.discountFontSizePx ?? null,
+        ...patch,
+      },
+    });
+
+  // 템플릿을 바꾸면 칸 크기가 달라 글자 크기만 새 템플릿 기본값으로 돌리고, 고친 글은 남긴다
+  const selectTemplate = (template: PosterTemplate) =>
+    updatePoster({
+      templateId: template.id,
+      text: text && {
+        ...text,
+        eventNameFontSizePx: null,
+        discountFontSizePx: null,
+      },
+    });
 
   // 이미지는 고르자마자 올린다. 올리는 동안에는 이전 이미지로 저장되지 않게 키를 비우고,
   // 다 올리면 그사이 고른 템플릿은 그대로 두고 이미지만 바꾼다
@@ -425,7 +475,7 @@ export const PosterStep = () => {
     <div className="flex flex-col gap-8 px-page">
       <FieldGroup legend="템플릿">
         <TemplateOptions
-          onSelect={(template) => updatePoster({ templateId: template.id })}
+          onSelect={selectTemplate}
           selectedId={selectedTemplate?.id}
           slots={slots}
           templates={templates}
@@ -446,11 +496,11 @@ export const PosterStep = () => {
             onSelect={(file) =>
               void uploadPosterImage({ status: 'selected', file })
             }
-            slots={slots}
+            slots={previewSlots}
           />
           <p className="flex gap-1 text-caption-mobile break-keep text-text-secondary">
             <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-            가게명과 할인 내용은 자동으로 채워지고, 시간은 쿠폰 사용 시간이
+            점선 칸의 글은 아래에서 바꿀 수 있어요. 시간은 쿠폰 사용 시간이
             들어가요.
           </p>
         </section>
@@ -458,6 +508,16 @@ export const PosterStep = () => {
         <p className="-mt-4 rounded-xl border border-dashed border-border-subtle px-4 py-8 text-center text-body-sm-mobile text-text-secondary">
           템플릿을 고르면 미리보기가 나와요
         </p>
+      )}
+
+      {selectedTemplate && (
+        <PosterTextFields
+          baseDiscountText={baseDiscountText}
+          onChange={updateText}
+          periodText={toPosterPeriod(coupon)}
+          storeName={store.name}
+          value={textValues}
+        />
       )}
     </div>
   );
