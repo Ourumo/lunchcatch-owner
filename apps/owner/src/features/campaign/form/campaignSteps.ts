@@ -8,7 +8,7 @@ import {
   isValidTarget,
 } from '@owner/api/campaign';
 import type { PlatformSettings } from '@owner/api/platform';
-import { isPosterComplete } from '@owner/api/poster';
+import { isPosterComplete, isPosterTextValid } from '@owner/api/poster';
 
 // 등록 단계. 확인(review) 단계는 저장할 입력값이 없어 CampaignValues에 없다
 export type CampaignStepId = CampaignStepKey | 'review';
@@ -57,13 +57,16 @@ export const campaignSteps: CampaignStep[] = [
     id: 'poster',
     path: 'poster',
     title: '포스터',
-    canProceed: ({ poster }) => isPosterComplete(poster),
+    canProceed: ({ poster }) =>
+      isPosterComplete(poster) && isPosterTextValid(poster?.text ?? null),
     progressHint: ({ poster }) =>
       poster === null
         ? '템플릿을 골라 주세요'
-        : isPosterComplete(poster)
-          ? '포스터를 모두 채웠어요'
-          : '포스터 이미지를 올려 주세요',
+        : !isPosterComplete(poster)
+          ? '포스터 이미지를 올려 주세요'
+          : isPosterTextValid(poster.text)
+            ? '포스터를 모두 채웠어요'
+            : '가게명을 입력해 주세요',
   },
   { id: 'target', path: 'target', title: '노출 대상' },
   {

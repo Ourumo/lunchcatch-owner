@@ -1,6 +1,12 @@
 import { ApiError, request } from './client';
 import type { PlatformSettings } from './platform';
-import { type CampaignPoster, isPosterComplete } from './poster';
+import {
+  type CampaignPoster,
+  getPosterTextPatch,
+  isPosterComplete,
+  type PosterResponse,
+  type PosterTextPatch,
+} from './poster';
 import { getKstToday, splitPeriod } from './report';
 import { getMyStore } from './store';
 import type { ApiResult } from './types';
@@ -932,17 +938,7 @@ export const changeDailyBudget = async (
   }
 };
 
-// 포스터 생성 응답. 슬롯이 모두 채워진 완성 HTML이다
-interface PosterCreateResponse {
-  posterId: number;
-  campaignId: number;
-  templateId: number;
-  // "{가게명} - {템플릿 이름}"
-  title: string;
-  html: string;
-}
-
-// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 템플릿과 이미지만 보낸다
+// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워 템플릿과 이미지만 보낸다
 const toPosterCreateRequest = ({
   imageObjectKey,
   templateId,
@@ -951,7 +947,48 @@ const toPosterCreateRequest = ({
   objectKey: imageObjectKey,
 });
 
+// 포스터 문구 수정 실패. 화면 검사로 미리 막지만 서버가 거절하면 이유를 알린다
+const POSTER_TEXT_MESSAGES: Record<string, string> = {
+  'POSTER-026':
+    '가게명은 1~30자, 할인 문구 뒤에 붙일 말은 20자까지 쓸 수 있고 줄바꿈이나 보이지 않는 문자는 쓸 수 없습니다.',
+  'POSTER-027':
+    '글자 크기는 가게명 16~48px, 할인 문구 14~40px 사이로 정해 주세요.',
+  'POSTER-001':
+    '이 템플릿은 문구를 고칠 수 없습니다. 다른 템플릿을 골라 주세요.',
+  'POSTER-020': POSTER_REQUIRED_MESSAGE,
+  'CAMPAIGN-001': NOT_ACTIVE_OWNER_MESSAGE,
+  'CAMPAIGN-005': NOT_FOUND_MESSAGE,
+  'CAMPAIGN-006': NOT_EDITABLE_MESSAGE,
+};
+
+// 저장된 포스터의 가게명과 할인 문구를 고친다. 바꾼 필드만 보내고, 시간과 이미지는 고칠 수 없다
+const updatePosterText = async (
+  id: string,
+  patch: PosterTextPatch,
+): Promise<ApiResult<null>> => {
+  try {
+    await request<PosterResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
+      { method: 'PATCH', body: patch },
+    );
+
+    return { ok: true, data: null };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
+
+    const message = error.code ? POSTER_TEXT_MESSAGES[error.code] : undefined;
+
+    return message
+      ? { ok: false, code: error.code ?? undefined, message }
+      : { ok: false };
+  }
+};
+
 // 등록 2단계 포스터 저장. 캠페인당 포스터는 1건이라, 이미 있으면 서버가 덮어쓴다.
+// 고친 문구는 포스터가 있어야 고칠 수 있어, 만든 뒤 응답의 슬롯 값과 다른 필드만 이어서 고친다.
+// 같은 템플릿으로 다시 만들면 서버가 고친 문구를 남기므로 그대로면 수정 요청을 보내지 않는다.
 // 등록 화면이 DRAFT인지 확인한 뒤에 부른다
 export const savePosterStep = async (
   id: string,
@@ -963,12 +1000,13 @@ export const savePosterStep = async (
   }
 
   try {
-    await request<PosterCreateResponse>(
+    const { slots } = await request<PosterResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
       { method: 'POST', body: toPosterCreateRequest(poster) },
     );
+    const patch = getPosterTextPatch(poster.text, slots);
 
-    return { ok: true, data: null };
+    return patch ? updatePosterText(id, patch) : { ok: true, data: null };
   } catch (error) {
     if (!(error instanceof ApiError)) {
       return { ok: false };
