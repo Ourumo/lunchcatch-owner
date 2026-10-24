@@ -26,13 +26,19 @@ export const PosterPreview = ({
   slots,
   width,
 }: PosterPreviewProps) => {
+  const srcDoc = slots
+    ? fillPosterTemplate(html, slots, { markEditable })
+    : html;
   const frame = (
     <iframe
       className={['block aspect-[210/297] w-full border-0', className]
         .filter(Boolean)
         .join(' ')}
+      // 그려 둔 iframe의 srcdoc을 바꾸면 iframe이 다른 문서로 이동해 브라우저 방문 기록이 하나씩 쌓이고,
+      // 뒤로 가기가 화면 대신 미리보기를 되돌린다. 내용이 바뀌면 iframe을 새로 만들어 기록이 남지 않게 한다
+      key={srcDoc}
       sandbox=""
-      srcDoc={slots ? fillPosterTemplate(html, slots, { markEditable }) : html}
+      srcDoc={srcDoc}
       tabIndex={-1}
       title="포스터 미리보기"
     />

@@ -57,6 +57,33 @@ export const POSTER_TEXT_RULES = {
   },
 } as const;
 
+// 글자 수는 서버처럼 코드 포인트로 센다 (이모지 하나가 1자)
+export const countPosterTextLength = (text: string) => [...text].length;
+
+// 입력한 문구를 한 줄로 맞춘다. 붙여넣은 줄바꿈과 탭은 서버가 거절해 공백으로 바꾸고, 최대 글자 수를 넘으면 자른다.
+// 그 밖의 보이지 않는 문자는 서버 거절(POSTER-026) 안내로 알린다
+export const toPosterTextInput = (value: string, maxLength: number) =>
+  [...value.replace(/[\r\n\t]/g, ' ')].slice(0, maxLength).join('');
+
+// 고친 문구가 서버 검사 범위 안인지. 앞뒤 공백을 자른 뒤 센다. 고치지 않았으면 서버가 채운 값이라 통과한다
+export const isPosterTextValid = (text: PosterTextValues | null) => {
+  if (!text) {
+    return true;
+  }
+
+  const { discount, eventName } = POSTER_TEXT_RULES;
+  const eventNameLength = countPosterTextLength(text.eventName.trim());
+
+  return (
+    eventNameLength >= eventName.minLength &&
+    eventNameLength <= eventName.maxLength &&
+    countPosterTextLength(text.discountSuffix.trim()) <= discount.maxLength
+  );
+};
+
+// 할인 뒤 문구에 금액이나 할인율을 쓰면 쿠폰 조건과 다른 할인으로 보일 수 있다. 서버는 막지 않아 화면이 경고만 한다
+export const hasDiscountAmountText = (suffix: string) => /[원%]/.test(suffix);
+
 // 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채우고, 점주는 템플릿과 이미지를 고른 뒤
 // 가게명과 할인 문구를 고칠 수 있다
 export interface CampaignPoster {

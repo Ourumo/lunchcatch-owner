@@ -1,11 +1,14 @@
 import { useId } from 'react';
 import { Input } from '@repo/ui';
-import { Lock } from 'lucide-react';
+import { Lock, TriangleAlert } from 'lucide-react';
 
-import { POSTER_TEXT_RULES, type PosterTextValues } from '@owner/api/poster';
-
-// 글자 수는 서버처럼 코드 포인트로 센다 (이모지 하나가 1자)
-const countCharacters = (text: string) => [...text].length;
+import {
+  countPosterTextLength,
+  hasDiscountAmountText,
+  POSTER_TEXT_RULES,
+  type PosterTextValues,
+  toPosterTextInput,
+} from '@owner/api/poster';
 
 interface FontSizeStepperProps {
   label: string;
@@ -36,8 +39,9 @@ const FontSizeStepper = ({
       Math.min(rule.maxFontSizePx, Math.max(rule.minFontSizePx, value + delta)),
     );
   };
+  // 범위 끝이면 그쪽으로는 더 바꿀 수 없어 막는다. 비활성 색은 공통 버튼과 같다
   const buttonClassName =
-    'flex h-9 w-11 items-center justify-center rounded-md border border-border-subtle bg-bg-surface font-bold text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
+    'flex h-9 w-11 items-center justify-center rounded-md border border-border-subtle bg-bg-surface font-bold text-text-primary transition-colors enabled:hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:bg-action-primary-disabled disabled:text-action-disabled-fg';
 
   return (
     <div className="flex items-center justify-between gap-3">
@@ -46,6 +50,7 @@ const FontSizeStepper = ({
         <button
           aria-label={`${label} 글자 작게`}
           className={`${buttonClassName} text-caption-mobile`}
+          disabled={value !== null && value <= rule.minFontSizePx}
           onClick={() => step(-2)}
           type="button"
         >
@@ -60,6 +65,7 @@ const FontSizeStepper = ({
         <button
           aria-label={`${label} 글자 크게`}
           className={`${buttonClassName} text-body-mobile`}
+          disabled={value !== null && value >= rule.maxFontSizePx}
           onClick={() => step(2)}
           type="button"
         >
@@ -76,12 +82,14 @@ interface CountedLabelProps {
   optional?: boolean;
   count: number;
   maxLength: number;
+  isInvalid?: boolean;
 }
 
 const CountedLabel = ({
   count,
   htmlFor,
   label,
+  isInvalid = false,
   maxLength,
   optional = false,
 }: CountedLabelProps) => (
@@ -95,7 +103,9 @@ const CountedLabel = ({
         <span className="font-normal text-text-secondary"> (선택)</span>
       )}
     </label>
-    <span className="text-caption-mobile text-text-secondary">
+    <span
+      className={`text-caption-mobile ${isInvalid ? 'text-status-danger-fg' : 'text-text-secondary'}`}
+    >
       {count}/{maxLength}
     </span>
   </div>
@@ -123,7 +133,11 @@ export const PosterTextFields = ({
 }: PosterTextFieldsProps) => {
   const eventNameId = useId();
   const suffixId = useId();
+  const suffixWarningId = useId();
   const { discount, eventName } = POSTER_TEXT_RULES;
+  const isEventNameEmpty =
+    countPosterTextLength(value.eventName.trim()) < eventName.minLength;
+  const hasAmountText = hasDiscountAmountText(value.discountSuffix);
 
   return (
     <section className="flex flex-col gap-5 rounded-xl border border-border-subtle bg-bg-surface p-4">
@@ -133,14 +147,26 @@ export const PosterTextFields = ({
 
       <div className="flex flex-col gap-2">
         <CountedLabel
-          count={countCharacters(value.eventName)}
+          count={countPosterTextLength(value.eventName)}
           htmlFor={eventNameId}
+          isInvalid={isEventNameEmpty}
           label="가게명"
           maxLength={eventName.maxLength}
         />
         <Input
+          errorMessage={
+            isEventNameEmpty ? '가게명을 1자 이상 입력해 주세요' : undefined
+          }
           id={eventNameId}
-          onChange={(event) => onChange({ eventName: event.target.value })}
+          onChange={(event) =>
+            onChange({
+              eventName: toPosterTextInput(
+                event.target.value,
+                eventName.maxLength,
+              ),
+            })
+          }
+          placeholder="가게명을 입력해 주세요"
           value={value.eventName}
         />
         <FontSizeStepper
@@ -178,7 +204,7 @@ export const PosterTextFields = ({
         </p>
         <div className="mt-1.5">
           <CountedLabel
-            count={countCharacters(value.discountSuffix)}
+            count={countPosterTextLength(value.discountSuffix)}
             htmlFor={suffixId}
             label="뒤에 붙일 문구"
             maxLength={discount.maxLength}
@@ -186,11 +212,32 @@ export const PosterTextFields = ({
           />
         </div>
         <Input
+          aria-describedby={hasAmountText ? suffixWarningId : undefined}
           id={suffixId}
-          onChange={(event) => onChange({ discountSuffix: event.target.value })}
+          onChange={(event) =>
+            onChange({
+              discountSuffix: toPosterTextInput(
+                event.target.value,
+                discount.maxLength,
+              ),
+            })
+          }
           placeholder="예: (1인 1개), 포장 가능"
           value={value.discountSuffix}
         />
+        {hasAmountText && (
+          <p
+            className="flex gap-1.5 rounded-lg bg-status-warning-bg px-3 py-2.5 text-caption-mobile break-keep text-text-primary"
+            id={suffixWarningId}
+          >
+            <TriangleAlert
+              aria-hidden="true"
+              className="mt-0.5 size-3.5 shrink-0 text-status-warning-fg"
+            />
+            금액(원)이나 할인율(%)을 쓰면 쿠폰 조건과 다른 할인으로 보일 수
+            있어요. 할인 금액은 1단계 쿠폰 조건에서 바꿔 주세요.
+          </p>
+        )}
         <FontSizeStepper
           label="할인 문구"
           onChange={(size) => onChange({ discountFontSizePx: size })}
