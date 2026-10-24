@@ -107,8 +107,9 @@ const LowBalanceAlert = ({ onCharge }: { onCharge: () => void }) => (
     <p className="min-w-0 flex-1 text-body-sm-mobile font-bold break-keep text-status-danger-fg">
       포인트가 부족해 캠페인이 멈췄어요
     </p>
+    {/* 경고 배경 위에 뜨는 표면색 버튼. 다크 모드에서는 경고 배경과 위험색 채움이 같은 색이라 채움 버튼이 보이지 않는다 */}
     <button
-      className="flex h-9 shrink-0 items-center rounded-full bg-status-danger-border px-3.5 text-body-sm-mobile font-bold text-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+      className="flex h-9 shrink-0 items-center rounded-full bg-bg-surface px-3.5 text-body-sm-mobile font-bold text-status-danger-fg transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
       onClick={onCharge}
       type="button"
     >
