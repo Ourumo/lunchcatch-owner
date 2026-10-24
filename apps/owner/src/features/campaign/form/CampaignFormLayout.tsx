@@ -154,7 +154,7 @@ export const CampaignFormLayout = () => {
     return { ok: true, data: campaignId };
   };
 
-  // 서버는 포스터를 만들 때 할인 내용을 쿠폰 조건으로, 기간을 집행 기간으로 채운다. 그 값을 저장한 뒤
+  // 서버는 포스터를 만들 때 할인 내용과 시간을 쿠폰 조건(1단계)으로 채운다. 1단계를 고쳐 저장한 뒤
   // 같은 템플릿과 이미지로 포스터를 다시 만들어 덮어써야 포스터에 반영된다. 아직 포스터가 없으면 건너뛴다
   const refreshPoster = async (
     saved: ApiResult<string>,
@@ -192,12 +192,9 @@ export const CampaignFormLayout = () => {
     }
 
     if (stepKey === 'budget') {
-      // 포스터(2단계)는 집행 기간보다 먼저 만들어 기간이 비어 있으므로, 집행 기간을 저장할 때마다 다시 만든다
-      return refreshPoster(
-        applySavedValues(
-          'budget',
-          await saveBudgetStep(campaignId, values.budget),
-        ),
+      return applySavedValues(
+        'budget',
+        await saveBudgetStep(campaignId, values.budget),
       );
     }
 

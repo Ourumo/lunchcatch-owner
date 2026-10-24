@@ -20,13 +20,13 @@ export interface PosterSlotValues {
   // 가게명
   eventName: string;
   discountText: string;
-  // 집행 기간
+  // 쿠폰 사용 시간 (매일 11:30 ~ 15:00)
   period: string;
   // 미리보기에 그릴 포스터 이미지 주소. 올리기 전이면 null
   imageUrl: string | null;
 }
 
-// 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 점주가 고르는 것은 템플릿과 이미지뿐이다
+// 캠페인당 1건. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워 점주가 고르는 것은 템플릿과 이미지뿐이다
 export interface CampaignPoster {
   // 처음 만들 때는 빈 문자열이고, 저장하면 서버가 정한다
   posterId: string;
@@ -115,7 +115,7 @@ export const preparePosterImageUpload = (
     { method: 'POST', body: { contentType, fileSize } },
   );
 
-// 저장된 포스터. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채운 값이다
+// 저장된 포스터. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채운 값이다
 interface PosterResponse {
   posterId: number;
   campaignId: number;

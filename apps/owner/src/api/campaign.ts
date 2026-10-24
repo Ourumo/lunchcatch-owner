@@ -942,7 +942,7 @@ interface PosterCreateResponse {
   html: string;
 }
 
-// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 템플릿과 이미지만 보낸다
+// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워 템플릿과 이미지만 보낸다
 const toPosterCreateRequest = ({
   imageObjectKey,
   templateId,

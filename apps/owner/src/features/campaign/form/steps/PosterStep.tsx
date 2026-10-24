@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { Camera, Check, Info, RotateCw } from 'lucide-react';
 
-import type { BudgetStepValues, CouponStepValues } from '@owner/api/campaign';
+import type { CouponStepValues } from '@owner/api/campaign';
 import {
   type ImageValue,
   isImageOfFile,
@@ -31,10 +31,7 @@ import { PosterPreview } from '../../PosterPreview';
 import { useCampaignForm } from '../useCampaignForm';
 
 const THUMBNAIL_WIDTH = 96;
-// 집행 기간은 4단계에서 정해, 아직 없으면 기간 자리에 이 이름을 보여준다
-const PERIOD_PLACEHOLDER = '집행 기간';
-
-// 미리보기 글은 서버가 포스터를 만들 때 채우는 형식을 따른다 (예: 전체 메뉴 1000원 할인, 10.22~10.24)
+// 미리보기 글은 서버가 포스터를 만들 때 채우는 형식을 따른다 (예: 전체 메뉴 1000원 할인, 매일 11:30 ~ 15:00)
 const toPosterDiscountText = (
   { discountTarget, discountType, discountValue, menuId }: CouponStepValues,
   menus: StoreMenu[],
@@ -51,13 +48,12 @@ const toPosterDiscountText = (
   return `${target} ${discountValue}${discountType === 'PERCENT' ? '%' : '원'} 할인`.trim();
 };
 
-// YYYY-MM-DD를 MM.DD로 적는다
-const toPosterDate = (value: string) => value.slice(5).replace('-', '.');
-
-const toPosterPeriod = ({ endDate, startDate }: BudgetStepValues) =>
-  startDate && endDate
-    ? `${toPosterDate(startDate)}~${toPosterDate(endDate)}`
-    : PERIOD_PLACEHOLDER;
+// 시간 칸은 집행 기간이 아니라 1단계에서 정한 쿠폰 사용 시간이다 (lc-backend #763)
+const toPosterPeriod = ({
+  usableFrom,
+  usableUntil,
+}: Pick<CouponStepValues, 'usableFrom' | 'usableUntil'>) =>
+  `매일 ${usableFrom} ~ ${usableUntil}`;
 
 // 이미지를 올리기 전 포스터의 이미지 자리에 넣는 안내 그림. 미리보기 iframe은 sandbox라 data 주소로 넘긴다
 const IMAGE_PLACEHOLDER_URL = `data:image/svg+xml,${encodeURIComponent(
@@ -297,10 +293,10 @@ const PosterImagePicker = ({
 };
 
 // 등록 2단계: 관리자가 게시한 템플릿을 고르고 포스터 이미지를 올린다.
-// 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워, 미리보기도 같은 값으로 보여준다
+// 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워, 미리보기도 같은 값으로 보여준다
 export const PosterStep = () => {
   const { campaignId, setPoster, values } = useCampaignForm();
-  const { budget, coupon, poster } = values;
+  const { coupon, poster } = values;
   const [templates, setTemplates] = useState<Loadable<PosterTemplate[]>>();
   const [store, setStore] = useState<Loadable<MyStore>>();
   // 값이 바뀌면 템플릿과 가게 정보를 다시 불러온다
@@ -371,7 +367,7 @@ export const PosterStep = () => {
   const slots: PosterSlotValues = {
     eventName: store.name,
     discountText: toPosterDiscountText(coupon, store.menus),
-    period: toPosterPeriod(budget),
+    period: toPosterPeriod(coupon),
     imageUrl: poster?.imageUrl ?? null,
   };
   const selectedTemplate = templates.find(
@@ -452,7 +448,7 @@ export const PosterStep = () => {
           />
           <p className="flex gap-1 text-caption-mobile break-keep text-text-secondary">
             <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-            가게명과 할인 내용은 자동으로 채워지고, 기간은 집행 기간을 정하면
+            가게명과 할인 내용은 자동으로 채워지고, 시간은 쿠폰 사용 시간이
             들어가요.
           </p>
         </section>
