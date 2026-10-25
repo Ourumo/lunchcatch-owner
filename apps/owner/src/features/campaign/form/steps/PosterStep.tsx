@@ -142,8 +142,12 @@ const TemplateOptions = ({
   return (
     <div className="-mx-page flex gap-3 overflow-x-auto px-page pb-1">
       {templates.map((template) => (
-        // 숨긴 라디오(sr-only)는 절대 위치라, label을 기준으로 두어야 가로로 넘긴 위치만큼 페이지가 넓어지지 않는다
-        <label className="relative shrink-0 cursor-pointer" key={template.id}>
+        // 숨긴 라디오(sr-only)는 절대 위치라, label을 기준으로 두어야 가로로 넘긴 위치만큼 페이지가 넓어지지 않는다.
+        // 너비는 썸네일에 맞춘다(w-min). 이름은 어디서든 줄을 바꿀 수 있어(wrap-anywhere) 썸네일보다 넓어지지 않는다
+        <label
+          className="relative w-min shrink-0 cursor-pointer"
+          key={template.id}
+        >
           <input
             checked={selectedId === template.id}
             className="peer sr-only"
@@ -161,10 +165,13 @@ const TemplateOptions = ({
               />
             </span>
           </span>
-          {/* 선택 표시를 썸네일 위에 올리면 포스터를 가리므로 이름 옆에 둔다 */}
-          <span className="mt-1.5 flex items-center justify-center gap-1 text-caption-mobile font-medium text-text-primary peer-checked:font-bold peer-checked:text-text-brand peer-checked:[&>svg]:block">
-            <Check aria-hidden="true" className="hidden size-3.5" />
-            {template.name}
+          {/* 선택 표시를 썸네일 위에 올리면 포스터를 가리므로 이름 첫 줄 옆에 둔다(높이 한 줄, h-lh).
+              이름은 100자까지라 두 줄에서 자른다 */}
+          <span className="mt-1.5 flex justify-center gap-1 text-caption-mobile font-medium text-text-primary peer-checked:font-bold peer-checked:text-text-brand peer-checked:[&>svg]:block">
+            <Check aria-hidden="true" className="hidden h-lh w-3.5 shrink-0" />
+            <span className="line-clamp-2 min-w-0 text-center wrap-anywhere">
+              {template.name}
+            </span>
           </span>
         </label>
       ))}
