@@ -1,3 +1,4 @@
+import { notifyAuthChanged } from './authChannel';
 import { ApiError, request } from './client';
 import type { ApiResult } from './types';
 
@@ -114,6 +115,9 @@ export const login = async ({
       body: { email, password },
     });
 
+    // 아래에서 실패로 돌려주는 경우에도 서버는 이미 인증 쿠키를 바꿨으므로 알린다
+    notifyAuthChanged();
+
     // ONBOARDING은 튜토리얼 대상이 아니라 본 적 없는 것으로 둔다
     if (data.status === 'ONBOARDING') {
       return {
@@ -191,6 +195,8 @@ export const logout = async (): Promise<ApiResult<null>> => {
     }
   }
 
+  // 쿠키를 같이 쓰는 다른 탭도 로그아웃된 것을 알게 한다
+  notifyAuthChanged();
   return { ok: true, data: null };
 };
 
