@@ -130,8 +130,9 @@ export const onSessionExpired = (listener: () => void) => {
   };
 };
 
-// 진행 중인 재발급. 여러 요청이 동시에 401을 받아도 재발급은 한 번만 보낸다
-// 같은 Refresh Token이 두 번 가면 서버가 재사용으로 보고 모든 로그인을 끊는다 (AUTH-004)
+// 진행 중인 재발급. 여러 요청이 동시에 401을 받아도 이 탭에서는 재발급을 한 번만 보낸다.
+// 서버는 교체 후 10초 안에 직전 Refresh Token이 다시 와도 Access Token만 새로 주어, 다른 탭과 겹쳐도 괜찮다.
+// 10초가 지난 뒤 직전 Refresh Token이 오면 재사용으로 보고 이 브라우저의 로그인만 끊는다. 다른 기기의 로그인은 남는다 (AUTH-004)
 let refreshing: Promise<boolean> | null = null;
 // 재발급에 성공한 횟수. 재발급 전에 보낸 요청이 늦게 401을 받으면 이미 바뀐 쿠키로 다시 보내기만 한다
 let refreshCount = 0;
