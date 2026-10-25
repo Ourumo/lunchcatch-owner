@@ -2,8 +2,10 @@ import { ApiError, request } from './client';
 import type { PlatformSettings } from './platform';
 import {
   type CampaignPoster,
-  getCampaignPoster,
+  getPosterTextPatch,
   isPosterComplete,
+  type PosterResponse,
+  type PosterTextPatch,
 } from './poster';
 import { getKstToday, splitPeriod } from './report';
 import { getMyStore } from './store';
@@ -324,30 +326,18 @@ interface CampaignListResponse {
 // 서버 목록 한 번에 받는 최대 개수
 const CAMPAIGN_LIST_PAGE_SIZE = 100;
 
-// 작성 중이면 이어서 작성할 수 있게 저장된 포스터도 불러온다.
-// 다른 상태는 포스터를 고칠 수 없어, 캠페인 상세가 완성 HTML을 따로 불러온다
-const fetchCampaignDetail = async (id: string): Promise<Campaign> => {
-  const campaign = toCampaign(
+// 포스터는 함께 받지 않는다. 포스터 조회가 실패해도 캠페인 목록과 상세는 보여줄 수 있게,
+// 포스터가 필요한 화면(등록 화면의 이어서 작성, 캠페인 상세의 완성 포스터)이 따로 불러온다
+const fetchCampaignDetail = async (id: string): Promise<Campaign> =>
+  toCampaign(
     await request<CampaignDetailResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}`,
     ),
   );
 
-  if (campaign.status !== 'DRAFT') {
-    return campaign;
-  }
-
-  const posterResult = await getCampaignPoster(id);
-
-  if (!posterResult.ok) {
-    throw new Error('포스터를 불러오지 못했습니다');
-  }
-
-  return { ...campaign, poster: posterResult.data?.poster ?? null };
-};
-
 // 목록 항목에는 중단 사유, 할인 메뉴, 발급 수량, 사용 가능 시간, 노출 대상이 없다.
-// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다
+// 이 값을 보여주는 현재 캠페인은 상세로 다시 채우고, 지난 캠페인은 제목·기간·상태만 쓰므로 비워 둔다.
+// 제목에 필요한 할인 메뉴는 이름을 보여주는 화면에서만 fillEndedMenuCampaign으로 채운다
 const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   id: String(item.campaignId),
   status: item.status,
@@ -373,18 +363,43 @@ const toListedCampaign = (item: CampaignListItemResponse): Campaign => ({
   },
 });
 
-// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다
-export const getCampaigns = async (): Promise<ApiResult<Campaign[]>> => {
+// 목록에는 할인 메뉴가 없어 특정 메뉴 할인인 종료 캠페인은 이름에 쓸 메뉴를 알 수 없다. 그 캠페인만 상세를 받아 채운다.
+// 상세를 받지 못하면 목록 값으로 두어 그 캠페인만 "특정 메뉴"로 보여주고, 목록은 실패로 보지 않는다
+const fillEndedMenuCampaign = async (campaign: Campaign): Promise<Campaign> => {
+  if (
+    campaign.status !== 'ENDED' ||
+    campaign.coupon.discountTarget !== 'MENU' ||
+    campaign.coupon.menuId !== null
+  ) {
+    return campaign;
+  }
+
+  try {
+    return await fetchCampaignDetail(campaign.id);
+  } catch {
+    return campaign;
+  }
+};
+
+// 최근 생성 순. 가게당 하나인 현재 캠페인은 가장 최근에 만든 캠페인이라 첫 페이지에 들어 있다.
+// 종료 캠페인 이름을 보여주는 화면만 fillEndedMenus로 특정 메뉴 할인의 메뉴를 채운다(캠페인마다 상세 요청이 늘어난다)
+export const getCampaigns = async ({
+  fillEndedMenus = false,
+}: { fillEndedMenus?: boolean } = {}): Promise<ApiResult<Campaign[]>> => {
   try {
     const { items } = await request<CampaignListResponse>(
       `/v1/owner/campaigns?pageSize=${CAMPAIGN_LIST_PAGE_SIZE}`,
     );
     const campaigns = await Promise.all(
-      items.map((item) =>
-        item.status === 'ENDED'
-          ? toListedCampaign(item)
-          : fetchCampaignDetail(String(item.campaignId)),
-      ),
+      items.map((item) => {
+        if (item.status !== 'ENDED') {
+          return fetchCampaignDetail(String(item.campaignId));
+        }
+
+        const campaign = toListedCampaign(item);
+
+        return fillEndedMenus ? fillEndedMenuCampaign(campaign) : campaign;
+      }),
     );
 
     return { ok: true, data: campaigns };
@@ -443,7 +458,14 @@ export const getEndedCampaignPage = async ({
       nextCursor = data.nextPageToken;
     } while (campaigns.length === 0 && nextCursor);
 
-    return { ok: true, data: { campaigns, nextCursor } };
+    // 지난 캠페인 전체 목록은 이름을 보여주므로 받은 구간마다 특정 메뉴 할인의 메뉴를 채운다
+    return {
+      ok: true,
+      data: {
+        campaigns: await Promise.all(campaigns.map(fillEndedMenuCampaign)),
+        nextCursor,
+      },
+    };
   } catch {
     return { ok: false, message: ENDED_PAGE_FAILED_MESSAGE };
   }
@@ -496,7 +518,7 @@ const toServerAgeGroups = (ageGroups: AgeGroup[]) =>
     .filter(([, group]) => ageGroups.length === 0 || ageGroups.includes(group))
     .map(([serverGroup]) => serverGroup);
 
-// 상세 응답에는 포스터와 성과가 없어 비워 둔다. 작성 중이면 포스터는 fetchCampaignDetail에서 채운다
+// 상세 응답에는 포스터와 성과가 없어 비워 둔다. 포스터가 필요한 화면은 따로 불러온다
 const toCampaign = (data: CampaignDetailResponse): Campaign => ({
   id: String(data.campaignId),
   status: data.status,
@@ -871,17 +893,52 @@ export const saveBudgetStep = async (
   }
 };
 
-// 포스터 생성 응답. 슬롯이 모두 채워진 완성 HTML이다
-interface PosterCreateResponse {
-  posterId: number;
-  campaignId: number;
-  templateId: number;
-  // "{가게명} - {템플릿 이름}"
-  title: string;
-  html: string;
-}
+// 409 CAMPAIGN-006. 그사이 진행 중이 아니게 되어 하루 예산을 바꿀 수 없다
+const DAILY_BUDGET_STATUS_CHANGED_MESSAGE =
+  '캠페인 상태가 바뀌어 하루 예산을 바꿀 수 없습니다. 진행 중인 캠페인만 바꿀 수 있습니다.';
+const INVALID_DAILY_BUDGET_MESSAGE = '하루 예산을 다시 확인해 주세요.';
 
-// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 집행 기간으로 채워 템플릿과 이미지만 보낸다
+// 진행 중(ACTIVE) 캠페인의 하루 예산 변경. 서버는 다음 영업일 00:00부터 적용할 값으로만 저장하고 오늘 하루 예산은 그대로 둔다.
+// 저장 응답과 상세 조회는 지금 적용 중인 하루 예산만 주고, 저장해 둔 값은 주지 않는다
+export const changeDailyBudget = async (
+  id: string,
+  dailyBudget: number,
+): Promise<ApiResult<null>> => {
+  try {
+    await patchCampaign(id, { dailyBudget });
+
+    return { ok: true, data: null };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
+
+    switch (error.code) {
+      // 상태가 바뀌었거나(006) 캠페인을 찾을 수 없다(005). 화면이 code를 보고 상세를 다시 불러온다
+      case 'CAMPAIGN-006':
+        return {
+          ok: false,
+          code: error.code,
+          message: DAILY_BUDGET_STATUS_CHANGED_MESSAGE,
+        };
+      case 'CAMPAIGN-005':
+        return { ok: false, code: error.code, message: NOT_FOUND_MESSAGE };
+      case 'CAMPAIGN-001':
+        return { ok: false, message: NOT_ACTIVE_OWNER_ACTION_MESSAGE };
+    }
+
+    // CAMPAIGN-007(최소 하루 예산 미만)은 화면 검사로 미리 막는다. 관리자가 기준을 바꿔 거절되면 서버 문구로 이유를 보여준다
+    if (error.status === 422 && error.message) {
+      return { ok: false, message: error.message };
+    }
+
+    return error.status === 400
+      ? { ok: false, message: INVALID_DAILY_BUDGET_MESSAGE }
+      : { ok: false };
+  }
+};
+
+// 포스터 생성 요청 본문. 글은 서버가 가게명, 쿠폰 조건, 쿠폰 사용 시간으로 채워 템플릿과 이미지만 보낸다
 const toPosterCreateRequest = ({
   imageObjectKey,
   templateId,
@@ -890,7 +947,48 @@ const toPosterCreateRequest = ({
   objectKey: imageObjectKey,
 });
 
+// 포스터 문구 수정 실패. 화면 검사로 미리 막지만 서버가 거절하면 이유를 알린다
+const POSTER_TEXT_MESSAGES: Record<string, string> = {
+  'POSTER-026':
+    '가게명은 1~30자, 할인 문구 뒤에 붙일 말은 20자까지 쓸 수 있고 줄바꿈이나 보이지 않는 문자는 쓸 수 없습니다.',
+  'POSTER-027':
+    '글자 크기는 가게명 16~48px, 할인 문구 14~40px 사이로 정해 주세요.',
+  'POSTER-001':
+    '이 템플릿은 문구를 고칠 수 없습니다. 다른 템플릿을 골라 주세요.',
+  'POSTER-020': POSTER_REQUIRED_MESSAGE,
+  'CAMPAIGN-001': NOT_ACTIVE_OWNER_MESSAGE,
+  'CAMPAIGN-005': NOT_FOUND_MESSAGE,
+  'CAMPAIGN-006': NOT_EDITABLE_MESSAGE,
+};
+
+// 저장된 포스터의 가게명과 할인 문구를 고친다. 바꾼 필드만 보내고, 시간과 이미지는 고칠 수 없다
+const updatePosterText = async (
+  id: string,
+  patch: PosterTextPatch,
+): Promise<ApiResult<null>> => {
+  try {
+    await request<PosterResponse>(
+      `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
+      { method: 'PATCH', body: patch },
+    );
+
+    return { ok: true, data: null };
+  } catch (error) {
+    if (!(error instanceof ApiError)) {
+      return { ok: false };
+    }
+
+    const message = error.code ? POSTER_TEXT_MESSAGES[error.code] : undefined;
+
+    return message
+      ? { ok: false, code: error.code ?? undefined, message }
+      : { ok: false };
+  }
+};
+
 // 등록 2단계 포스터 저장. 캠페인당 포스터는 1건이라, 이미 있으면 서버가 덮어쓴다.
+// 고친 문구는 포스터가 있어야 고칠 수 있어, 만든 뒤 응답의 슬롯 값과 다른 필드만 이어서 고친다.
+// 같은 템플릿으로 다시 만들면 서버가 고친 문구를 남기므로 그대로면 수정 요청을 보내지 않는다.
 // 등록 화면이 DRAFT인지 확인한 뒤에 부른다
 export const savePosterStep = async (
   id: string,
@@ -902,12 +1000,13 @@ export const savePosterStep = async (
   }
 
   try {
-    await request<PosterCreateResponse>(
+    const { slots } = await request<PosterResponse>(
       `/v1/owner/campaigns/${encodeURIComponent(id)}/poster`,
       { method: 'POST', body: toPosterCreateRequest(poster) },
     );
+    const patch = getPosterTextPatch(poster.text, slots);
 
-    return { ok: true, data: null };
+    return patch ? updatePosterText(id, patch) : { ok: true, data: null };
   } catch (error) {
     if (!(error instanceof ApiError)) {
       return { ok: false };

@@ -338,6 +338,10 @@ export interface ServerBusinessHour {
   openTime: string | null;
   closeTime: string | null;
   isClosed: boolean | null;
+  // HH:mm:ss. 점주 화면에는 입력이 없고, 서버에 있으면 사용자 앱 가게 상세가 보여준다. 없으면 null
+  breakStartTime: string | null;
+  breakEndTime: string | null;
+  lastOrderTime: string | null;
 }
 
 const toTime = (time: string | null) => time?.slice(0, 5) ?? '';

@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
 import { Info } from 'lucide-react';
 
 import {
@@ -8,7 +8,6 @@ import {
   ISSUE_OPEN_TIME,
   isValidTarget,
 } from '@owner/api/campaign';
-import { getPointBalance, type PointBalance } from '@owner/api/points';
 import {
   getCampaignPoster,
   isPosterComplete,
@@ -27,6 +26,7 @@ import {
   formatAgeGroups,
   formatGender,
   formatRadius,
+  getDiscountTargetValue,
 } from '../../campaignFormat';
 import { DetailNote, DetailRow } from '../../detail/DetailSection';
 import { PosterPreview } from '../../PosterPreview';
@@ -38,6 +38,7 @@ import {
 } from '../campaignSteps';
 import { PointSummary } from '../PointSummary';
 import { useCampaignForm } from '../useCampaignForm';
+import type { ReviewOutletContext } from '../useReviewBalance';
 
 const POSTER_PREVIEW_WIDTH = 200;
 
@@ -88,28 +89,25 @@ const findStep = (id: CampaignStep['id']) =>
 export const ReviewStep = () => {
   const { campaignId, platformSettings, values } = useCampaignForm();
   const { budget, coupon, poster, target } = values;
-  const [menus, setMenus] = useState<StoreMenu[]>([]);
+  // 할인 대상의 메뉴 이름에 쓴다
+  const [menus, setMenus] = useState<Loadable<StoreMenu[]>>();
   // 서버가 만든 완성 포스터. 아직 만들지 않았으면 'none'
   const [savedPoster, setSavedPoster] =
     useState<Loadable<SavedPoster | 'none'>>();
-  const [balance, setBalance] = useState<Loadable<PointBalance>>();
+  // 활성화를 막을지 판단하는 레이아웃이 불러온 잔액을 그대로 보여준다
+  const { balance, retryBalance } = useOutletContext<ReviewOutletContext>();
 
   useEffect(() => {
     let ignore = false;
 
     getMyStore().then((result) => {
-      if (!ignore && result.ok) {
-        setMenus(result.data.menus);
+      if (!ignore) {
+        setMenus(result.ok ? result.data.menus : null);
       }
     });
     getCampaignPoster(campaignId).then((result) => {
       if (!ignore) {
         setSavedPoster(result.ok ? (result.data ?? 'none') : null);
-      }
-    });
-    getPointBalance().then((result) => {
-      if (!ignore) {
-        setBalance(result.ok ? result.data : null);
       }
     });
 
@@ -119,7 +117,7 @@ export const ReviewStep = () => {
     };
   }, [campaignId]);
 
-  const menu = menus.find(({ id }) => id === coupon.menuId);
+  const discountTarget = getDiscountTargetValue(coupon, menus);
   const isBudgetComplete = isBudgetStepComplete(budget, platformSettings);
   const periodDays = isBudgetComplete
     ? getPeriodDays(budget.startDate, budget.endDate)
@@ -138,12 +136,9 @@ export const ReviewStep = () => {
       >
         <dl className="mt-3 flex flex-col gap-2.5">
           <DetailRow
+            isMuted={discountTarget?.isMuted}
             label="할인 대상"
-            value={
-              coupon.discountTarget === 'ALL'
-                ? '전 메뉴'
-                : menu && `${menu.name} (${formatNumber(menu.price)}원)`
-            }
+            value={discountTarget?.text}
           />
           <DetailRow
             isHighlighted
@@ -240,7 +235,9 @@ export const ReviewStep = () => {
       {isBudgetComplete && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
+          onRetry={retryBalance}
           requiredPoints={budget.dailyBudget * periodDays}
+          step="review"
         />
       )}
 

@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { Input, SegmentedControl } from '@repo/ui';
-import { Info, Minus, Plus } from 'lucide-react';
+import { Info, Minus, Plus, RotateCw } from 'lucide-react';
 
 import {
   type CouponStepValues,
@@ -172,10 +172,17 @@ interface MenuOptionsProps {
   menus: MenusState;
   selectedMenuId: string | null;
   onSelect: (menuId: string) => void;
+  // 대표 메뉴를 불러오지 못했을 때 다시 부른다
+  onRetry: () => void;
 }
 
 // 입점 때 등록한 대표 메뉴 중 할인할 메뉴 하나를 고른다
-const MenuOptions = ({ menus, onSelect, selectedMenuId }: MenuOptionsProps) => {
+const MenuOptions = ({
+  menus,
+  onRetry,
+  onSelect,
+  selectedMenuId,
+}: MenuOptionsProps) => {
   const name = useId();
 
   if (!menus) {
@@ -188,9 +195,23 @@ const MenuOptions = ({ menus, onSelect, selectedMenuId }: MenuOptionsProps) => {
 
   if (menus === 'error') {
     return (
-      <p className="text-caption-mobile text-status-danger-fg">
-        대표 메뉴를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
-      </p>
+      // 누르는 영역은 높이 44px로 두되 줄 높이가 커지지 않도록 위아래 여백을 당긴다
+      <div
+        className="-my-3 flex items-center justify-between gap-2"
+        role="status"
+      >
+        <span className="text-caption-mobile text-status-danger-fg">
+          대표 메뉴를 불러오지 못했어요
+        </span>
+        <button
+          className="flex h-11 shrink-0 items-center gap-1 rounded-full px-2 text-caption-mobile font-semibold text-text-primary hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-action-primary"
+          onClick={onRetry}
+          type="button"
+        >
+          <RotateCw aria-hidden="true" className="size-3.5" />
+          다시 시도
+        </button>
+      </div>
     );
   }
 
@@ -224,9 +245,9 @@ interface IssueLimitStepperProps {
 const IssueLimitStepper = ({ onChange, value }: IssueLimitStepperProps) => {
   const current = value ?? 0;
   const buttonClassName =
-    'flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface-brand text-action-primary transition-colors hover:bg-brand-200 focus-visible:outline-2 focus-visible:outline-action-primary disabled:bg-surface-subtle disabled:text-text-disabled';
+    'flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface-brand text-action-primary transition-colors hover:bg-brand-200 focus-visible:outline-2 focus-visible:outline-action-primary disabled:bg-action-primary-disabled disabled:text-action-disabled-fg';
   const quickButtonClassName =
-    'flex h-9 min-w-0 items-center justify-center rounded-full border text-caption-mobile font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:border-border-subtle disabled:bg-surface-subtle disabled:text-text-disabled';
+    'flex h-9 min-w-0 items-center justify-center rounded-full border text-caption-mobile font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:border-border-subtle disabled:bg-action-primary-disabled disabled:text-action-disabled-fg';
 
   // 0 아래로는 내려가지 않고, 0이 되면 미입력(null)으로 둔다
   const adjust = (delta: number) => {
@@ -433,6 +454,8 @@ export const CouponStep = () => {
   const { updateStepValues, values } = useCampaignForm();
   const { coupon } = values;
   const [menus, setMenus] = useState<MenusState>(null);
+  // 값이 바뀌면 대표 메뉴를 다시 불러온다
+  const [menusRequestId, setMenusRequestId] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -447,7 +470,12 @@ export const CouponStep = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [menusRequestId]);
+
+  const retryMenus = () => {
+    setMenus(null);
+    setMenusRequestId((id) => id + 1);
+  };
 
   const update = (patch: Partial<CouponStepValues>) =>
     updateStepValues('coupon', patch);
@@ -508,6 +536,7 @@ export const CouponStep = () => {
         {coupon.discountTarget === 'MENU' && !hasNoMenus && (
           <MenuOptions
             menus={menus}
+            onRetry={retryMenus}
             onSelect={(menuId) => update({ menuId })}
             selectedMenuId={coupon.menuId}
           />

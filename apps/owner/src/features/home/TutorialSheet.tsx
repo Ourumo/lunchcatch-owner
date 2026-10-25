@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { BottomSheet, Button } from '@repo/ui';
-import { ChartColumn, CircleAlert, Clock, Coins, Ticket } from 'lucide-react';
+import { ChartColumn, Clock, Coins, Ticket } from 'lucide-react';
 
 interface TutorialStep {
   icon: ReactNode;
@@ -44,50 +44,24 @@ const tutorialSteps: TutorialStep[] = [
   },
 ];
 
-const SAVE_FAILED_MESSAGE =
-  '완료를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
-
 interface TutorialSheetProps {
-  // 마지막 단계의 시작하기, 건너뛰기, 시트를 닫는 동작(Esc, 아래로 끌기)에서 부른다.
-  // 쓰는 쪽이 시트를 내리고 true를 돌려준다. false면 시트에 남아 실패 안내와 다시 시도를 보여준다
-  onFinish: () => Promise<boolean>;
+  // 마지막 단계의 시작하기, 건너뛰기, 시트를 닫는 동작(Esc, 아래로 끌기)에서 부른다. 쓰는 쪽이 시트를 내린다
+  onClose: () => void;
 }
 
 // 런치캐치 사용법 튜토리얼. 홈 위에 시트로 띄워 단계를 넘긴다.
-// 처음 볼 때는 끝내면 완료를 서버에 저장하고(FirstVisitTutorial), 다시 볼 때는 닫기만 한다
-export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
+// 처음 볼 때는 닫으면 완료를 서버에 저장하고(FirstVisitTutorial), 다시 볼 때는 닫기만 한다
+export const TutorialSheet = ({ onClose }: TutorialSheetProps) => {
   const [stepIndex, setStepIndex] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasFailed, setHasFailed] = useState(false);
   const step = tutorialSteps[stepIndex];
   const isLastStep = stepIndex === tutorialSteps.length - 1;
-
-  const finish = async () => {
-    if (isSaving) {
-      return;
-    }
-
-    setIsSaving(true);
-    setHasFailed(false);
-
-    // 성공하면 쓰는 쪽이 시트를 내리므로 상태를 되돌리지 않는다
-    if (!(await onFinish())) {
-      setIsSaving(false);
-      setHasFailed(true);
-    }
-  };
-
-  const goTo = (index: number) => {
-    setHasFailed(false);
-    setStepIndex(index);
-  };
 
   return (
     // 배경을 잘못 눌러 넘어가지 않도록 배경으로는 닫지 않는다
     <BottomSheet
       closeOnBackdrop={false}
       isOpen
-      onClose={finish}
+      onClose={onClose}
       title="런치캐치 둘러보기"
     >
       <div className="flex flex-col">
@@ -97,7 +71,7 @@ export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
             {stepIndex + 1} / {tutorialSteps.length}
           </p>
           {!isLastStep && (
-            <Button disabled={isSaving} onClick={finish} variant="tertiary">
+            <Button onClick={onClose} variant="tertiary">
               건너뛰기
             </Button>
           )}
@@ -137,25 +111,11 @@ export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
           ))}
         </div>
 
-        {hasFailed && (
-          <p
-            className="mt-5 flex gap-2 rounded-xl bg-status-danger-bg px-3.5 py-3 type-body-sm break-keep text-status-danger-fg"
-            role="alert"
-          >
-            <CircleAlert
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0"
-            />
-            {SAVE_FAILED_MESSAGE}
-          </p>
-        )}
-
         <div className="mt-5 grid grid-cols-3 gap-2">
           {stepIndex > 0 && (
             <Button
               className="h-12"
-              disabled={isSaving}
-              onClick={() => goTo(stepIndex - 1)}
+              onClick={() => setStepIndex(stepIndex - 1)}
               variant="secondary"
             >
               이전
@@ -163,12 +123,9 @@ export const TutorialSheet = ({ onFinish }: TutorialSheetProps) => {
           )}
           <Button
             className={`h-12 ${stepIndex > 0 ? 'col-span-2' : 'col-span-3'}`}
-            isLoading={isSaving}
-            onClick={
-              isLastStep || hasFailed ? finish : () => goTo(stepIndex + 1)
-            }
+            onClick={isLastStep ? onClose : () => setStepIndex(stepIndex + 1)}
           >
-            {hasFailed ? '다시 시도' : isLastStep ? '시작하기' : '다음'}
+            {isLastStep ? '시작하기' : '다음'}
           </Button>
         </div>
       </div>

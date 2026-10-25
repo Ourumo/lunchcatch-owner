@@ -5,6 +5,7 @@ import type { StoreMenu } from '@owner/api/store';
 import { useTodayPerformance } from '@owner/hooks/useCampaignPerformance';
 import { getCampaignTitle } from '@owner/ui/campaignFormat';
 import { CurrentCampaignCard } from '@owner/ui/CurrentCampaignCard/CurrentCampaignCard';
+import { PerformanceError } from '@owner/ui/PerformanceError/PerformanceError';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 
 import { getCurrentCampaign } from './homeCampaigns';
@@ -67,17 +68,20 @@ const CurrentCampaign = ({ campaign, title }: CurrentCampaignProps) => {
 const CAMPAIGN_CARD_HEIGHT = 280;
 
 export interface HomeCampaignSectionProps {
-  // 불러오는 중이면 null. 제목은 그대로 두고 카드 자리만 스켈레톤으로 둔다
-  campaigns: Campaign[] | null;
+  // 불러오는 중이면 null. 제목은 그대로 두고 카드 자리만 스켈레톤으로 둔다. 실패하면 'error'
+  campaigns: Campaign[] | 'error' | null;
   menus: StoreMenu[];
+  // 실패했을 때 캠페인 목록을 다시 부른다
+  onRetry: () => void;
 }
 
 // 현재 캠페인. 카드를 누르면 상세로 가고, 전체 목록은 가운데 캠페인 탭으로 가므로 "전체 보기"는 두지 않는다
 export const HomeCampaignSection = ({
   campaigns,
   menus,
+  onRetry,
 }: HomeCampaignSectionProps) => {
-  const current = campaigns && getCurrentCampaign(campaigns);
+  const current = Array.isArray(campaigns) && getCurrentCampaign(campaigns);
 
   return (
     <section className="flex flex-col gap-3">
@@ -86,6 +90,11 @@ export const HomeCampaignSection = ({
       </h2>
       {campaigns === null ? (
         <SkeletonBlock height={CAMPAIGN_CARD_HEIGHT} />
+      ) : campaigns === 'error' ? (
+        <PerformanceError
+          message="캠페인을 불러오지 못했어요"
+          onRetry={onRetry}
+        />
       ) : current ? (
         <CurrentCampaign
           campaign={current}

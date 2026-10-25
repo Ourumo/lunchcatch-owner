@@ -11,7 +11,7 @@ import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { CurrentCampaignActions } from './CurrentCampaignActions';
+import { CampaignActions } from '../actions/CampaignActions';
 import { EndedCampaignCard } from './EndedCampaignCard';
 import {
   ENDED_CAMPAIGNS_PATH,
@@ -178,9 +178,7 @@ const CurrentCampaign = ({
   return (
     <CurrentCampaignCard
       campaign={campaign}
-      footer={
-        <CurrentCampaignActions campaign={campaign} onChanged={onChanged} />
-      }
+      footer={<CampaignActions campaign={campaign} onChanged={onChanged} />}
       title={title}
       todayPerformance={todayPerformance}
     />

@@ -64,3 +64,42 @@ export const confirmStoreMenuImageUpload = async (uploadId: string) => {
     body: { uploadId },
   });
 };
+
+interface StoreMenusResponse {
+  menus: {
+    menuId: number;
+    name: string;
+    price: number;
+    sortOrder: number;
+  }[];
+}
+
+export interface RegisteredStoreMenu {
+  id: string;
+  name: string;
+  price: number;
+  // 메뉴 중 몇 번째로 보이는지
+  sortOrder: number;
+}
+
+// 서버에 등록된 대표 메뉴 목록. 내 가게 조회를 읽고 입점 신청 중에도 쓸 수 있다.
+// 등록 응답을 받지 못해 메뉴 ID를 모를 때, 서버에 이미 등록됐는지 확인하는 데 쓴다
+export const getRegisteredStoreMenus = async (): Promise<
+  ApiResult<RegisteredStoreMenu[]>
+> => {
+  try {
+    const data = await request<StoreMenusResponse>('/v1/owner/store');
+
+    return {
+      ok: true,
+      data: data.menus.map(({ menuId, name, price, sortOrder }) => ({
+        id: String(menuId),
+        name,
+        price,
+        sortOrder,
+      })),
+    };
+  } catch {
+    return { ok: false };
+  }
+};

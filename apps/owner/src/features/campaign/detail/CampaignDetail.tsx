@@ -23,7 +23,13 @@ import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 import { TopBar } from '@owner/ui/TopBar/TopBar';
 
-import { formatAgeGroups, formatGender, formatRadius } from '../campaignFormat';
+import { CampaignActions } from '../actions/CampaignActions';
+import {
+  formatAgeGroups,
+  formatGender,
+  formatRadius,
+  getDiscountTargetValue,
+} from '../campaignFormat';
 import { PosterPreview } from '../PosterPreview';
 import { DetailNote, DetailRow, DetailSection } from './DetailSection';
 import { useCampaignDetail } from './useCampaignDetail';
@@ -81,7 +87,8 @@ const PosterSection = ({
 
 interface CampaignContentProps {
   campaign: Campaign;
-  menus: StoreMenu[];
+  // 가게 메뉴. 불러오지 못했으면 null
+  menus: StoreMenu[] | null;
   posterHtml: string | 'none' | null;
 }
 
@@ -97,7 +104,7 @@ const CampaignContent = ({
   const canHavePerformance = status !== 'DRAFT' && status !== 'SCHEDULED';
   const performance =
     performanceState.status === 'success' ? performanceState.data : null;
-  const menu = menus.find(({ id }) => id === coupon.menuId);
+  const discountTarget = getDiscountTargetValue(coupon, menus);
   const hasPeriod = Boolean(budget.startDate && budget.endDate);
   const periodDays = hasPeriod
     ? getPeriodDays(budget.startDate, budget.endDate)
@@ -115,7 +122,8 @@ const CampaignContent = ({
           </span>
         </div>
         <h2 className="mt-2 text-h1 font-bold break-keep text-text-primary">
-          {getCampaignTitle(coupon, menus)}
+          {/* 메뉴를 불러오지 못하면 제목은 "특정 메뉴"로 두고, 할인 대상에서 이유를 보여준다 */}
+          {getCampaignTitle(coupon, menus ?? [])}
         </h2>
       </div>
 
@@ -124,12 +132,9 @@ const CampaignContent = ({
 
       <DetailSection title="쿠폰 조건">
         <DetailRow
+          isMuted={discountTarget?.isMuted}
           label="할인 대상"
-          value={
-            coupon.discountTarget === 'ALL'
-              ? '전 메뉴'
-              : menu && `${menu.name} (${formatNumber(menu.price)}원)`
-          }
+          value={discountTarget?.text}
         />
         <DetailRow isHighlighted label="할인" value={formatDiscount(coupon)} />
         <DetailRow
@@ -260,10 +265,10 @@ export interface CampaignDetailProps {
   id: string;
 }
 
-// 캠페인 상세 조회. 상태별 액션(중단, 재개, 하루 예산 변경 등)은 이후 하단에 추가한다
+// 캠페인 상세 조회. 화면 아래에 상태별 처리(중단, 다시 시작, 종료, 대기 중 취소, 이어서 작성, 하루 예산 변경)를 붙이고, 처리한 뒤 다시 불러온다
 export const CampaignDetail = ({ id }: CampaignDetailProps) => {
   const goBack = useGoBack(LIST_PATH);
-  const { retry, state } = useCampaignDetail(id);
+  const { reload, retry, state } = useCampaignDetail(id);
 
   // 앱이 화면을 옮길 때 스크롤을 되돌리지 않아, 길게 내린 목록(지난 캠페인 전체 등)에서 들어오면 중간부터 보인다.
   // 상세는 항상 맨 위에서 시작한다
@@ -310,6 +315,14 @@ export const CampaignDetail = ({ id }: CampaignDetailProps) => {
         <TopBar onBack={goBack} title="캠페인 상세" />
       </div>
       <main className="flex flex-1 flex-col">{renderContent()}</main>
+      {state.status === 'success' && (
+        <CampaignActions
+          campaign={state.campaign}
+          canChangeDailyBudget
+          layout="bar"
+          onChanged={reload}
+        />
+      )}
     </>
   );
 };

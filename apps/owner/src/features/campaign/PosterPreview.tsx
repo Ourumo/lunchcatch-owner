@@ -12,6 +12,8 @@ export interface PosterPreviewProps {
   slots?: PosterSlotValues;
   // 넘기면 이 폭(px)으로 줄여서 보여준다. 없으면 감싼 요소의 폭을 채운다
   width?: number;
+  // 템플릿에서 점주가 고칠 수 있는 칸(가게명, 할인)을 점선으로 표시한다
+  markEditable?: boolean;
   className?: string;
 }
 
@@ -20,16 +22,23 @@ export interface PosterPreviewProps {
 export const PosterPreview = ({
   className,
   html,
+  markEditable,
   slots,
   width,
 }: PosterPreviewProps) => {
+  const srcDoc = slots
+    ? fillPosterTemplate(html, slots, { markEditable })
+    : html;
   const frame = (
     <iframe
       className={['block aspect-[210/297] w-full border-0', className]
         .filter(Boolean)
         .join(' ')}
+      // 그려 둔 iframe의 srcdoc을 바꾸면 iframe이 다른 문서로 이동해 브라우저 방문 기록이 하나씩 쌓이고,
+      // 뒤로 가기가 화면 대신 미리보기를 되돌린다. 내용이 바뀌면 iframe을 새로 만들어 기록이 남지 않게 한다
+      key={srcDoc}
       sandbox=""
-      srcDoc={slots ? fillPosterTemplate(html, slots) : html}
+      srcDoc={srcDoc}
       tabIndex={-1}
       title="포스터 미리보기"
     />

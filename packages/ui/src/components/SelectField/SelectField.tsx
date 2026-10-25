@@ -30,6 +30,7 @@ export interface SelectFieldProps extends Omit<
 }
 
 export function SelectField({
+  'aria-label': ariaLabel,
   defaultValue = '',
   disabled,
   fitContent = false,
@@ -146,6 +147,11 @@ export function SelectField({
         onKeyDown={handleKeyDown}
         type="button"
         {...props}
+        aria-label={
+          ariaLabel
+            ? ariaLabel + ': ' + (selectedOption?.label ?? placeholder)
+            : undefined
+        }
       >
         <span
           className={

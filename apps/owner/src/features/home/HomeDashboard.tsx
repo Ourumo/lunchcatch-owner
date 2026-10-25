@@ -5,6 +5,7 @@ import {
   CircleAlert,
   CircleHelp,
   QrCode,
+  RotateCw,
   Wallet,
 } from 'lucide-react';
 
@@ -25,12 +26,17 @@ import { useHome } from './useHome';
 const QR_SCAN_PATH = '/qr-scan';
 
 interface HomeHeaderProps {
-  // 불러오는 중이면 null. 가게 이름과 잔액 자리만 스켈레톤으로 두고 사용법은 그대로 그린다
-  balance: number | null;
+  // 불러오는 중이면 null. 가게 이름과 잔액 자리만 스켈레톤으로 두고 사용법은 그대로 그린다.
+  // 잔액을 불러오지 못하면 'error'로, 잔액 자리만 다시 불러오기 버튼으로 바꾼다
+  balance: number | 'error' | null;
   onBalanceClick: () => void;
+  onBalanceRetry: () => void;
   onHelpClick: () => void;
   store: MyStore | null;
 }
+
+const balanceButtonClassName =
+  'flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface text-body-sm-mobile font-bold text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary';
 
 // 알림 기능이 없어 알림 아이콘 대신 잔액을 둔다. 잔액이 모자라면 캠페인이 멈추므로 늘 보이게 한다.
 // 사용법은 자주 보지 않아 가게 이름 아래에 작은 글자로 둔다.
@@ -38,6 +44,7 @@ interface HomeHeaderProps {
 const HomeHeader = ({
   balance,
   onBalanceClick,
+  onBalanceRetry,
   onHelpClick,
   store,
 }: HomeHeaderProps) => (
@@ -52,10 +59,20 @@ const HomeHeader = ({
       )}
       {balance === null ? (
         <SkeletonBlock className="h-11 w-28" rounded="full" />
+      ) : balance === 'error' ? (
+        <button
+          aria-label="잔액을 불러오지 못했어요, 다시 불러오기"
+          className={`${balanceButtonClassName} px-3.5`}
+          onClick={onBalanceRetry}
+          type="button"
+        >
+          <RotateCw aria-hidden="true" className="size-4 text-text-secondary" />
+          다시 불러오기
+        </button>
       ) : (
         <button
           aria-label={`포인트 잔액 ${formatPoints(balance)}, 충전하기`}
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface pr-2.5 pl-3.5 text-body-sm-mobile font-bold text-text-primary transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+          className={`${balanceButtonClassName} pr-2.5 pl-3.5`}
           onClick={onBalanceClick}
           type="button"
         >
@@ -90,8 +107,9 @@ const LowBalanceAlert = ({ onCharge }: { onCharge: () => void }) => (
     <p className="min-w-0 flex-1 text-body-sm-mobile font-bold break-keep text-status-danger-fg">
       포인트가 부족해 캠페인이 멈췄어요
     </p>
+    {/* 경고 배경 위에 뜨는 표면색 버튼. 다크 모드에서는 경고 배경과 위험색 채움이 같은 색이라 채움 버튼이 보이지 않는다 */}
     <button
-      className="flex h-9 shrink-0 items-center rounded-full bg-status-danger-border px-3.5 text-body-sm-mobile font-bold text-text-inverse transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+      className="flex h-9 shrink-0 items-center rounded-full bg-bg-surface px-3.5 text-body-sm-mobile font-bold text-status-danger-fg transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
       onClick={onCharge}
       type="button"
     >
@@ -118,14 +136,24 @@ const QrScanLink = () => (
 
 // 홈 탭. 점심에 앱을 열면 가장 먼저 보는 화면이라 QR 스캔과 오늘 캠페인 상황을 위에 둔다
 export const HomeDashboard = () => {
-  const { retry, state } = useHome();
+  const {
+    balance,
+    campaigns,
+    recentDays,
+    retry,
+    retryBalance,
+    retryCampaigns,
+    retryRecentDays,
+    store,
+  } = useHome();
   const [isChargeOpen, setIsChargeOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const chargePolicy = useChargePolicy();
   const startCharge = usePointCharge();
 
   const renderContent = () => {
-    if (state.status === 'error') {
+    // 가게 이름, 메뉴 이름, 최근 실적이 모두 가게 정보에 기대어 가게 정보만은 화면 전체 오류로 본다
+    if (store.status === 'error') {
       return (
         <StatusMessage
           description="잠시 후 다시 시도해 주세요"
@@ -136,36 +164,72 @@ export const HomeDashboard = () => {
       );
     }
 
-    // 불러오는 동안에도 같은 배치로 그린다. 고정된 부분(사용법, QR, 섹션 제목)은 그대로 두고 값 자리만 스켈레톤으로 둔다
-    const home = state.status === 'success' ? state : null;
-    const current = home && getCurrentCampaign(home.campaigns);
+    // 자리마다 따로 불러와 받은 자리부터 채운다. 고정된 부분(사용법, QR, 섹션 제목)은 그대로 두고
+    // 불러오는 중인 값 자리만 스켈레톤으로, 실패한 자리만 다시 시도로 둔다
+    const storeData = store.status === 'success' ? store.data : null;
+    const balanceValue =
+      balance.status === 'success'
+        ? balance.data
+        : balance.status === 'error'
+          ? 'error'
+          : null;
+    const campaignList =
+      campaigns.status === 'success'
+        ? campaigns.data
+        : campaigns.status === 'error'
+          ? 'error'
+          : null;
+    // 최근 실적은 캠페인 목록을 받아야 불러오므로, 캠페인 목록이 실패하면 함께 실패로 보여주고 캠페인 목록부터 다시 부른다
+    const recentDaysValue =
+      campaigns.status === 'error' || recentDays.status === 'error'
+        ? 'error'
+        : recentDays.status === 'success'
+          ? recentDays.data
+          : null;
+    const current =
+      campaigns.status === 'success' && getCurrentCampaign(campaigns.data);
     const isPausedByNoPoints =
-      current?.status === 'PAUSED' && current.pausedReason === 'NO_POINTS';
+      current &&
+      current.status === 'PAUSED' &&
+      current.pausedReason === 'NO_POINTS';
+    const isLoading =
+      !storeData || balanceValue === null || campaignList === null;
     const openCharge = () => setIsChargeOpen(true);
 
     return (
       <div
-        aria-busy={home ? undefined : true}
+        aria-busy={isLoading ? true : undefined}
         className="flex flex-col gap-5 px-page py-5"
       >
-        {!home && <span className="sr-only">홈 화면을 불러오는 중</span>}
+        {isLoading && <span className="sr-only">홈 화면을 불러오는 중</span>}
         <HomeHeader
-          balance={home?.balance ?? null}
+          balance={balanceValue}
           onBalanceClick={openCharge}
+          onBalanceRetry={retryBalance}
           onHelpClick={() => setIsTutorialOpen(true)}
-          store={home?.store ?? null}
+          store={storeData}
         />
         {isPausedByNoPoints && <LowBalanceAlert onCharge={openCharge} />}
         <QrScanLink />
+        {/* 캠페인 제목에 가게 메뉴 이름이 들어가, 가게 정보를 받기 전에는 캠페인 자리도 불러오는 중으로 둔다 */}
         <HomeCampaignSection
-          campaigns={home?.campaigns ?? null}
-          menus={home?.store.menus ?? []}
+          campaigns={storeData ? campaignList : null}
+          menus={storeData?.menus ?? []}
+          onRetry={retryCampaigns}
         />
-        <RecentPerformance days={home?.recentDays ?? null} />
+        <RecentPerformance
+          days={recentDaysValue}
+          onRetry={
+            campaigns.status === 'error' ? retryCampaigns : retryRecentDays
+          }
+        />
 
-        {home && isChargeOpen && (
+        {/* 잔액을 불러오지 못해도 잔액 부족 경고에서 충전할 수 있게 잔액 없이 연다 */}
+        {isChargeOpen && (
           <PointChargeSheet
-            balance={home.balance}
+            balance={
+              typeof balanceValue === 'number' ? balanceValue : undefined
+            }
             policy={chargePolicy}
             onCharge={startCharge}
             onClose={() => setIsChargeOpen(false)}
@@ -173,12 +237,7 @@ export const HomeDashboard = () => {
         )}
         {/* 다시 볼 때는 완료를 저장하지 않고 닫기만 한다. 튜토리얼을 봤는지(tutorialViewed)는 바꾸지 않는다 */}
         {isTutorialOpen && (
-          <TutorialSheet
-            onFinish={async () => {
-              setIsTutorialOpen(false);
-              return true;
-            }}
-          />
+          <TutorialSheet onClose={() => setIsTutorialOpen(false)} />
         )}
       </div>
     );

@@ -16,21 +16,15 @@ import {
 } from '@owner/ui/campaignFormat';
 import { DateRangePicker } from '@owner/ui/DateRangePicker/DateRangePicker';
 
+import { toDailyBudgetOrNull } from '../../dailyBudgetInput';
 import { PointSummary } from '../PointSummary';
 import { useCampaignForm } from '../useCampaignForm';
 
-const BUDGET_MAX_DIGITS = 8;
 // 신규 캠페인 우선 노출 기간과 같다 (docs/requirements-common.md "피드 구성")
 const RECOMMENDED_MIN_DAYS = 3;
 
 // 불러오는 중이면 undefined, 실패하면 null
 type Loadable<T> = T | null | undefined;
-
-const toNumberOrNull = (value: string) => {
-  const digits = value.replace(/\D/g, '').slice(0, BUDGET_MAX_DIGITS);
-
-  return digits ? Number(digits) : null;
-};
 
 interface FieldGroupProps {
   legend: string;
@@ -57,6 +51,8 @@ export const BudgetStep = () => {
   const { platformSettings, updateStepValues, values } = useCampaignForm();
   const { budget } = values;
   const [balance, setBalance] = useState<Loadable<PointBalance>>();
+  // 값이 바뀌면 잔액을 다시 불러온다
+  const [balanceRequestId, setBalanceRequestId] = useState(0);
   const tomorrow = getDateValueFromToday(1);
 
   useEffect(() => {
@@ -72,7 +68,12 @@ export const BudgetStep = () => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [balanceRequestId]);
+
+  const retryBalance = () => {
+    setBalance(undefined);
+    setBalanceRequestId((id) => id + 1);
+  };
 
   const update = (patch: Partial<BudgetStepValues>) =>
     updateStepValues('budget', patch);
@@ -105,7 +106,7 @@ export const BudgetStep = () => {
           errorMessage={budgetError}
           inputMode="numeric"
           onChange={(event) =>
-            update({ dailyBudget: toNumberOrNull(event.target.value) })
+            update({ dailyBudget: toDailyBudgetOrNull(event.target.value) })
           }
           placeholder={`최소 ${formatNumber(minDailyBudget)}`}
           trailing="P"
@@ -165,7 +166,9 @@ export const BudgetStep = () => {
       {hasBudget && hasPeriod && budget.dailyBudget !== null && (
         <PointSummary
           balance={balance}
+          onRetry={retryBalance}
           requiredPoints={budget.dailyBudget * periodDays}
+          step="budget"
         />
       )}
     </div>

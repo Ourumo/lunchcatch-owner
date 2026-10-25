@@ -10,7 +10,8 @@ type CampaignDetailState =
   | {
       status: 'success';
       campaign: Campaign;
-      menus: StoreMenu[];
+      // 가게 메뉴. 불러오지 못했으면 null
+      menus: StoreMenu[] | null;
       // 서버가 만든 완성 포스터 HTML. 아직 만들지 않았으면 'none', 불러오지 못했으면 null
       posterHtml: string | 'none' | null;
     };
@@ -41,7 +42,7 @@ export const useCampaignDetail = (id: string) => {
         setState({
           status: 'success',
           campaign: campaignResult.data,
-          menus: storeResult.ok ? storeResult.data.menus : [],
+          menus: storeResult.ok ? storeResult.data.menus : null,
           posterHtml: posterResult.ok
             ? (posterResult.data?.html ?? 'none')
             : null,
@@ -60,5 +61,10 @@ export const useCampaignDetail = (id: string) => {
     setRequestId((value) => value + 1);
   };
 
-  return { retry, state };
+  // 중단, 종료처럼 캠페인을 바꾼 뒤 다시 불러온다. 지금 화면을 그대로 둔 채 결과가 오면 바꾼다
+  const reload = () => {
+    setRequestId((value) => value + 1);
+  };
+
+  return { reload, retry, state };
 };

@@ -164,6 +164,10 @@ export function DateRangePicker({
     selectedRange.startDate || selectedRange.endDate,
   );
 
+  const rangeLabel = hasSelectedRange
+    ? `${selectedRange.startDate ? formatRangeLabel(selectedRange.startDate) : startLabel} ~ ${selectedRange.endDate ? formatRangeLabel(selectedRange.endDate) : endLabel}`
+    : placeholder;
+
   return (
     <div
       className="relative w-[var(--layout-date-range-picker-width)] max-w-full shrink-0"
@@ -172,7 +176,7 @@ export function DateRangePicker({
       <button
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel + ': ' + rangeLabel}
         className="flex h-10 w-full items-center gap-2 rounded-md border border-border-subtle bg-bg-surface px-3 text-left text-caption-web text-text-primary transition-colors hover:border-border-subtle focus:border-action-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-disabled"
         disabled={disabled}
         onClick={handleOpen}
@@ -185,9 +189,7 @@ export function DateRangePicker({
         <span
           className={`min-w-0 truncate ${hasSelectedRange ? '' : 'text-text-secondary'}`}
         >
-          {hasSelectedRange
-            ? `${selectedRange.startDate ? formatRangeLabel(selectedRange.startDate) : startLabel} ~ ${selectedRange.endDate ? formatRangeLabel(selectedRange.endDate) : endLabel}`
-            : placeholder}
+          {rangeLabel}
         </span>
       </button>
 
