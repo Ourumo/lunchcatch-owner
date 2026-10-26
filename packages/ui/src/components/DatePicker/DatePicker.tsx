@@ -224,14 +224,14 @@ export function DatePicker({
 
           <div className="mt-4 flex items-center justify-between border-t border-border-subtle pt-3">
             <button
-              className="text-caption-web text-text-secondary transition-colors hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
+              className="text-caption-web text-text-secondary transition-colors hover:text-action-primary-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary"
               onClick={() => handleValueChange('')}
               type="button"
             >
               초기화
             </button>
             <button
-              className="text-caption-web font-medium text-action-primary transition-colors hover:text-action-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled"
+              className="text-caption-web font-medium text-action-primary-text transition-colors hover:text-action-primary-text-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled"
               disabled={!!maxDate && formatDateValue(today) > maxDate}
               onClick={() => handleValueChange(formatDateValue(today))}
               type="button"
