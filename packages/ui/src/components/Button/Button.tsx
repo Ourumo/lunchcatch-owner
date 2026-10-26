@@ -14,11 +14,11 @@ const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     'border-transparent bg-action-primary text-text-inverse enabled:hover:bg-action-primary-hover',
   secondary:
-    'border-action-primary bg-bg-surface text-action-primary enabled:hover:bg-surface-subtle',
+    'border-action-primary bg-bg-surface text-action-primary-text enabled:hover:bg-surface-subtle',
   neutral:
     'border-border-subtle bg-bg-surface text-text-secondary enabled:hover:bg-surface-subtle enabled:hover:text-text-primary',
   tertiary:
-    'border-transparent bg-transparent text-action-primary enabled:hover:bg-surface-subtle',
+    'border-transparent bg-transparent text-action-primary-text enabled:hover:bg-surface-subtle',
   danger:
     'border-transparent bg-status-danger-border text-text-inverse enabled:hover:opacity-90',
 };
