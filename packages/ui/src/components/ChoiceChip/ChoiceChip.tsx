@@ -23,7 +23,7 @@ export function ChoiceChip({
         .join(' ')}
     >
       <input className="peer sr-only" type={type} {...props} />
-      <span className="flex w-full items-center justify-center rounded-full border border-border-subtle bg-bg-surface px-3.5 text-caption-mobile font-medium whitespace-nowrap text-text-primary transition-colors peer-checked:bg-surface-brand peer-checked:text-action-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary">
+      <span className="flex w-full items-center justify-center rounded-full border border-border-subtle bg-bg-surface px-3.5 text-caption-mobile font-medium whitespace-nowrap text-text-primary transition-colors peer-checked:bg-surface-brand peer-checked:text-action-primary-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action-primary">
         {children}
       </span>
     </label>

@@ -129,6 +129,9 @@
 
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-600);
+  /* 글자 대비는 배경·테두리·그래프의 강조색과 독립적으로 조정한다. */
+  --semantic-action-primary-text: var(--semantic-action-primary);
+  --semantic-action-primary-text-hover: var(--semantic-action-primary-hover);
   --semantic-action-primary-disabled: var(--primitive-neutral-200);
   --semantic-action-disabled-fg: var(--primitive-neutral-900);
 
@@ -184,6 +187,8 @@
 
   --semantic-action-primary: var(--primitive-brand-500);
   --semantic-action-primary-hover: var(--primitive-brand-400);
+  --semantic-action-primary-text: var(--semantic-action-primary);
+  --semantic-action-primary-text-hover: var(--semantic-action-primary-hover);
   --semantic-action-primary-disabled: var(--primitive-neutral-500);
   --semantic-action-disabled-fg: var(--primitive-neutral-0);
 
@@ -257,6 +262,8 @@
   --color-border-subtle: var(--semantic-border-subtle);
   --color-action-primary: var(--semantic-action-primary);
   --color-action-primary-hover: var(--semantic-action-primary-hover);
+  --color-action-primary-text: var(--semantic-action-primary-text);
+  --color-action-primary-text-hover: var(--semantic-action-primary-text-hover);
   --color-action-primary-disabled: var(--semantic-action-primary-disabled);
   --color-action-disabled-fg: var(--semantic-action-disabled-fg);
   --color-surface-brand: var(--semantic-surface-brand);

@@ -39,9 +39,9 @@ export function Tabs({ defaultValue, items, onValueChange, value }: TabsProps) {
         return (
           <button
             aria-selected={isSelected}
-            className={`relative border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-action-primary hover:text-action-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled ${
+            className={`relative border-0 bg-transparent text-body-web font-normal transition-colors duration-150 ease-out after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-action-primary hover:text-action-primary-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-primary disabled:cursor-not-allowed disabled:text-text-disabled ${
               isSelected
-                ? 'text-action-primary after:block'
+                ? 'text-action-primary-text after:block'
                 : 'text-text-secondary after:hidden'
             }`}
             disabled={item.disabled}
