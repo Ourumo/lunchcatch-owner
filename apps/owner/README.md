@@ -129,6 +129,7 @@ pnpm dev:owner   # http://localhost:5174
 | 변수 | 내용 |
 | --- | --- |
 | `API_PROXY_TARGET` | 로컬 Vite 프록시가 요청을 넘길 API 서버. 비우면 `http://localhost:8080` |
+| `S3_UPLOAD_PROXY_TARGET` | 로컬 Vite 프록시가 사진 업로드를 넘길 S3 버킷. 비우면 개발 서버 버킷. `API_PROXY_TARGET`을 다른 서버로 바꾸면 그 서버가 쓰는 버킷으로 함께 바꿔야 업로드가 됨 |
 | `VITE_KAKAO_JS_KEY` | 입점 신청 위치 검색용 카카오 지도 키. 카카오에 등록한 도메인(`localhost:5174` 등)에서만 동작 |
 | `VITE_TOSS_CLIENT_KEY` | 포인트 충전 결제위젯 클라이언트 키. 시크릿 키는 백엔드에만 둠 |
 | `VITE_MOCK_OWNER_STATUS` | `ACTIVE` 또는 `ONBOARDING`을 넣으면 서버에 묻지 않고 그 상태로 로그인한 것으로 봄. 로컬 개발에서만 읽음 |
