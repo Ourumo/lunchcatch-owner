@@ -5,7 +5,7 @@
 <p align="center">
   <img src="docs/images/user-splash.webp" alt="사용자 앱 스플래시 화면" width="148" />
   <img src="docs/images/owner-home.webp" alt="점주 앱 홈의 진행 중인 캠페인" width="148" />
-  <img src="docs/images/admin-template-chat.webp" alt="관리자 앱 채팅으로 템플릿 만들기" width="512" />
+  <img src="docs/images/admin-template-chat.webp" alt="라이트모드 관리자 템플릿 편집기의 AI 채팅·포스터·HTML 미리보기" width="512" />
   <br />
   <sub>왼쪽부터 사용자 앱 · 점주 앱 · 관리자 앱</sub>
 </p>
@@ -87,7 +87,7 @@
 
 | 화면 | 기능 |
 | :---: | --- |
-| <img src="docs/images/feature-1-admin.webp" alt="관리자가 채팅으로 포스터 템플릿을 만들고 미리보는 화면" width="360" /> | **1. 관리자 · AI로 포스터 템플릿 제작**<br><br>• 채팅으로 요청하면 LLM이 포스터 템플릿 HTML을 생성하고, 결과를 iframe으로 바로 미리보기<br>• 마음에 드는 결과는 임시저장해 버전으로 쌓고, 그중 하나를 게시해 점주에게 공개 |
+| <img src="docs/images/feature-1-admin.webp" alt="최신 관리자 템플릿 편집 화면" width="360" /> | **1. 관리자 · AI로 포스터 템플릿 제작**<br><br>• AI 채팅과 미리보기·HTML 요소 선택으로 포스터 템플릿을 생성·수정<br>• 버전별 결과를 확인하고 게시·재게시하며 점주 노출 여부 관리 |
 | <img src="docs/images/feature-2-owner.webp" alt="점주 홈과 캠페인 포스터 화면" width="360" /> | **2. 점주 · 캠페인과 포스터 등록**<br><br>• 공개된 템플릿을 골라 가게 사진, 할인 문구 같은 빈칸만 채워 포스터 제작<br>• 쿠폰 조건, 노출 대상, 하루 예산과 기간을 정하고, 자동 검수를 통과하면 캠페인 노출 |
 | <img src="docs/images/feature-3-user.webp" alt="오늘 점심 스와이프 피드와 11:00 오픈 뒤 찜 목록" width="360" /> | **3. 사용자 · 찜하고 11:00 선착순 발급**<br><br>• 10:00부터 주변 가게 포스터를 카드로 넘기며 마음에 드는 쿠폰 찜<br>• 10:50에 오픈 알림을 받고, 11:00에 찜한 쿠폰을 선착순으로 발급 |
 | <img src="docs/images/feature-4-store.webp" alt="60초 1회용 쿠폰 QR" width="360" /> | **4. 매장 · QR로 쿠폰 사용**<br><br>• 사용자가 60초 동안만 유효한 1회용 QR을 보여주면 점주가 스캔해 사용 처리<br>• QR은 60초마다 새로 바뀌고 한 번 쓰면 다시 쓸 수 없어, 캡처한 QR로 돌려쓰기 방지 |
