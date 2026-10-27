@@ -52,7 +52,7 @@
 | iframe 미리보기 | 관리자 템플릿, 점주 포스터, 사용자 피드와 가게 상세의 포스터를 모두 iframe으로 표시 |
 | 저장과 수정 이력 | 미리보기를 확인하고 임시저장할 때마다 새 버전으로 저장 |
 | 게시 상태 관리 | 템플릿은 임시저장 → 게시 → 활성/비활성, 캠페인은 활성화 → 중단·재개 → 종료 |
-| 이벤트 기간과 노출 제어 | 캠페인 집행 기간과 하루 예산, 서빙 시간대(10:00~12:59) |
+| 이벤트 기간과 노출 제어 | 캠페인 집행 기간과 하루 예산 안에서 하루 종일 피드에 노출, 쿠폰 발급은 11:00~14:00 |
 | 사용자 화면에서 조회 | 점주가 만든 포스터가 사용자 피드와 가게 상세에 그대로 노출 |
 
 </details>
@@ -89,7 +89,7 @@
 | :---: | --- |
 | <img src="docs/images/feature-1-admin.webp" alt="최신 관리자 템플릿 편집 화면" width="360" /> | **1. 관리자 · AI로 포스터 템플릿 제작**<br><br>• AI 채팅과 미리보기·HTML 요소 선택으로 포스터 템플릿을 생성·수정<br>• 버전별 결과를 확인하고 게시·재게시하며 점주 노출 여부 관리 |
 | <img src="docs/images/feature-2-owner.webp" alt="점주 홈과 캠페인 포스터 화면" width="360" /> | **2. 점주 · 캠페인과 포스터 등록**<br><br>• 공개된 템플릿을 골라 가게 사진, 할인 문구 같은 빈칸만 채워 포스터 제작<br>• 쿠폰 조건, 노출 대상, 하루 예산과 기간을 정하고, 자동 검수를 통과하면 캠페인 노출 |
-| <img src="docs/images/feature-3-user.webp" alt="오늘 점심 스와이프 피드와 11:00 오픈 뒤 찜 목록" width="360" /> | **3. 사용자 · 찜하고 11:00 선착순 발급**<br><br>• 10:00부터 주변 가게 포스터를 카드로 넘기며 마음에 드는 쿠폰 찜<br>• 10:50에 오픈 알림을 받고, 11:00에 찜한 쿠폰을 선착순으로 발급 |
+| <img src="docs/images/feature-3-user.webp" alt="오늘 점심 스와이프 피드와 11:00 오픈 뒤 찜 목록" width="360" /> | **3. 사용자 · 찜하고 11:00 선착순 발급**<br><br>• 주변 가게 포스터를 카드로 넘기며 마음에 드는 쿠폰 찜 (피드는 하루 종일)<br>• 11:00에 찜한 쿠폰을 선착순으로 발급 (14:00 마감, 하루 최대 3장) |
 | <img src="docs/images/feature-4-store.webp" alt="60초 1회용 쿠폰 QR" width="360" /> | **4. 매장 · QR로 쿠폰 사용**<br><br>• 사용자가 60초 동안만 유효한 1회용 QR을 보여주면 점주가 스캔해 사용 처리<br>• QR은 60초마다 새로 바뀌고 한 번 쓰면 다시 쓸 수 없어, 캡처한 QR로 돌려쓰기 방지 |
 
 <br>
@@ -112,9 +112,10 @@
 | Monorepo | pnpm workspaces, Turborepo |
 | UI · 문서 | Storybook 10, Vitest (`@repo/ui` 공통 컴포넌트) |
 | 코드 품질 | ESLint, Prettier, Husky, lint-staged |
-| 인증 · 알림 | Kakao Login (OAuth), Firebase Cloud Messaging |
+| 인증 | Kakao Login (OAuth) |
+| 지도 · 결제 | Kakao Maps JavaScript SDK (지도, 장소·주소 검색), Toss Payments (점주 포인트 충전) |
 | Backend | Java 21, Spring Boot 4, MySQL 8.4, Valkey 9 ([lc-backend](https://github.com/lunch-catch/lc-backend) 참고) |
-| AI | LLM (AWS Bedrock 예정, 백엔드에서 호출) |
+| AI | LLM (AWS Bedrock, 백엔드에서 호출) |
 | 배포 | Vercel (프론트 앱별 프로젝트), AWS · Terraform (백엔드, [lc-infra](https://github.com/lunch-catch/lc-infra) 참고) |
 | 협업 | GitHub (Issues, Projects), Figma, Notion |
 
@@ -143,10 +144,8 @@
 
 ### HttpOnly 쿠키 인증
 
-<!-- TODO: 점주 앱 API 클라이언트를 만든 뒤 함께 적용됐는지 확인 -->
-
 - 서버가 발급한 HttpOnly 쿠키를 브라우저가 요청마다 자동으로 전송하고, 프론트는 토큰을 직접 저장하거나 읽지 않음
-- API 요청에는 `credentials: 'include'`만 설정
+- 세 앱 모두 API 요청에는 `credentials: 'include'`만 설정
 
 <br>
 
@@ -179,8 +178,11 @@ pnpm install
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | 배포 | API 서버 주소 (빌드할 때 코드에 들어가 Vercel에 설정) |
 | `API_PROXY_TARGET` | 로컬 개발 | `/v1` 요청을 넘길 API 서버. 기본값 `http://localhost:8080` |
+| `VITE_KAKAO_JS_KEY` | 사용자 · 점주 | 카카오 지도 JavaScript 키 (지도, 장소·주소 검색). 카카오 디벨로퍼스에 등록한 도메인에서만 동작 |
+| `VITE_TOSS_CLIENT_KEY` | 점주 | 토스페이먼츠 클라이언트 키 (포인트 충전 결제창) |
 
-- 로컬에서는 환경 변수 파일 없이 실행 가능
+- 로컬에서는 환경 변수 파일 없이도 실행되지만, 카카오 키가 없으면 지도와 위치 검색이, 토스 키가 없으면 결제가 동작하지 않음
+- 앱마다 `.env.example`에 필요한 값이 정리되어 있음
 - `VITE_API_BASE_URL`을 비워 두면 Vite 개발 서버가 `/v1` 요청을 `API_PROXY_TARGET`으로 넘겨, CORS 설정 없이 쿠키까지 주고받음
 - 로컬 백엔드 대신 개발 서버에 붙이려면 앱 폴더에 `.env.local` 생성 (git에 올라가지 않음)
 
@@ -210,6 +212,9 @@ API_PROXY_TARGET=https://api.dev.lunchcatch.com
 | `pnpm lint` | ESLint 검사 |
 | `pnpm typecheck` | 타입 검사 |
 | `pnpm format:check` | Prettier 검사 |
+| `pnpm test:storybook` | 공통 컴포넌트 Storybook 테스트 (접근성 검사 포함) |
+
+- Storybook 테스트는 Playwright 브라우저로 돌아가서, 처음 한 번 `pnpm exec playwright install chromium-headless-shell` 필요
 
 ### 6. 배포
 
@@ -242,7 +247,7 @@ lc-frontend/
 ## 협업 규칙
 
 - 작업은 [GitHub Projects · Frontend](https://github.com/orgs/lunch-catch/projects/15)에서 이슈 단위로 관리
-- 브랜치는 `main`(배포), `develop`(개발 통합), `feat/*`(기능 개발)로 구분
+- 브랜치는 `main`(배포), `develop`(개발 통합)과, develop에서 따는 작업 브랜치(`feat/*`, `fix/*` 등 커밋 타입과 같은 이름)로 구분
 - 커밋 메시지는 `feat`, `fix`, `docs`, `chore` 같은 타입 뒤에 한국어 설명
 - 커밋 전에 Husky와 lint-staged가 ESLint와 Prettier 자동 실행
 
