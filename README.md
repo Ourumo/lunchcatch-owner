@@ -2,7 +2,7 @@
 
 > 주변 가게와 직장인을 점심 쿠폰으로 이어주는 위치 기반 쿠폰 플랫폼 **런치캐치**의 점주 앱
 >
-> 🏆 유레카 융합 프로젝트 최우수상
+> 🏆 **유레카 4기 융합 프로젝트 최우수상**
 
 | 홈 | 포스터 만들기 | 캠페인 확인 |
 | :---: | :---: | :---: |
@@ -12,11 +12,11 @@
 
 ## 이 저장소에 대해
 
-- **원본**: 팀 저장소 [lunch-catch/lc-frontend](https://github.com/lunch-catch/lc-frontend) (2026.09.09 ~ 2026.10.28, 프론트엔드 3 · 백엔드 5)
-- 원본에서 제가 맡은 **점주 앱과 공통 패키지만 커밋 기록과 함께 가져와**, 프로젝트가 끝난 뒤에도 이어서 다듬는 개인 저장소입니다.
+- **원본**: [lunch-catch/lc-frontend](https://github.com/lunch-catch/lc-frontend) (2026.09.09 ~ 2026.10.28, 프론트엔드 3 · 백엔드 5)
+- 원본에서 **점주 앱과 공통 패키지만 커밋 기록과 함께 가져와**, 프로젝트가 끝난 뒤에도 이어서 다듬는 개인 저장소입니다.
 - 원본과 다른 점
-  - 사용자 앱과 관리자 앱은 뺐습니다. 두 앱은 원본 저장소에서 볼 수 있습니다.
-  - 서비스 도메인과 API 서버는 프로젝트가 끝나 내려갔습니다. 지금은 화면을 열면 로그인 정보 확인에서 멈춥니다. 서버 없이 화면을 볼 수 있도록 목 데이터 작업을 할 예정입니다.
+  - 사용자 앱과 관리자 앱은 제외했습니다. 두 앱은 [원본 저장소](https://github.com/lunch-catch/lc-frontend)에서 볼 수 있습니다.
+  - 서비스 도메인과 API 서버 없이 목 데이터로 화면을 볼 수 있습니다.
 - 커밋 메시지와 문서의 이슈 · PR 번호(`#315` 등)는 **원본 저장소 기준**입니다. 원본의 [Issues](https://github.com/lunch-catch/lc-frontend/issues?q=is%3Aissue)와 [Pull requests](https://github.com/lunch-catch/lc-frontend/pulls?q=is%3Apr)에서 찾을 수 있습니다.
 
 <br>
@@ -28,24 +28,26 @@
 
 <img src="docs/images/core-flow.webp" alt="1 관리자 AI로 템플릿 제작, 2 점주 캠페인·포스터 등록, 3 사용자 찜하고 11:00 발급, 4 매장 QR로 쿠폰 사용으로 이어지는 흐름" width="800" />
 
-점주 앱의 서비스 규칙, 주요 화면, 구현 고민은 [점주 앱 README](apps/owner/README.md)에 정리했습니다.
+점주 앱의 서비스 규칙, 주요 화면, 구현 고민 등 자세한 내용은 [점주 앱 README](apps/owner/README.md)에 정리했습니다.
 
 <br>
 
 ## 맡은 일
 
-**이규태 [@Ourumo](https://github.com/Ourumo)** · FE 파트장 · 점주 앱 전담
-
-- **개발 환경**: Vite · React 프로젝트 생성, ESLint · Prettier · Husky 도입, npm 단일 앱을 pnpm workspaces + Turborepo 모노레포로 전환, import 경로 규칙을 ESLint 규칙으로 직접 작성(`packages/eslint-config/rules`), CodeRabbit 자동 리뷰 설정
-- **점주 앱 전체**: 입점 신청 6단계(단계별 저장 · 이어하기, 카카오 지도 장소 검색, S3 사진 업로드), 캠페인 등록 · 포스터 · 상태별 처리, 토스페이먼츠 포인트 충전 · 내역 · 환불, QR 쿠폰 사용 처리, 가게 분석, 토큰 재발급과 탭 간 로그인 상태 동기화
-
-### 함께한 사람
-
-| 이름 | 역할 |
-| --- | --- |
-| 고유정 [@daenggg](https://github.com/daenggg) | 관리자 앱. 공통 컴포넌트 12종(`@repo/ui`)과 Tailwind · Storybook 초기 설정 |
-| 서지현 [@jhwest-dev](https://github.com/jhwest-dev) | 사용자 앱 |
-| 백엔드 5명 | 원본 저장소 [팀원 소개](https://github.com/lunch-catch/lc-frontend#팀원-소개) 참고 · [lc-backend](https://github.com/lunch-catch/lc-backend) |
+- **역할**: FE 파트장 · 점주 앱 전담
+- **개발 환경**:
+  1. Vite · React 프로젝트 생성
+  2. ESLint · Prettier · Husky 도입
+  3. npm 단일 앱을 pnpm workspaces + Turborepo 모노레포로 전환
+  4. import 경로 규칙을 ESLint 규칙으로 직접 작성(`packages/eslint-config/rules`)
+  5. CodeRabbit 자동 리뷰 설정
+- **점주 앱 전체**:
+  1. 입점 신청 6단계(단계별 저장 · 이어하기, 카카오 지도 장소 검색, S3 사진 업로드)
+  2. 캠페인 등록 · 포스터 · 상태별 처리
+  3. 토스페이먼츠 포인트 충전 · 내역 · 환불
+  4. QR 쿠폰 사용 처리
+  5. 가게 분석 및 통계
+  6. 토큰 재발급과 탭 간 로그인 상태 동기화
 
 <br>
 
