@@ -7,9 +7,7 @@ pnpm workspaces와 Turborepo 기반 모노레포입니다. 역할(사용자, 점
 ```
 lc-frontend/
 ├── apps/
-│   ├── user/              # 사용자(직장인) 앱
 │   ├── owner/             # 점주 앱
-│   ├── admin/             # 관리자 앱
 │   └── storybook/         # 컴포넌트 문서·테스트용 Storybook
 ├── packages/
 │   ├── ui/                # @repo/ui: 공통 컴포넌트, 디자인 토큰, 전역 스타일, 테마
@@ -26,9 +24,7 @@ lc-frontend/
 
 | 앱 | 패키지 이름 | 포트 |
 | --- | --- | --- |
-| user | `user` | 5173 |
 | owner | `owner` | 5174 |
-| admin | `admin` | 5175 |
 | storybook | `storybook-app` | 6006 |
 
 포트가 이미 사용 중이면 다른 포트로 넘어가지 않고 에러로 멈춥니다(`strictPort`).
@@ -87,26 +83,22 @@ apps/* ──→ @repo/ui, @repo/utils
 
 | 앱 | 별칭 | 가리키는 폴더 |
 | --- | --- | --- |
-| user | `@user/` | `apps/user/src` |
 | owner | `@owner/` | `apps/owner/src` |
-| admin | `@admin/` | `apps/admin/src` |
 
 ### 별칭과 상대 경로
 
-`src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/billing`, `ui/DataTable`)
+`src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/signup`, `ui/TopBar`)
 
 | 가져오는 대상 | 경로 |
 | --- | --- |
 | 같은 모듈 안의 파일 | 상대 경로(`./`, `../`) |
-| 모듈 밖의 파일 (다른 기능, 다른 레이어) | 앱 별칭(`@admin/`) |
+| 모듈 밖의 파일 (다른 기능, 다른 레이어) | 앱 별칭(`@owner/`) |
 
 ```tsx
-// apps/admin/src/features/billing/ui/RefundDetails.tsx (모듈: features/billing)
-import { type AdminRefund, processRefund } from '@admin/api/refunds';
-import { AdminModal } from '@admin/ui/AdminModal/AdminModal';
+// apps/owner/src/features/signup/steps/TermsStep.tsx (모듈: features/signup)
+import { ownerTerms, type TermsItem } from '@owner/api/signupFlow';
 
-import { useBillingMutation } from '../useBillingMutation';
-import { DetailItem } from './BillingDetails';
+import { useSignupFlow } from '../useSignupFlow';
 ```
 
 - 레이어 바로 아래 파일(`api/store.ts` 등)은 파일 하나가 모듈입니다. 같은 폴더는 `./`로 가져오고, `../`는 쓰지 않습니다.
@@ -115,7 +107,7 @@ import { DetailItem } from './BillingDetails';
 
 ### 별칭 설정
 
-- 앱마다 별칭 이름이 다른 이유는 Storybook이 세 앱의 컴포넌트를 한꺼번에 읽기 때문입니다. 모두 `@/`를 쓰면 어느 앱의 `src`인지 구분할 수 없습니다.
+- 원본 저장소에서는 Storybook이 세 앱(`user`, `owner`, `admin`)의 컴포넌트를 한꺼번에 읽어, 모두 `@/`를 쓰면 어느 앱의 `src`인지 구분할 수 없어서 앱마다 별칭 이름을 달리했습니다. 이 저장소는 점주 앱만 남아 `@owner/`만 씁니다.
 - 각 앱은 자기 별칭만 인식하므로, 다른 앱의 별칭을 import하면 타입 에러가 납니다.
 - 별칭은 앱의 `tsconfig.app.json`(`paths`)에만 정의합니다. Vite와 Storybook은 `resolve.tsconfigPaths` 옵션으로 이 값을 그대로 읽으므로 따로 등록하지 않습니다.
 - 앱을 추가하면 새 앱의 `tsconfig.app.json`에 `paths`를, `packages/eslint-config/index.js`의 `aliasApps`에 앱 이름을 추가합니다. import 정렬 그룹과 import 경로 규칙이 이 목록을 함께 씁니다.

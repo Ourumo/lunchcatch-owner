@@ -4,7 +4,8 @@
 
 ## 기술 스택
 
-- pnpm workspaces + Turborepo 모노레포 (`apps/user`, `apps/owner`, `apps/admin`, `packages/*`)
+- pnpm workspaces + Turborepo 모노레포 (`apps/owner`, `apps/storybook`, `packages/*`)
+- 원본 저장소 [lunch-catch/lc-frontend](https://github.com/lunch-catch/lc-frontend)에서 점주 앱만 가져온 저장소. 사용자 · 관리자 앱과 명세는 원본에 있음
 - React 19 + Vite 8 + TypeScript
 - Tailwind CSS
 - Storybook (`apps/storybook`)
@@ -13,9 +14,7 @@
 
 ## 참고 문서
 
-- docs/requirements-user.md — 사용자(직장인) 요구사항 명세서
 - docs/requirements-owner.md — 점주 요구사항 명세서
-- docs/requirements-admin.md — 관리자 요구사항 명세서
 - docs/requirements-common.md — 공통/시스템 요구사항
 - docs/folder-structure.md — 폴더 구조
 - docs/conventions.md — 코딩/커밋/브랜치 규칙

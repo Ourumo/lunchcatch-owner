@@ -40,7 +40,7 @@ feat: 카카오 로그인 화면 구현
 - 파일명: 컴포넌트는 PascalCase, 유틸/훅은 camelCase
 - import 경로 (앱 코드): `src/<레이어>/<이름>` 폴더 하나를 모듈로 봅니다. (예: `features/signup`)
   - 같은 모듈 안은 상대 경로(`./`, `../`)로 가져옵니다.
-  - 모듈 밖(다른 기능, 다른 레이어)은 앱 경로 별칭(`@user/`, `@owner/`, `@admin/`)으로 가져옵니다.
+  - 모듈 밖(다른 기능, 다른 레이어)은 앱 경로 별칭(`@owner/`)으로 가져옵니다.
   - 어기면 ESLint에서 에러로 처리됩니다. `packages`는 별칭이 없으므로 이 규칙을 적용하지 않습니다. 자세한 기준은 `docs/folder-structure.md` "Path alias"를 봅니다.
 
 ```tsx
@@ -81,11 +81,9 @@ pnpm install
 
 | 명령어 | 설명 |
 | --- | --- |
-| `pnpm dev` | user, owner, admin 앱 개발 서버 실행 (Storybook 제외) |
-| `pnpm dev:user` | user 앱 개발 서버만 실행 |
+| `pnpm dev` | owner 앱 개발 서버 실행 (Storybook 제외) |
 | `pnpm dev:owner` | owner 앱 개발 서버만 실행 |
-| `pnpm dev:admin` | admin 앱 개발 서버만 실행 |
-| `pnpm build` | user, owner, admin 앱 빌드 (Storybook 제외) |
+| `pnpm build` | owner 앱 빌드 (Storybook 제외) |
 | `pnpm storybook` | Storybook 개발 서버 실행 |
 | `pnpm build-storybook` | Storybook 빌드 |
 | `pnpm test:storybook` | Storybook 테스트 실행 |
@@ -93,7 +91,7 @@ pnpm install
 그 밖에 특정 앱이나 패키지에서만 태스크를 실행하려면 `--filter`로 패키지 이름을 지정합니다.
 
 ```bash
-pnpm exec turbo run build --filter=admin
+pnpm exec turbo run build --filter=owner
 ```
 
 ### 의존성 추가

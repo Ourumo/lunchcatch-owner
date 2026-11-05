@@ -1,6 +1,8 @@
 # 배포
 
-> 프론트 세 앱의 배포 설정과 운영 시 알아 둘 점 (팀 내부용)
+> 점주 앱의 배포 설정과 운영 시 알아 둘 점
+>
+> 원본 저장소에서는 세 앱을 Vercel 프로젝트로 나눠 배포했고, 서비스 도메인(`lunchcatch.com`)과 API 서버는 프로젝트가 끝나 내려갔습니다. 지금은 `lunchcatch-owner.vercel.app`만 남아 있습니다.
 
 [← 프로젝트 README로 돌아가기](../README.md#포팅-매뉴얼)
 
@@ -8,11 +10,11 @@
 
 <!-- TODO: 실제 Vercel 프로젝트 설정과 맞는지 확인 -->
 
-- 세 앱은 Vercel 프로젝트를 하나씩 만들어 따로 배포하며, 프로젝트마다 아래처럼 설정
+- 점주 앱 Vercel 프로젝트 설정
 
 | 항목 | 값 |
 | --- | --- |
-| Root Directory | `apps/user`, `apps/owner`, `apps/admin` 중 하나 |
+| Root Directory | `apps/owner` |
 | Framework Preset | Vite |
 | Install Command | `pnpm install` |
 | Build Command | `pnpm build` (앱의 `tsc -b && vite build`) |
@@ -29,7 +31,6 @@
 
 | 앱 | 쓰는 곳 |
 | --- | --- |
-| `apps/user` | 가게 지도, 주소 검색 |
 | `apps/owner` | 입점 신청 매장 위치 장소 검색 |
 
 - 카카오 지도 키는 카카오 디벨로퍼스 [앱] > [플랫폼 키] > [JavaScript 키] > [JavaScript SDK 도메인]에 등록한 도메인에서만 동작하므로, Production과 Preview에서 실제로 여는 주소를 모두 등록하고 배포 주소가 바뀌면 함께 변경 필요
@@ -45,5 +46,4 @@
 
 - 인증 쿠키가 `lunchcatch.com` 아래 주소에만 발급되어, PR 미리보기(`*.vercel.app`)에서는 로그인 불가
 - API 서버의 CORS도 `lunchcatch.com` 아래 주소만 허용
-- 카카오 로그인 콜백 경로는 사용자 앱의 `/oauth/callback`이며, 바꾸면 백엔드와 카카오 콘솔 설정도 함께 변경 필요
 - 개발 API 서버(`api.dev.lunchcatch.com`)는 필요할 때만 켜 두므로, 연동 테스트 전에 인프라 담당에게 요청
