@@ -127,7 +127,7 @@
 - 기술 스택: React 19, TypeScript, Vite, React Router, Tailwind CSS v4, 카카오 지도, 토스페이먼츠 결제위젯
 
 ```bash
-pnpm dev:owner   # http://localhost:5174
+pnpm dev   # http://localhost:5174
 ```
 
 - API 서버가 필요합니다. 원본 백엔드 [lc-backend](https://github.com/lunch-catch/lc-backend)를 로컬(`http://localhost:8080`)에서 실행하면 Vite 프록시가 `/v1` 요청을 넘깁니다.
@@ -141,7 +141,7 @@ pnpm dev:owner   # http://localhost:5174
 | `S3_UPLOAD_PROXY_TARGET` | 로컬 Vite 프록시가 사진 업로드를 넘길 S3 버킷. 비우면 원본의 개발 버킷을 쓰는데 지금은 없어서, 사진을 올리려면 로컬 백엔드가 쓰는 버킷으로 바꿔야 함 |
 | `VITE_KAKAO_JS_KEY` | 입점 신청 위치 검색용 카카오 지도 키. 카카오에 등록한 도메인(`localhost:5174` 등)에서만 동작 |
 | `VITE_TOSS_CLIENT_KEY` | 포인트 충전 결제위젯 클라이언트 키. 시크릿 키는 백엔드에만 둠 |
-| `VITE_MOCK_OWNER_STATUS` | `ACTIVE` 또는 `ONBOARDING`을 넣으면 앱 시작 때 서버에 묻지 않고 그 상태로 로그인한 것으로 봄. **로그인 상태만 흉내 내고** 가게 · 캠페인 같은 데이터 요청은 그대로 서버로 보냄. 로컬 개발(`pnpm dev:owner`)에서만 읽고 배포 빌드에서는 무시 |
+| `VITE_MOCK_OWNER_STATUS` | `ACTIVE` 또는 `ONBOARDING`을 넣으면 앱 시작 때 서버에 묻지 않고 그 상태로 로그인한 것으로 봄. **로그인 상태만 흉내 내고** 가게 · 캠페인 같은 데이터 요청은 그대로 서버로 보냄. 로컬 개발(`pnpm dev`)에서만 읽고 배포 빌드에서는 무시 |
 
 <br>
 

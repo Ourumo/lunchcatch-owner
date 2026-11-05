@@ -84,7 +84,7 @@ npm install -g corepack
 corepack enable pnpm
 pnpm install
 
-pnpm dev:owner   # http://localhost:5174
+pnpm dev   # http://localhost:5174
 ```
 
 - `pnpm install`이 끝나면 Husky가 커밋 전 검사(ESLint, Prettier)를 자동 설정
