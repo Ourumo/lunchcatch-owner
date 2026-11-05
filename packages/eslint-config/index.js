@@ -14,7 +14,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import moduleImportPath from './rules/module-import-path.js';
 
 // 경로 별칭(@<앱>/)을 쓰는 앱. 앱을 추가하면 여기에도 추가한다
-const aliasApps = ['admin', 'owner', 'user'];
+const aliasApps = ['owner'];
 
 export default defineConfig([
   globalIgnores(['dist', 'storybook-static']),

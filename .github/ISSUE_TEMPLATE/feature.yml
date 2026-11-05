@@ -9,9 +9,7 @@ body:
       label: 도메인
       description: 작업 대상 화면 또는 공용 컴포넌트 범위를 선택한다
       options:
-        - admin
         - owner
-        - user
         - shared
     validations:
       required: true
