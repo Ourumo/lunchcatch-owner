@@ -6,7 +6,7 @@
 
 [← 프로젝트 README로 돌아가기](../../README.md)
 
-> **현재 상태**: 프로젝트가 끝나 API 서버가 내려갔습니다. 배포 화면([lunchcatch-owner.vercel.app](https://lunchcatch-owner.vercel.app/))은 지금 로그인 정보 확인에서 멈춥니다. 서버 없이 화면을 볼 수 있도록 목 데이터 작업을 할 예정입니다.
+> **현재 상태**: 프로젝트가 끝나 API 서버가 내려갔습니다. 배포 화면([lunchcatch-owner-demo.vercel.app](https://lunchcatch-owner-demo.vercel.app/))은 지금 로그인 정보 확인에서 멈춥니다. 서버 없이 화면을 볼 수 있도록 목 데이터 작업을 할 예정입니다.
 
 | 홈 | 캠페인 생성 | 캠페인 상세 |
 | :---: | :---: | :---: |

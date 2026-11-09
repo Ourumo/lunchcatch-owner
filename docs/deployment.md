@@ -2,7 +2,7 @@
 
 > 점주 앱의 배포 설정과 운영 시 알아 둘 점
 >
-> 원본 저장소에서는 세 앱을 Vercel 프로젝트로 나눠 배포했고, 서비스 도메인(`lunchcatch.com`)과 API 서버는 프로젝트가 끝나 내려갔습니다. 지금은 `lunchcatch-owner.vercel.app`만 남아 있습니다.
+> 원본 저장소에서는 세 앱을 Vercel 프로젝트로 나눠 배포했고, 서비스 도메인(`lunchcatch.com`)과 API 서버는 프로젝트가 끝나 내려갔습니다. 지금은 `lunchcatch-owner-demo.vercel.app`만 남아 있습니다.
 
 [← 프로젝트 README로 돌아가기](../README.md#포팅-매뉴얼)
 
