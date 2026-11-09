@@ -23,17 +23,7 @@
     </script>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>런치캐치 점주</title>
-    <script>
-      // 개발 사이트를 실제 서비스로 착각하지 않도록 탭 이름 앞에 환경을 붙인다
-      // 운영 주소(Vercel 운영 주소)에서만 표시를 빼고, 그 밖의 주소(Vercel 미리보기 등)는 모두 [DEV]로 둔다
-      (() => {
-        const { hostname } = window.location;
-        if (hostname === 'lunchcatch-owner-demo.vercel.app') return;
-        const label = hostname === 'localhost' ? '[LOCAL]' : '[DEV]';
-        document.title = `${label} ${document.title}`;
-      })();
-    </script>
+    <title>런치캐치 점주 | [DEMO]</title>
   </head>
   <body>
     <div id="root"></div>
