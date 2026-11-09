@@ -43,6 +43,7 @@ apps/<앱>/src/
 ├── layout/       # 여러 페이지를 감싸는 틀
 ├── api/          # 서버 요청 함수와 mock 데이터
 ├── auth/         # 로그인 상태와 접근 제어
+├── mocks/        # 목 모드(VITE_USE_MOCK)에서 서버 대신 응답하는 MSW 핸들러와 시연 데이터
 ├── index.css
 └── main.tsx
 ```
@@ -57,6 +58,7 @@ apps/<앱>/src/
 | `layout` | 페이지마다 반복되는 바깥 구조 | 사이드바 레이아웃, 하단 탭바 레이아웃 |
 | `api` | 서버 요청 함수와 mock 데이터 | `store.ts`, `mocks/` |
 | `auth` | 로그인 상태 제공과 비로그인 접근 차단 | `AuthProvider.tsx`, `RequireAuth.tsx` |
+| `mocks` | 목 모드에서 네트워크 요청을 가로채 서버 대신 응답하는 MSW 설정, 핸들러, 시연 데이터. `api/mocks/`(서버에 API가 없는 고정값)와 역할이 다르다 | `browser.ts`, `handlers/auth.ts`, `db.ts` |
 
 ## 의존 방향
 
@@ -74,6 +76,8 @@ apps/* ──→ @repo/ui, @repo/utils
 - `ui`의 import 규칙은 각 앱의 `eslint.config.js`(`no-restricted-imports`)로 검사합니다.
 - `features`끼리는 서로 import하지 않습니다. 두 기능이 같은 코드를 써야 하면 컴포넌트와 표시용 함수는 `ui`나 `@repo/ui`로, 훅은 `hooks`로 옮깁니다.
 - `hooks`는 `features`, `pages`, `app`을 import하지 않습니다. `ui`와 달리 `api`의 요청 함수를 불러도 됩니다.
+- `mocks`는 `main.tsx`만 import합니다. 다른 레이어는 `mocks`를 몰라야 목 모드를 꺼도 앱 코드가 그대로 동작합니다. 예외로 화면이 목 모드인지 알아야 할 때는 `import.meta.env.VITE_USE_MOCK`을 직접 읽습니다.
+- `mocks`는 `api`의 타입만 `import type`으로 가져와 응답 모양을 맞춥니다.
 - 앱끼리는 서로 import하지 않습니다.
 - `packages`는 `apps`를 import하지 않습니다.
 
