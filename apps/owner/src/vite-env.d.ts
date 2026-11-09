@@ -6,8 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_KAKAO_JS_KEY?: string;
   // 토스페이먼츠 결제위젯 클라이언트 키. 포인트 충전 결제창에 쓴다 (시크릿 키는 백엔드에만 둔다)
   readonly VITE_TOSS_CLIENT_KEY?: string;
-  // 개발용 로그인 상태 (ACTIVE, ONBOARDING). 로컬 개발에서만 읽는다 (api/auth.ts getMe)
-  readonly VITE_MOCK_OWNER_STATUS?: string;
+  // 'true'면 목 모드. 서버 대신 MSW가 시연 데이터로 답한다 (src/mocks, main.tsx)
+  readonly VITE_USE_MOCK?: string;
 }
 
 interface ImportMeta {
