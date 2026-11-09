@@ -9,11 +9,16 @@ import {
 } from '@owner/auth/validation';
 import { useCountdown } from '@owner/hooks/useCountdown';
 
+import { demoAccount, isMockMode } from './demoAccount';
+
 interface UseLoginFormOptions {
   onSuccess: (response: LoginResponse) => void;
 }
 
-const initialValues: LoginValues = { email: '', password: '' };
+// 목 모드에서는 시연 계정 값으로 채워 둔다
+const initialValues: LoginValues = isMockMode
+  ? demoAccount
+  : { email: '', password: '' };
 const initialTouched = { email: false, password: false };
 
 export const useLoginForm = ({ onSuccess }: UseLoginFormOptions) => {

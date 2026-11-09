@@ -3,6 +3,7 @@ import { LockKeyhole, Mail } from 'lucide-react';
 
 import type { LoginResponse } from '@owner/api/auth';
 
+import { isMockMode } from './demoAccount';
 import { useLoginForm } from './useLoginForm';
 
 interface LoginFormProps {
@@ -26,6 +27,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     <form className="flex flex-col gap-4" noValidate onSubmit={handleSubmit}>
       <Input
         autoComplete="email"
+        // 목 모드에서는 시연 계정 값을 고칠 수 없게 막는다
+        disabled={isMockMode}
         errorMessage={errors.email}
         inputMode="email"
         label="이메일 주소"
@@ -39,6 +42,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       />
       <Input
         autoComplete="current-password"
+        disabled={isMockMode}
         errorMessage={errors.password}
         label="비밀번호"
         leadingIcon={<LockKeyhole className="size-4" />}
@@ -49,6 +53,14 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
         type="password"
         value={values.password}
       />
+      {isMockMode && (
+        <Toast
+          className="break-keep"
+          description="서버 없이 시연 데이터로 동작해요. 채워진 계정 그대로 로그인을 눌러 둘러보세요."
+          style={{ maxWidth: 'none' }}
+          title="시연용 계정"
+        />
+      )}
       {submitError && (
         <Toast
           className="break-keep"
