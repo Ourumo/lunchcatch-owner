@@ -61,6 +61,7 @@
 | 코드 품질 | ESLint, Prettier, Husky, lint-staged |
 | 지도 · 결제 | Kakao Maps JavaScript SDK (장소 검색), Toss Payments 결제위젯 (포인트 충전) |
 | QR 인식 | BarcodeDetector, ZXing WASM (iOS Safari 대체) |
+| 목 서버 | MSW 3 (서버 없이 시연 데이터로 동작하는 목 모드) |
 | 배포 | Vercel |
 
 <br>
@@ -69,7 +70,7 @@
 
 ### 요구 사항
 
-- Node.js: Vite 8 기준 `20.19` 이상 또는 `22.12` 이상
+- Node.js: ~~Vite 8 기준 `20.19` 이상 또는 `22.12` 이상~~ `22.12` 이상 (목 모드에 쓰는 MSW 3.x가 Node 22.12 이상을 요구)
 - pnpm: 루트 `package.json`의 `packageManager` 버전을 corepack이 자동으로 사용
 
 ### 설치와 실행
@@ -89,6 +90,7 @@ pnpm dev   # http://localhost:5174
 
 - `pnpm install`이 끝나면 Husky가 커밋 전 검사(ESLint, Prettier)를 자동 설정
 - API 서버가 필요합니다. 원본 백엔드 [lc-backend](https://github.com/lunch-catch/lc-backend)를 로컬(`http://localhost:8080`)에서 실행하면 Vite 프록시가 `/v1` 요청을 넘깁니다.
+- 서버 없이 보려면 `VITE_USE_MOCK=true pnpm dev`로 목 모드를 켭니다. 시연 계정이 채워진 로그인 화면에서 로그인 버튼만 누르면 됩니다.
 - 환경 변수는 `apps/owner/.env.local`에 넣습니다. 항목은 [`apps/owner/.env.example`](apps/owner/.env.example)과 [점주 앱 README](apps/owner/README.md#실행)에 있습니다.
 
 ### 빌드와 검사
