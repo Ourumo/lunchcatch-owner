@@ -68,7 +68,7 @@ export interface MockStore {
 
 // 사진 업로드 한 건. 업로드 주소를 발급할 때 만들고, 사진을 받으면 url을 채우고, 확인하면 가게 · 메뉴에 붙인다
 export interface MockUpload {
-  target: 'LOGO' | 'INTERIOR' | 'MENU';
+  target: 'LOGO' | 'INTERIOR' | 'MENU' | 'POSTER';
   // 메뉴 사진이면 어느 메뉴인지
   menuId: number | null;
   // 매장 사진 중 몇 번째인지. 발급할 때 자리를 잡는다
@@ -104,6 +104,22 @@ export interface MockCampaign {
   createdAt: string;
 }
 
+// 캠페인 포스터. 캠페인당 1건이다. 완성 HTML은 저장하지 않고 응답할 때 템플릿에 채워 만든다 (poster.ts)
+export interface MockPoster {
+  posterId: number;
+  campaignId: number;
+  templateId: number;
+  // 포스터 사진 (data URL)
+  imageUrl: string;
+  // 점주가 고친 가게명. 고치지 않았으면 null이고 가게 이름을 쓴다
+  eventNameText: string | null;
+  // 고친 글자 크기(px). 고치지 않았으면 null이고 템플릿 크기를 쓴다
+  eventNameFontSizePx: number | null;
+  // 할인 기본 문구 뒤에 붙일 말. 없으면 빈 문자열
+  discountSuffix: string;
+  discountFontSizePx: number | null;
+}
+
 // 목 서버 전체 상태. 쓰기 요청(로그인, 튜토리얼 완료 등)이 이 값을 바꾸고 db.ts가 저장한다
 export interface MockDb {
   // 시연 데이터 모양이 바뀌면 올린다. 저장된 값과 다르면 버리고 처음 상태로 시작한다
@@ -119,6 +135,7 @@ export interface MockDb {
   };
   store: MockStore;
   campaigns: MockCampaign[];
+  posters: MockPoster[];
   points: {
     // 원장 합계. 충전·환불·소진이 생기면 바뀐다
     balance: number;
@@ -133,11 +150,58 @@ export interface MockDb {
   nextId: number;
 }
 
-export const MOCK_DB_VERSION = 2;
+export const MOCK_DB_VERSION = 3;
 
 export const MOCK_OWNER_EMAIL = 'demo@lunchcatch.com';
 
 export const MOCK_STORE_ID = 1;
+
+// 시연 캠페인 포스터에 넣는 그림. 사진 대신 간단한 그릇 그림을 data URL로 둔다(sandbox iframe은 data 주소만 그린다).
+// 화면은 포스터 사진 주소의 경로를 objectKey로 읽어(api/poster.ts toObjectKey) base64 data URL로 둔다
+const createPosterImage = (background: string, bowl: string) =>
+  `data:image/svg+xml;base64,${btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="440" viewBox="0 0 640 440">` +
+      `<rect width="640" height="440" fill="${background}"/>` +
+      `<path d="M260 120c-20-30 20-50 0-80M320 120c-20-30 20-50 0-80M380 120c-20-30 20-50 0-80" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity=".8"/>` +
+      `<ellipse cx="320" cy="360" rx="230" ry="34" fill="#000000" opacity=".12"/>` +
+      `<path d="M100 200h440a220 160 0 0 1-440 0z" fill="#ffffff"/>` +
+      `<path d="M130 200h380a190 130 0 0 1-380 0z" fill="${bowl}"/>` +
+      `<rect x="100" y="188" width="440" height="24" rx="12" fill="#ffffff"/>` +
+      `</svg>`,
+  )}`;
+
+const createPosters = (): MockPoster[] => [
+  {
+    posterId: 3,
+    campaignId: 3,
+    templateId: 3,
+    imageUrl: createPosterImage('#ffc9a3', '#e8590c'),
+    eventNameText: null,
+    eventNameFontSizePx: null,
+    discountSuffix: '점심 특가',
+    discountFontSizePx: null,
+  },
+  {
+    posterId: 2,
+    campaignId: 2,
+    templateId: 2,
+    imageUrl: createPosterImage('#d3e4cd', '#c92a2a'),
+    eventNameText: null,
+    eventNameFontSizePx: null,
+    discountSuffix: '',
+    discountFontSizePx: null,
+  },
+  {
+    posterId: 1,
+    campaignId: 1,
+    templateId: 1,
+    imageUrl: createPosterImage('#4a423d', '#f08c00'),
+    eventNameText: null,
+    eventNameFontSizePx: null,
+    discountSuffix: '',
+    discountFontSizePx: null,
+  },
+];
 
 const ALL_AGE_GROUPS = ['AGE_20S', 'AGE_30S', 'AGE_40S', 'AGE_50_PLUS'];
 
@@ -172,9 +236,10 @@ const createCampaigns = (today: string): MockCampaign[] => [
     campaignId: 3,
     status: 'ACTIVE',
     pausedReason: null,
+    // 전체 메뉴 할인은 금액 할인만 쓸 수 있다 (api/campaign.ts isAllowedDiscount)
     discountTargetType: 'ALL',
-    discountType: 'PERCENT',
-    discountValue: 15,
+    discountType: 'AMOUNT',
+    discountValue: 1500,
     targetMenuId: null,
     issueQuantity: 30,
     usableStartTime: '11:30:00',
@@ -293,6 +358,7 @@ export const createSeed = (): MockDb => {
       },
     },
     campaigns: createCampaigns(today),
+    posters: createPosters(),
     points: {
       balance: 152000,
       reservedPoint: 20000,
@@ -335,5 +401,6 @@ export const createOnboardingSeed = (email: string): MockDb => ({
     },
   },
   campaigns: [],
+  posters: [],
   points: { balance: 0, reservedPoint: 0 },
 });

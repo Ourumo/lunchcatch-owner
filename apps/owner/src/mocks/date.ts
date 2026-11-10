@@ -14,6 +14,10 @@ export const getKstToday = () =>
 export const getKstHour = () =>
   new Date(Date.now() + KST_OFFSET_MS).getUTCHours();
 
+// 지금 한국 시각(HH:mm:ss)
+export const getKstTime = () =>
+  new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(11, 19);
+
 // YYYY-MM-DD에 일수를 더한다. 시간대 영향을 받지 않게 UTC 자정으로 계산한다
 export const addDays = (date: string, days: number) =>
   new Date(Date.parse(date) + days * DAY_MS).toISOString().slice(0, 10);

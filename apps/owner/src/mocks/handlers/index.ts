@@ -2,6 +2,7 @@ import { authHandlers } from './auth';
 import { campaignHandlers } from './campaign';
 import { imageUploadHandlers } from './imageUpload';
 import { pointHandlers } from './points';
+import { posterHandlers } from './poster';
 import { reportHandlers } from './report';
 import { signupFlowHandlers } from './signupFlow';
 import { storeHandlers } from './store';
@@ -18,6 +19,7 @@ export const handlers = [
   ...storeMenuHandlers,
   ...imageUploadHandlers,
   ...campaignHandlers,
+  ...posterHandlers,
   ...pointHandlers,
   ...reportHandlers,
 ];
