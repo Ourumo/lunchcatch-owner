@@ -2,6 +2,7 @@ import { authHandlers } from './auth';
 import { campaignHandlers } from './campaign';
 import { pointHandlers } from './points';
 import { reportHandlers } from './report';
+import { signupFlowHandlers } from './signupFlow';
 import { storeHandlers } from './store';
 
 // 목 서버가 대신 답하는 요청 전체. 여기에 없는 요청은 가로채지 않고 그대로 네트워크로 보낸다 (browser.ts)
@@ -9,6 +10,7 @@ import { storeHandlers } from './store';
 export const handlers = [
   ...authHandlers,
   ...storeHandlers,
+  ...signupFlowHandlers,
   ...campaignHandlers,
   ...pointHandlers,
   ...reportHandlers,
