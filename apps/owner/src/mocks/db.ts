@@ -35,12 +35,30 @@ export const getDb = () => {
   return db;
 };
 
+// 저장한다. sessionStorage는 탭마다 약 5MB까지라, 사진이 많아 넘치면 저장하지 못한다.
+// 그때는 메모리에만 두고 시연은 이어 간다. 새로고침하면 마지막으로 저장한 상태로 돌아간다
+const save = (current: MockDb) => {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  } catch {
+    console.warn(
+      '[목 모드] 저장 공간이 부족해 이번 변경은 새로고침하면 사라집니다.',
+    );
+  }
+};
+
 // 핸들러가 데이터를 바꾼 뒤 부른다. 바꾸는 함수를 받아 적용하고 저장한다
 export const updateDb = (change: (current: MockDb) => void) => {
   const current = getDb();
 
   change(current);
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  save(current);
+};
+
+// 데이터를 통째로 바꾼다 (회원가입으로 새 점주를 만들 때)
+export const replaceDb = (next: MockDb) => {
+  db = next;
+  save(next);
 };
 
 // 처음 상태로 되돌린다 (로그아웃)
