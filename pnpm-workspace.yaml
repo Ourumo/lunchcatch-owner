@@ -37,6 +37,8 @@ catalog:
   husky: ^9.1.7
   lint-staged: ^17.5.1
   lucide-react: ^1.47.0
+  # 서버 없이 시연하는 목 모드(VITE_USE_MOCK)에서 네트워크 요청을 가로챈다. 3.x부터 Node 22.12 이상
+  msw: ^3.0.4
   playwright: ^1.63.0
   prettier: ^3.9.8
   react: ^19.2.8
