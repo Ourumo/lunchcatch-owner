@@ -14,11 +14,13 @@ const DEMO_QR_TOKENS = {
   alreadyUsed: '00000000-0000-4000-8000-000000000002',
   otherStore: '00000000-0000-4000-8000-000000000003',
   notUsableTime: '00000000-0000-4000-8000-000000000004',
-  noResponse: '00000000-0000-4000-8000-000000000005',
+  // 응답 없음 QR의 앞부분. 화면이 누를 때마다 뒤를 랜덤으로 채워 새 QR을 만든다
+  noResponsePrefix: '00000000-0000-4000-8000-5',
 };
 
-// "응답 없음" QR을 한 번 보낸 적이 있는지. 처음에는 응답을 받지 못한 것처럼 실패하고, 다시 시도하면 처리한다
-let hasMissedResponse = false;
+// 응답 없음 QR 중 한 번 실패시킨 것. 처음 온 QR은 응답을 받지 못한 것처럼 실패하고, 같은 QR로 다시 시도하면 처리한다.
+// QR마다 따로 기억해, 다시 시도하지 않고 새로 누르면 다시 실패부터 시작한다
+const missedResponseTokens = new Set<string>();
 
 // 시연 QR의 거절 응답. 진짜 서버도 이런 경우 사유 코드 없이 문구로 거절해 화면이 문구를 그대로 보여준다(만료는 코드가 있다)
 const getDemoRejection = (qrToken: string) => {
@@ -35,12 +37,16 @@ const getDemoRejection = (qrToken: string) => {
         'COUPON-006',
         '지금은 쿠폰을 사용할 수 있는 시간이 아니에요.',
       );
-    case DEMO_QR_TOKENS.noResponse:
-      if (hasMissedResponse) return null;
-      hasMissedResponse = true;
-      return fail(503, 'COMMON-503', '잠시 후 다시 시도해 주세요.');
     default:
-      return null;
+      if (
+        !qrToken.startsWith(DEMO_QR_TOKENS.noResponsePrefix) ||
+        missedResponseTokens.has(qrToken)
+      ) {
+        return null;
+      }
+
+      missedResponseTokens.add(qrToken);
+      return fail(503, 'COMMON-503', '잠시 후 다시 시도해 주세요.');
   }
 };
 
@@ -88,13 +94,7 @@ export const couponUsageHandlers = [
 
       const campaign = db.campaigns.find(({ status }) => status === 'ACTIVE');
 
-      // "응답 없음" 시연 QR은 다시 시도하면 처리되고, 다음에 또 눌러도 같은 흐름을 보여 주도록 사용 기록으로 막지 않는다
-      const isNoResponseDemo = qrToken === DEMO_QR_TOKENS.noResponse;
-
-      if (
-        !isNoResponseDemo &&
-        db.redemptions.some((item) => item.qrToken === qrToken)
-      ) {
+      if (db.redemptions.some((item) => item.qrToken === qrToken)) {
         return fail(409, 'COUPON-004', '이미 사용한 쿠폰이에요.');
       }
 
@@ -109,8 +109,6 @@ export const couponUsageHandlers = [
       const usageHistoryId = db.nextId;
       const discountAmount = getDiscountAmount(db, campaign);
       const useTime = toKstDateTime(getKstToday(), getKstTime());
-
-      if (isNoResponseDemo) hasMissedResponse = false;
 
       updateDb((current) => {
         current.nextId += 1;
