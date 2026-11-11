@@ -18,3 +18,17 @@ export const noContent = () => new HttpResponse(null, { status: 204 });
 // 화면은 재발급을 시도하고 재발급도 401이면 로그인 화면으로 보낸다 (api/client.ts request)
 export const unauthenticated = () =>
   fail(401, 'AUTH-005', '로그인이 필요합니다.');
+
+// 커서 방식 목록의 한 구간. 서버는 pageSize와 pageToken(다음 구간 커서)으로 나눠 준다.
+// 목 서버는 커서에 몇 번째부터인지를 담는다. 마지막 구간이면 nextPageToken이 null이다
+export const paginate = <T>(items: T[], request: Request) => {
+  const { searchParams } = new URL(request.url);
+  const pageSize = Number(searchParams.get('pageSize')) || 20;
+  const start = Number(searchParams.get('pageToken')) || 0;
+  const end = start + pageSize;
+
+  return {
+    items: items.slice(start, end),
+    nextPageToken: end < items.length ? String(end) : null,
+  };
+};

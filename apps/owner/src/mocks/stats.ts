@@ -14,7 +14,7 @@ export interface DailyStats {
 }
 
 // 문자열을 0 이상 1 미만의 수로 바꾼다. 같은 문자열이면 늘 같은 수다 (FNV-1a 해시)
-const toRatio = (key: string) => {
+export const toRatio = (key: string) => {
   let hash = 2166136261;
 
   for (let index = 0; index < key.length; index += 1) {
@@ -42,9 +42,11 @@ const getServedDates = (campaign: MockCampaign) => {
     return [];
   }
 
-  const today = getKstToday();
+  const lastDate = [endDate, campaign.endedOn, getKstToday()]
+    .filter((date): date is string => Boolean(date))
+    .sort()[0];
 
-  return eachDate(startDate, endDate < today ? endDate : today);
+  return lastDate ? eachDate(startDate, lastDate) : [];
 };
 
 const getDailyStats = (campaign: MockCampaign, date: string): DailyStats => {
