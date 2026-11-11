@@ -4,12 +4,13 @@ import { getKstToday } from '@owner/mocks/date';
 import { getDb } from '@owner/mocks/db';
 import { getBalance, getLedger, getReservedPoint } from '@owner/mocks/ledger';
 import { ok, paginate, unauthenticated } from '@owner/mocks/response';
-import { getStatsByDate, sumStats } from '@owner/mocks/stats';
+import {
+  getStatsByDate,
+  IMPRESSION_UNIT_COST,
+  sumStats,
+} from '@owner/mocks/stats';
 
 // 포인트 잔액 · 원장 · 충전 정책 · 소진 집계 (api/points.ts, api/campaign.ts)
-
-// 과금 노출 1회당 포인트. 소진 포인트로 노출 수를 거꾸로 계산하는 데만 쓴다
-const IMPRESSION_UNIT_COST = 10;
 
 // 충전 정책. 충전 주문(payments.ts)도 이 값으로 금액을 검사한다
 export const CHARGE_POLICY = {

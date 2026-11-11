@@ -6,7 +6,7 @@ import { getStatsByDate } from './stats';
 //
 // 서버 원장 규칙(api/points.ts)
 // - 충전(CHARGE)은 +, 환불(REFUND)은 −
-// - 캠페인 집행일 00:00에 하루 예산을 예약(RESERVE, −)하고, 다음 날 00:00에 쓰지 않은 만큼을 예약 해제(RELEASE, +)한다
+// - 캠페인 집행일 00:00에 하루 예산을 예약(RESERVE, −)하고(잔액이 모자라면 잔액까지만), 다음 날 00:00에 쓰지 않은 만큼을 예약 해제(RELEASE, +)한다
 // - 노출마다 쌓이는 소진(DEDUCT)은 원장으로 내리지 않는다
 // 충전 · 환불은 db.ledger에 기록하고, 예약 · 예약 해제는 날짜별 실적(stats.ts)에서 계산한다
 
@@ -20,6 +20,9 @@ const getCampaignEntries = (db: MockDb): MockLedgerEntry[] => {
   return db.campaigns.flatMap((campaign) =>
     getStatsByDate(campaign, '', today).flatMap(
       ({ date, reservedPoint, spentPoint }): MockLedgerEntry[] => {
+        // 예약할 포인트가 없던 날(잔액 0)은 기록이 없다
+        if (reservedPoint === 0) return [];
+
         const reserve: MockLedgerEntry = {
           ledgerId: toComputedId(campaign.campaignId, date, 1),
           entryType: 'RESERVE',
@@ -27,11 +30,15 @@ const getCampaignEntries = (db: MockDb): MockLedgerEntry[] => {
           campaignId: campaign.campaignId,
           businessDate: date,
           paymentId: null,
-          createdAt: toKstDateTime(date, '00:00:00'),
+          // 충전으로 다시 잡은 예약은 충전한 시각에 기록된다
+          createdAt: toKstDateTime(
+            date,
+            campaign.reserves?.[date]?.time ?? '00:00:00',
+          ),
         };
 
-        // 오늘 몫은 내일 00:00에 해제된다
-        if (date === today) return [reserve];
+        // 오늘 몫은 내일 00:00에 해제된다. 예약한 포인트를 모두 쓴 날은 되돌릴 것이 없어 해제 기록이 없다
+        if (date === today || reservedPoint === spentPoint) return [reserve];
 
         return [
           reserve,

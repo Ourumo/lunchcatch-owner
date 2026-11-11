@@ -15,6 +15,7 @@ import type { ApiResult } from '@owner/api/types';
 import { formatPoints } from '@owner/ui/campaignFormat';
 
 import { CampaignActionSheet } from './CampaignActionSheet';
+import { CampaignChargeSheet } from './CampaignChargeSheet';
 import { DailyBudgetSheet } from './DailyBudgetSheet';
 
 export interface CampaignActionsProps {
@@ -81,7 +82,8 @@ const actionConfigs: Record<CampaignAction, CampaignActionConfig> = {
 };
 
 // 상태별로 둘 처리. 재개는 점주가 직접 중단한(OWNER) 캠페인만 할 수 있다.
-// 잔액 부족(NO_POINTS)은 충전하면 자동으로 다시 시작되고, 관리자 중단(ADMIN)은 점주가 아무것도 할 수 없어 카드의 안내만 둔다
+// 잔액 부족(NO_POINTS)은 충전하면 자동으로 다시 시작되어 종료 옆에 충전(CHARGE_BUTTON)을 함께 두고,
+// 관리자 중단(ADMIN)은 점주가 아무것도 할 수 없어 카드의 안내만 둔다
 const getActions = ({
   pausedReason,
   status,
@@ -124,6 +126,18 @@ const DAILY_BUDGET_BUTTON = {
   variant: 'secondary',
 } satisfies { label: string; variant: ButtonVariant };
 
+// 잔액 부족으로 멈춘 캠페인의 충전 버튼. 충전하면 바로 다시 시작되어 되돌릴 수 없는 종료보다 앞선 주 행동으로 둔다
+const CHARGE_BUTTON = {
+  label: '포인트 충전',
+  variant: 'primary',
+} satisfies { label: string; variant: ButtonVariant };
+
+const isPausedByNoPoints = ({
+  pausedReason,
+  status,
+}: Pick<Campaign, 'pausedReason' | 'status'>) =>
+  status === 'PAUSED' && pausedReason === 'NO_POINTS';
+
 // 하루 예산을 바꿀 수 있는지. 바꾼 값은 다음 날 00:00부터 적용되어, 진행 중이어도 집행 마지막 날이면 적용할 날이 없다
 const canChangeDailyBudgetOf = ({
   budget,
@@ -143,7 +157,7 @@ export const CampaignActions = ({
 }: CampaignActionsProps) => {
   const { budget, id, status } = campaign;
   const [openAction, setOpenAction] = useState<
-    CampaignAction | 'dailyBudget' | null
+    CampaignAction | 'dailyBudget' | 'charge' | null
   >(null);
   // 하루 예산을 바꾼 뒤의 안내. 서버가 바꾼 값을 주지 않아 상세에서 볼 수 없으므로 점주가 닫거나 다른 처리를 할 때까지 둔다
   const [dailyBudgetNotice, setDailyBudgetNotice] = useState<string | null>(
@@ -154,6 +168,7 @@ export const CampaignActions = ({
   const actions = getActions(campaign);
   const showDailyBudget =
     canChangeDailyBudget && canChangeDailyBudgetOf(campaign);
+  const showCharge = isPausedByNoPoints(campaign);
   const classNames = layoutClassNames[layout];
 
   const closeSheet = () => {
@@ -223,7 +238,10 @@ export const CampaignActions = ({
   }
 
   const openConfig =
-    openAction && openAction !== 'dailyBudget' && actionConfigs[openAction];
+    openAction &&
+    openAction !== 'dailyBudget' &&
+    openAction !== 'charge' &&
+    actionConfigs[openAction];
 
   return (
     <>
@@ -259,6 +277,15 @@ export const CampaignActions = ({
               {DAILY_BUDGET_BUTTON.label}
             </Button>
           )}
+          {showCharge && (
+            <Button
+              className={`${classNames.button} flex-1`}
+              onClick={() => setOpenAction('charge')}
+              variant={CHARGE_BUTTON.variant}
+            >
+              {CHARGE_BUTTON.label}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -278,6 +305,14 @@ export const CampaignActions = ({
           currentDailyBudget={budget.dailyBudget}
           onClose={closeSheet}
           onSave={saveDailyBudget}
+        />
+      )}
+
+      {/* 결제를 마치면 지금 화면으로 돌아와 다시 불러오므로, 다시 시작된 상태는 돌아온 화면이 보여준다 */}
+      {openAction === 'charge' && (
+        <CampaignChargeSheet
+          dailyBudget={budget.dailyBudget}
+          onClose={closeSheet}
         />
       )}
     </>

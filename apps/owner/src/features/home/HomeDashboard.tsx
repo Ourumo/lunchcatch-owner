@@ -17,6 +17,7 @@ import { PointChargeSheet } from '@owner/ui/PointChargeSheet/PointChargeSheet';
 import { SkeletonBlock } from '@owner/ui/SkeletonBlock/SkeletonBlock';
 import { StatusMessage } from '@owner/ui/StatusMessage/StatusMessage';
 
+import { DemoNoPointsCard, isDemoNoPointsEnabled } from './DemoNoPointsCard';
 import { getCurrentCampaign } from './homeCampaigns';
 import { HomeCampaignSection } from './HomeCampaignSection';
 import { RecentPerformance } from './RecentPerformance';
@@ -223,6 +224,15 @@ export const HomeDashboard = () => {
             campaigns.status === 'error' ? retryCampaigns : retryRecentDays
           }
         />
+        {/* 시연 버튼은 진행 중 캠페인이 있을 때만 둔다. 그 캠페인을 잔액 부족으로 멈추고 잔액도 바뀌어 모두 다시 부른다 */}
+        {isDemoNoPointsEnabled && current && current.status === 'ACTIVE' && (
+          <DemoNoPointsCard
+            onChanged={() => {
+              retry();
+              retryBalance();
+            }}
+          />
+        )}
 
         {/* 잔액을 불러오지 못해도 잔액 부족 경고에서 충전할 수 있게 잔액 없이 연다 */}
         {isChargeOpen && (
