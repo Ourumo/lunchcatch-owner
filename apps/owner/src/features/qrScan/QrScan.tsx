@@ -6,6 +6,7 @@ import { redeemCoupon, type RedeemedCoupon } from '@owner/api/redeem';
 import { getMyStore, type StoreLocation } from '@owner/api/store';
 import type { ApiResult } from '@owner/api/types';
 
+import { DemoQrCases, isDemoQrEnabled } from './DemoQrCases';
 import { RedeemResult } from './RedeemResult';
 import { type CameraErrorStatus, useCamera } from './useCamera';
 import { useQrDetector } from './useQrDetector';
@@ -180,6 +181,15 @@ export const QrScan = ({ onClose }: QrScanProps) => {
       );
     }
 
+    // 목 모드의 시연 QR은 카메라 없이도 누를 수 있어, 카메라가 꺼져 있을 때도 처리 중임을 보여준다
+    if (scan.status === 'processing' && camera.state.status !== 'active') {
+      return (
+        <p className="m-auto text-body-mobile" role="status">
+          쿠폰을 확인하는 중이에요
+        </p>
+      );
+    }
+
     if (camera.state.status === 'requesting') {
       return (
         <p className="m-auto text-body-mobile" role="status">
@@ -252,6 +262,10 @@ export const QrScan = ({ onClose }: QrScanProps) => {
         </button>
       </header>
       {renderContent()}
+      {/* 목 모드에서는 카메라 권한을 묻고 난 뒤 허용 · 거부와 상관없이 시연 QR을 보여준다 */}
+      {isDemoQrEnabled &&
+        camera.state.status !== 'requesting' &&
+        scan.status === 'scanning' && <DemoQrCases onScan={handleDetect} />}
     </main>
   );
 };
