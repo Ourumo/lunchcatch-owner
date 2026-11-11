@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#fff4ea"/>
+  <circle cx="300" cy="270" r="190" fill="#f56b20"/>
+  <circle cx="300" cy="270" r="166" fill="none" stroke="#ffffff" stroke-width="5" stroke-dasharray="4 12" stroke-linecap="round"/>
+  <path d="M262 160c-14-20 14-34 0-54M300 160c-14-20 14-34 0-54M338 160c-14-20 14-34 0-54" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M185 222h230a115 92 0 0 1-230 0z" fill="#ffffff"/>
+  <rect x="177" y="212" width="246" height="18" rx="9" fill="#ffffff"/>
+  <path d="M215 232h170a85 60 0 0 1-170 0z" fill="#ffd8bf"/>
+  <text x="530" y="250" font-family="'Noto Sans KR','Apple SD Gothic Neo',sans-serif" font-size="64" font-weight="800" fill="#2f2a27">런치캐치</text>
+  <text x="530" y="330" font-family="'Noto Sans KR','Apple SD Gothic Neo',sans-serif" font-size="56" font-weight="700" fill="#f56b20">시연 한식당</text>
+</svg>

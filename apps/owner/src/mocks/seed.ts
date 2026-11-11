@@ -197,7 +197,7 @@ export interface MockDb {
   nextId: number;
 }
 
-export const MOCK_DB_VERSION = 4;
+export const MOCK_DB_VERSION = 5;
 
 export const MOCK_OWNER_EMAIL = 'demo@lunchcatch.com';
 
@@ -328,6 +328,13 @@ const createRefunds = (today: string): MockRefund[] => [
   },
 ];
 
+// 시연 가게 사진. public/mock-images의 그림을 쓴다. 같은 이름의 실제 사진으로 바꾸면 그대로 보인다
+const mockImage = (fileName: string, sortOrder = 0): MockImage => ({
+  objectKey: `mock-images/${fileName}`,
+  url: `/mock-images/${fileName}`,
+  sortOrder,
+});
+
 const ALL_AGE_GROUPS = ['AGE_20S', 'AGE_30S', 'AGE_40S', 'AGE_50_PLUS'];
 
 // 평일 11:00~21:00 영업, 브레이크타임 15:00~17:00, 주말 휴무
@@ -446,9 +453,12 @@ export const createSeed = (): MockDb => {
       latitude: 37.5006,
       longitude: 127.0364,
       businessHours: createBusinessHours(),
-      // 사진은 S3가 내려가 쓸 수 없어 비워 둔다. 화면은 사진이 없을 때의 모습으로 보여준다
-      logoImage: null,
-      interiorImages: [],
+      logoImage: mockImage('logo.svg'),
+      interiorImages: [
+        mockImage('interior-1.svg', 0),
+        mockImage('interior-2.svg', 1),
+        mockImage('interior-3.svg', 2),
+      ],
       menus: [
         {
           menuId: 101,
@@ -456,7 +466,7 @@ export const createSeed = (): MockDb => {
           price: 9000,
           description: '국내산 돼지고기를 넣고 끓인 김치찌개',
           sortOrder: 0,
-          image: null,
+          image: mockImage('menu-kimchi-jjigae.svg'),
         },
         {
           menuId: 102,
@@ -464,7 +474,7 @@ export const createSeed = (): MockDb => {
           price: 10000,
           description: '매콤한 양념에 볶은 제육과 쌈 채소',
           sortOrder: 1,
-          image: null,
+          image: mockImage('menu-jeyuk.svg'),
         },
         {
           menuId: 103,
@@ -472,7 +482,7 @@ export const createSeed = (): MockDb => {
           price: 9000,
           description: null,
           sortOrder: 2,
-          image: null,
+          image: mockImage('menu-doenjang.svg'),
         },
       ],
       // 입점 신청을 마친 가게
