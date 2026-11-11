@@ -102,6 +102,8 @@ export interface MockCampaign {
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
+  // 점주가 종료한 날. 집행 종료일 전에 종료했으면 그다음 날부터는 집행하지 않는다
+  endedOn?: string;
 }
 
 // 캠페인 포스터. 캠페인당 1건이다. 완성 HTML은 저장하지 않고 응답할 때 템플릿에 채워 만든다 (poster.ts)
@@ -120,6 +122,51 @@ export interface MockPoster {
   discountFontSizePx: number | null;
 }
 
+// 포인트 원장 한 줄 (GET /v1/owner/points/ledger). amount는 잔액의 증감(+/−)이다
+export interface MockLedgerEntry {
+  ledgerId: number;
+  entryType: 'CHARGE' | 'RESERVE' | 'DEDUCT' | 'RELEASE' | 'REFUND' | 'ADJUST';
+  amount: number;
+  campaignId: number | null;
+  businessDate: string | null;
+  paymentId: number | null;
+  createdAt: string;
+}
+
+// 충전 결제 (GET /v1/owner/payments)
+export interface MockPayment {
+  paymentId: number;
+  orderId: string;
+  amount: number;
+  status: 'REQUESTED' | 'APPROVED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';
+  displayStatus:
+    'IN_PROGRESS' | 'CONFIRMING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  failureReason: string | null;
+  requestedAt: string;
+  approvedAt: string | null;
+  canceledAt: string | null;
+}
+
+// 환불 요청 (GET /v1/owner/refund-requests)
+export interface MockRefund {
+  refundRequestId: number;
+  amount: number;
+  fee: number;
+  status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+  reason: string | null;
+  rejectReason: string | null;
+  requestedAt: string;
+  processedAt: string | null;
+}
+
+export interface MockRedemption {
+  usageHistoryId: number;
+  qrToken: string;
+  campaignId: number;
+  discountAmount: number;
+  useTime: string;
+}
+
 // 목 서버 전체 상태. 쓰기 요청(로그인, 튜토리얼 완료 등)이 이 값을 바꾸고 db.ts가 저장한다
 export interface MockDb {
   // 시연 데이터 모양이 바뀌면 올린다. 저장된 값과 다르면 버리고 처음 상태로 시작한다
@@ -136,12 +183,12 @@ export interface MockDb {
   store: MockStore;
   campaigns: MockCampaign[];
   posters: MockPoster[];
-  points: {
-    // 원장 합계. 충전·환불·소진이 생기면 바뀐다
-    balance: number;
-    // 오늘 캠페인에 예약된 포인트
-    reservedPoint: number;
-  };
+  // 포인트 원장 중 직접 기록하는 것(충전, 환불). 캠페인의 예약 · 예약 해제는 실적에서 계산한다 (ledger.ts)
+  ledger: MockLedgerEntry[];
+  payments: MockPayment[];
+  refunds: MockRefund[];
+  // QR로 사용 처리한 쿠폰. 같은 QR은 한 번만 쓸 수 있다
+  redemptions: MockRedemption[];
   // 업로드 ID → 업로드
   uploads: Record<string, MockUpload>;
   // 마지막으로 발급한 로고 업로드. 그보다 먼저 받은 로고 업로드는 확인할 수 없다 (다른 창에서 로고를 다시 올린 경우)
@@ -150,7 +197,7 @@ export interface MockDb {
   nextId: number;
 }
 
-export const MOCK_DB_VERSION = 3;
+export const MOCK_DB_VERSION = 4;
 
 export const MOCK_OWNER_EMAIL = 'demo@lunchcatch.com';
 
@@ -200,6 +247,84 @@ const createPosters = (): MockPoster[] => [
     eventNameFontSizePx: null,
     discountSuffix: '',
     discountFontSizePx: null,
+  },
+];
+
+// 충전 · 환불 기록. 캠페인 집행으로 나간 포인트는 실적에서 계산해 더한다.
+// 진행 중 캠페인까지 집행하고도 15만 포인트 안팎이 남도록 맞췄다
+const createPayments = (today: string): MockPayment[] => {
+  const approved = (
+    paymentId: number,
+    amount: number,
+    daysAgo: number,
+  ): MockPayment => {
+    const at = toKstDateTime(addDays(today, -daysAgo), '10:12:00');
+
+    return {
+      paymentId,
+      orderId: `mock-order-${paymentId}`,
+      amount,
+      status: 'APPROVED',
+      displayStatus: 'COMPLETED',
+      failureReason: null,
+      requestedAt: at,
+      approvedAt: at,
+      canceledAt: null,
+    };
+  };
+  const failedAt = toKstDateTime(addDays(today, -10), '15:40:00');
+
+  return [
+    approved(1, 200000, 66),
+    approved(2, 300000, 33),
+    {
+      paymentId: 3,
+      orderId: 'mock-order-3',
+      amount: 50000,
+      status: 'FAILED',
+      displayStatus: 'FAILED',
+      failureReason: '카드 한도를 넘었어요.',
+      requestedAt: failedAt,
+      approvedAt: null,
+      canceledAt: null,
+    },
+    approved(4, 150000, 9),
+  ];
+};
+
+const createLedger = (payments: MockPayment[], today: string) => [
+  ...payments
+    .filter(({ status }) => status === 'APPROVED')
+    .map(({ amount, approvedAt, paymentId }): MockLedgerEntry => ({
+      ledgerId: paymentId,
+      entryType: 'CHARGE',
+      amount,
+      campaignId: null,
+      businessDate: null,
+      paymentId,
+      createdAt: approvedAt ?? '',
+    })),
+  {
+    ledgerId: 5,
+    entryType: 'REFUND',
+    amount: -20000,
+    campaignId: null,
+    businessDate: null,
+    paymentId: null,
+    createdAt: toKstDateTime(addDays(today, -42), '17:30:00'),
+  } satisfies MockLedgerEntry,
+];
+
+const createRefunds = (today: string): MockRefund[] => [
+  {
+    refundRequestId: 1,
+    amount: 20000,
+    fee: 0,
+    status: 'COMPLETED',
+    reason: '첫 캠페인을 마치고 남은 포인트 일부를 돌려받음',
+    rejectReason: null,
+    requestedAt: toKstDateTime(addDays(today, -44), '11:02:00'),
+    processedAt: toKstDateTime(addDays(today, -42), '17:30:00'),
   },
 ];
 
@@ -359,10 +484,16 @@ export const createSeed = (): MockDb => {
     },
     campaigns: createCampaigns(today),
     posters: createPosters(),
-    points: {
-      balance: 152000,
-      reservedPoint: 20000,
-    },
+    ...(() => {
+      const payments = createPayments(today);
+
+      return {
+        payments,
+        ledger: createLedger(payments, today),
+        refunds: createRefunds(today),
+      };
+    })(),
+    redemptions: [],
     uploads: {},
     latestLogoUploadId: null,
     nextId: 1000,
@@ -402,5 +533,8 @@ export const createOnboardingSeed = (email: string): MockDb => ({
   },
   campaigns: [],
   posters: [],
-  points: { balance: 0, reservedPoint: 0 },
+  ledger: [],
+  payments: [],
+  refunds: [],
+  redemptions: [],
 });

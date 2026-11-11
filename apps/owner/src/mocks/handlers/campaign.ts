@@ -398,6 +398,8 @@ export const campaignHandlers = [
         updateDb(() => {
           campaign.status = to;
           campaign.pausedReason = action === 'pause' ? 'OWNER' : null;
+
+          if (action === 'end') campaign.endedOn = getKstToday();
         });
 
         return ok(response);

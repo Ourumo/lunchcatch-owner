@@ -1,8 +1,11 @@
 import { authHandlers } from './auth';
 import { campaignHandlers } from './campaign';
+import { couponUsageHandlers } from './couponUsage';
 import { imageUploadHandlers } from './imageUpload';
+import { paymentHandlers } from './payments';
 import { pointHandlers } from './points';
 import { posterHandlers } from './poster';
+import { refundHandlers } from './refund';
 import { reportHandlers } from './report';
 import { signupFlowHandlers } from './signupFlow';
 import { storeHandlers } from './store';
@@ -21,5 +24,8 @@ export const handlers = [
   ...campaignHandlers,
   ...posterHandlers,
   ...pointHandlers,
+  ...paymentHandlers,
+  ...refundHandlers,
   ...reportHandlers,
+  ...couponUsageHandlers,
 ];
