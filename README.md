@@ -16,7 +16,7 @@
 - 원본에서 **점주 앱과 공통 패키지만 커밋 기록과 함께 가져와**, 프로젝트가 끝난 뒤에도 이어서 다듬는 개인 저장소입니다.
 - 원본과 다른 점
   - 사용자 앱과 관리자 앱은 제외했습니다. 두 앱은 [원본 저장소](https://github.com/lunch-catch/lc-frontend)에서 볼 수 있습니다.
-  - 원본의 서비스 도메인과 API 서버가 내려가, 서버 없이 화면을 볼 수 있도록 목 데이터 작업을 할 예정입니다.
+  - 원본의 서비스 도메인과 API 서버가 내려가, 배포 화면([lunchcatch-owner-demo.vercel.app](https://lunchcatch-owner-demo.vercel.app/))은 목 모드(MSW)로 서버 없이 시연 데이터로 동작합니다.
 - 커밋 메시지와 문서의 이슈 · PR 번호(`#315` 등)는 **원본 저장소 기준**입니다. 원본의 [Issues](https://github.com/lunch-catch/lc-frontend/issues?q=is%3Aissue)와 [Pull requests](https://github.com/lunch-catch/lc-frontend/pulls?q=is%3Apr)에서 찾을 수 있습니다.
 
 <br>
