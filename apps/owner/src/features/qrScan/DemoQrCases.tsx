@@ -8,7 +8,8 @@ const DEMO_QR_TOKENS = {
   alreadyUsed: '00000000-0000-4000-8000-000000000002',
   otherStore: '00000000-0000-4000-8000-000000000003',
   notUsableTime: '00000000-0000-4000-8000-000000000004',
-  noResponse: '00000000-0000-4000-8000-000000000005',
+  // 응답 없음은 누를 때마다 새 QR이어야 해서 앞부분만 정하고 뒤 11자리는 랜덤으로 채운다
+  noResponsePrefix: '00000000-0000-4000-8000-5',
 };
 
 const DEMO_QR_CASES: { label: string; createToken: () => string }[] = [
@@ -18,8 +19,12 @@ const DEMO_QR_CASES: { label: string; createToken: () => string }[] = [
   { label: '이미 사용한 쿠폰', createToken: () => DEMO_QR_TOKENS.alreadyUsed },
   { label: '다른 가게 쿠폰', createToken: () => DEMO_QR_TOKENS.otherStore },
   { label: '사용 시간 아님', createToken: () => DEMO_QR_TOKENS.notUsableTime },
-  // 처음에는 응답을 받지 못하고, 다시 시도하면 처리된다
-  { label: '응답 없음', createToken: () => DEMO_QR_TOKENS.noResponse },
+  // 처음에는 응답을 받지 못하고, 같은 QR로 다시 시도하면 처리된다. 누를 때마다 새 QR이라 매번 실패부터 시작한다
+  {
+    label: '응답 없음',
+    createToken: () =>
+      `${DEMO_QR_TOKENS.noResponsePrefix}${crypto.randomUUID().slice(-11)}`,
+  },
   // 쿠폰 QR 모양(UUID)이 아니라 서버에 보내지 않고 화면에서 거른다
   { label: '쿠폰 QR 아님', createToken: () => 'https://example.com' },
 ];
