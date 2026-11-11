@@ -104,6 +104,9 @@ export interface MockCampaign {
   createdAt: string;
   // 점주가 종료한 날. 집행 종료일 전에 종료했으면 그다음 날부터는 집행하지 않는다
   endedOn?: string;
+  // 예약액이 하루 예산과 다른 날(YYYY-MM-DD). 00:00에 잔액이 모자라 잔액까지만 예약했거나, 충전으로 예약을 다시 잡은 날이다.
+  // time은 예약한 시각(HH:mm:ss)이다. 없는 날은 00:00에 하루 예산을 예약한 것으로 본다 (stats.ts)
+  reserves?: Record<string, { point: number; time: string }>;
 }
 
 // 캠페인 포스터. 캠페인당 1건이다. 완성 HTML은 저장하지 않고 응답할 때 템플릿에 채워 만든다 (poster.ts)

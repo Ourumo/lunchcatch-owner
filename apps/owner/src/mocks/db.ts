@@ -55,7 +55,7 @@ export const updateDb = (change: (current: MockDb) => void) => {
   save(current);
 };
 
-// 데이터를 통째로 바꾼다 (회원가입으로 새 점주를 만들 때)
+// 데이터를 통째로 바꾼다 (회원가입으로 새 점주를 만들 때, 시연 상황을 바꿀 때)
 export const replaceDb = (next: MockDb) => {
   db = next;
   save(next);

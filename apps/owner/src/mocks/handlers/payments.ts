@@ -2,6 +2,7 @@ import { http } from 'msw/http';
 
 import { getKstTime, getKstToday, toKstDateTime } from '@owner/mocks/date';
 import { getDb, updateDb } from '@owner/mocks/db';
+import { resumeNoPointsCampaigns } from '@owner/mocks/noPoints';
 import { fail, ok, paginate, unauthenticated } from '@owner/mocks/response';
 import type { MockPayment } from '@owner/mocks/seed';
 
@@ -83,7 +84,8 @@ export const paymentHandlers = [
     },
   ),
 
-  // 승인 확정. 포인트를 충전하고 원장에 남긴다. 같은 주문을 다시 확정해도 충전은 한 번이다
+  // 승인 확정. 포인트를 충전하고 원장에 남긴다. 같은 주문을 다시 확정해도 충전은 한 번이다.
+  // 잔액 부족으로 멈춘 캠페인이 있으면 충전한 포인트로 그날 예약을 다시 잡아 다시 시작한다
   http.post<PaymentParams, ConfirmBody>(
     '*/v1/owner/payments/:paymentId\\:confirm',
     async ({ params, request }) => {
@@ -126,6 +128,7 @@ export const paymentHandlers = [
             createdAt: approvedAt,
           });
           db.nextId += 1;
+          resumeNoPointsCampaigns(db);
         });
       }
 
